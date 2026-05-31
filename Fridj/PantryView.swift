@@ -3,7 +3,6 @@ import SwiftUI
 struct PantryView: View {
     @State private var store = PantryStore.shared
     @State private var newItem: String = ""
-    @State private var diet: String = ""
     @State private var recipes: [Recipe] = []
     @State private var isCooking = false
     @State private var isValidating = false
@@ -171,7 +170,7 @@ struct PantryView: View {
         errorText = nil
         isCooking = true
         do {
-            recipes = try await FrijAPI.recipes(ingredients: store.allNames, diet: diet)
+            recipes = try await FrijAPI.recipes(ingredients: store.allNames)
             showRecipes = true
         } catch {
             errorText = error.localizedDescription

@@ -11,7 +11,6 @@ struct ScanView: View {
     @State private var newlyAddedNames: Set<String> = []
 
     @State private var newItem: String = ""
-    @State private var diet: String = ""
     @State private var isScanning = false
     @State private var isValidating = false
     @State private var errorText: String?
@@ -38,7 +37,7 @@ struct ScanView: View {
                     }
 
                     PhotosPicker(selection: $pickerItem, matching: .images) {
-                        Label(pickedImage == nil ? "Pick a fridge photo" : "Pick a different photo",
+                        Label(pickedImage == nil ? "Pick a photo" : "Pick a different photo",
                               systemImage: "photo.on.rectangle")
                             .font(FridjFont.size(16, weight: .bold))
                             .foregroundColor(.white)
@@ -51,7 +50,7 @@ struct ScanView: View {
                     if isScanning {
                         HStack(spacing: FridjSpacing.sm) {
                             ProgressView()
-                            Text("Reading your fridge…")
+                            Text("Reading your kitchen…")
                                 .font(FridjFont.size(14))
                                 .foregroundColor(.fridjText.opacity(0.6))
                         }
@@ -75,7 +74,6 @@ struct ScanView: View {
                                 .font(FridjFont.size(13))
                                 .foregroundColor(.fridjCoral)
                         }
-                        dietField
                         cookButton
                     }
                 }
@@ -93,10 +91,10 @@ struct ScanView: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text("Scan your fridge")
+            Text("Scan your kitchen")
                 .font(FridjFont.style(.title, weight: .bold))
                 .foregroundColor(.fridjText)
-            Text("New items get added to your pantry. Frij remembers.")
+            Text("Fridge, pantry, spice rack — snap whatever's got food.")
                 .font(FridjFont.size(14))
                 .foregroundColor(.fridjText.opacity(0.5))
         }
@@ -202,13 +200,6 @@ struct ScanView: View {
         }
     }
 
-    private var dietField: some View {
-        TextField("dietary notes? (optional — high protein, no pork…)", text: $diet)
-            .font(FridjFont.size(15))
-            .padding(.horizontal, 16).padding(.vertical, 12)
-            .background(.white, in: RoundedRectangle(cornerRadius: FridjRadius.sm, style: .continuous))
-    }
-
     private var cookButton: some View {
         Button {
             Task { await cook() }
@@ -271,7 +262,7 @@ struct ScanView: View {
         errorText = nil
         isCooking = true
         do {
-            recipes = try await FrijAPI.recipes(ingredients: store.allNames, diet: diet)
+            recipes = try await FrijAPI.recipes(ingredients: store.allNames)
             showRecipes = true
         } catch {
             errorText = error.localizedDescription

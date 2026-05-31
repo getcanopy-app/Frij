@@ -32,11 +32,11 @@ struct CustomTabBar: View {
 
     // The fourth tab is now the pantry. Using a refrigerator icon since
     // that's what it represents. Ardalan can adjust the icon if he wants.
-    private let items: [(icon: String, tab: AppTab)] = [
-        ("house",                 .home),
-        ("viewfinder",            .scan),
-        ("list.bullet.rectangle", .recipes),
-        ("refrigerator",          .bookmarks)
+    private let items: [(icon: String, selectedIcon: String, tab: AppTab)] = [
+        ("house",                 "house.fill",                 .home),
+        ("viewfinder",            "viewfinder",                 .scan),
+        ("list.bullet.rectangle", "list.bullet.rectangle.fill", .recipes),
+        ("refrigerator",          "refrigerator",               .bookmarks)
     ]
 
     var body: some View {
@@ -46,10 +46,11 @@ struct CustomTabBar: View {
                     selectedTab = item.tab
                 } label: {
                     VStack(spacing: 4) {
-                        Image(systemName: selectedTab == item.tab ? item.icon + ".fill" : item.icon)
+                        Image(systemName: selectedTab == item.tab ? item.selectedIcon : item.icon)
                             .font(.system(size: 22, weight: .semibold))
                             .foregroundStyle(selectedTab == item.tab ? .primary : .secondary)
-                            .symbolEffect(.bounce, value: selectedTab == item.tab)
+                            .scaleEffect(selectedTab == item.tab ? 1.15 : 1.0)
+                            .animation(.spring(response: 0.3, dampingFraction: 0.55), value: selectedTab)
                     }
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 20)

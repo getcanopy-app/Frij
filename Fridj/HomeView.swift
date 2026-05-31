@@ -1,6 +1,8 @@
 import SwiftUI
 
 struct HomeView: View {
+    @State private var showProfile = false
+
     var body: some View {
         ZStack {
             LiquidCreamBackground()
@@ -23,13 +25,20 @@ struct HomeView: View {
             .padding(.horizontal, 20)
             .padding(.bottom, 110)
         }
+        .sheet(isPresented: $showProfile) {
+            ProfileView()
+        }
     }
 
     private var topBar: some View {
         HStack {
-            Image(systemName: "line.3.horizontal")
-                .font(.system(size: 18, weight: .semibold))
-                .foregroundStyle(.black.opacity(0.8))
+            Button {
+                showProfile = true
+            } label: {
+                Image(systemName: "person.circle")
+                    .font(.system(size: 22, weight: .semibold))
+                    .foregroundStyle(.black.opacity(0.8))
+            }
 
             Spacer()
 
@@ -39,8 +48,9 @@ struct HomeView: View {
 
             Spacer()
 
+            // Keep symmetry with the leading icon
             Color.clear
-                .frame(width: 18, height: 18)
+                .frame(width: 22, height: 22)
         }
         .padding(.top, 88)
     }
@@ -159,7 +169,6 @@ struct RecipeGlassCard: View {
 
     var body: some View {
         ZStack(alignment: .top) {
-            // Glass card body — pushed down so image floats above it
             VStack(alignment: .leading, spacing: 8) {
                 Spacer()
                 Text(title)
@@ -186,7 +195,6 @@ struct RecipeGlassCard: View {
             .glassEffect(tint.map { .regular.tint($0) } ?? .regular, in: .rect(cornerRadius: 26))
             .padding(.top, imageOverflow)
 
-            // Image floats above the card
             if let imageName {
                 Image(imageName)
                     .resizable()

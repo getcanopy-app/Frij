@@ -2,8 +2,6 @@
 //  FrijAPI.swift
 //  Fridj
 //
-//  The networking layer — talks to the Frij backend.
-//
 
 import Foundation
 import UIKit
@@ -15,7 +13,7 @@ enum FrijAPIError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .badResponse(let detail): return detail
-        case .imageEncodingFailed:     return "Couldn't prepare the photo. Try another shot."
+        case .imageEncodingFailed: return "Couldn't prepare the photo. Try another shot."
         }
     }
 }
@@ -29,7 +27,6 @@ struct ValidationResult: Codable {
 enum FrijAPI {
     static let baseURL = "https://frij-backend.vercel.app"
 
-    // MARK: Scan
     static func scan(image: UIImage) async throws -> [DetectedItem] {
         guard let jpegBase64 = ImagePrep.jpegBase64(from: image) else {
             throw FrijAPIError.imageEncodingFailed
@@ -39,24 +36,35 @@ enum FrijAPI {
         return try JSONDecoder().decode(ScanResponse.self, from: data).items
     }
 
-    // MARK: Recipes
-    static func recipes(ingredients: [String], diet: String?) async throws -> [Recipe] {
+    /// Recipes — pulls profile automatically so callers don't have to thread it through.
+    static func recipes(ingredients: [String], extraDiet: String? = nil) async throws -> [Recipe] {
+        let profile = ProfileStore.shared.profile
         var body: [String: Any] = ["ingredients": ingredients]
-        if let diet, !diet.isEmpty { body["diet"] = diet }
+
+        // Combine profile.diet with the optional per-call diet hint.
+        let combinedDiet = [profile.diet, extraDiet]
+            .compactMap { $0?.trimmingCharacters(in: .whitespaces) }
+            .filter { !$0.isEmpty }
+            .joined(separator: ", ")
+        if !combinedDiet.isEmpty { body["diet"] = combinedDiet }
+
+        if !profile.dislikes.trimmingCharacters(in: .whitespaces).isEmpty {
+            body["dislikes"] = profile.dislikes
+        }
+        if let household = profile.household {
+            body["household"] = household.rawValue
+        }
+
         let data = try await post("/api/recipes", body: body)
         return try JSONDecoder().decode(RecipeResponse.self, from: data).recipes
     }
 
-    // MARK: Validate (new)
-    /// Check whether a user-typed string is a real food ingredient. Returns a normalized
-    /// name on success, or a friendly reason on rejection.
     static func validate(name: String) async throws -> ValidationResult {
         let body: [String: Any] = ["name": name]
         let data = try await post("/api/validate", body: body)
         return try JSONDecoder().decode(ValidationResult.self, from: data)
     }
 
-    // MARK: Shared POST helper
     private static func post(_ path: String, body: [String: Any]) async throws -> Data {
         guard let url = URL(string: baseURL + path) else {
             throw FrijAPIError.badResponse("Bad URL")

@@ -1,12 +1,8 @@
 import SwiftUI
 
-// Replaces the "Coming soon" RecipesView placeholder.
-// Shows the 3 dinners the backend returned. Accepts recipes so ScanView
-// can present it; defaults to empty for the standalone tab/preview.
-
 struct RecipesView: View {
     var recipes: [Recipe] = []
-    @State private var expanded: String?
+    @State private var selected: Recipe?
 
     var body: some View {
         ZStack {
@@ -25,12 +21,16 @@ struct RecipesView: View {
 
                         ForEach(recipes) { recipe in
                             card(recipe)
+                                .onTapGesture { selected = recipe }
                         }
                     }
                     .padding(FridjSpacing.lg)
-                    .padding(.bottom, 120)
+                    .padding(.bottom, FridjSpacing.lg)
                 }
             }
+        }
+        .sheet(item: $selected) { recipe in
+            RecipeDetailView(recipe: recipe)
         }
     }
 
@@ -49,8 +49,7 @@ struct RecipesView: View {
     }
 
     private func card(_ recipe: Recipe) -> some View {
-        let isOpen = expanded == recipe.id
-        return VStack(alignment: .leading, spacing: FridjSpacing.sm) {
+        VStack(alignment: .leading, spacing: FridjSpacing.sm) {
             HStack(alignment: .top) {
                 Text(recipe.name)
                     .font(FridjFont.size(18, weight: .bold))
@@ -73,36 +72,118 @@ struct RecipesView: View {
                     .foregroundColor(.fridjOrange)
             }
 
-            Button {
-                withAnimation(.easeInOut(duration: 0.2)) {
-                    expanded = isOpen ? nil : recipe.id
-                }
-            } label: {
-                Text(isOpen ? "hide steps ↑" : "make this ↓")
-                    .font(FridjFont.size(14, weight: .bold))
+            HStack {
+                Spacer()
+                Label("View recipe", systemImage: "chevron.right")
+                    .font(FridjFont.size(13, weight: .bold))
                     .foregroundColor(.fridjOrange)
             }
-
-            if isOpen {
-                VStack(alignment: .leading, spacing: 10) {
-                    ForEach(Array(recipe.steps.enumerated()), id: \.offset) { idx, step in
-                        HStack(alignment: .top, spacing: 10) {
-                            Text("\(idx + 1)")
-                                .font(FridjFont.size(12, weight: .bold))
-                                .foregroundColor(.white)
-                                .frame(width: 22, height: 22)
-                                .background(Color.fridjGreen, in: Circle())
-                            Text(step)
-                                .font(FridjFont.size(14))
-                                .foregroundColor(.fridjText.opacity(0.8))
-                        }
-                    }
-                }
-                .padding(.top, 4)
-            }
+            .padding(.top, 2)
         }
         .padding(FridjSpacing.md)
         .background(.white, in: RoundedRectangle(cornerRadius: FridjRadius.recipeCard, style: .continuous))
+        .contentShape(RoundedRectangle(cornerRadius: FridjRadius.recipeCard, style: .continuous))
+    }
+}
+
+struct RecipeDetailView: View {
+    let recipe: Recipe
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        ZStack(alignment: .topTrailing) {
+            Color.fridjBg.ignoresSafeArea()
+
+            ScrollView {
+                VStack(alignment: .leading, spacing: FridjSpacing.xl) {
+
+                    VStack(alignment: .leading, spacing: FridjSpacing.sm) {
+                        Text(recipe.name)
+                            .font(FridjFont.style(.largeTitle, weight: .bold))
+                            .foregroundColor(.fridjText)
+
+                        Text(recipe.cookTime)
+                            .font(FridjFont.size(14, weight: .bold))
+                            .foregroundColor(.fridjGreen)
+                            .padding(.horizontal, 12).padding(.vertical, 6)
+                            .background(Color.fridjMint.opacity(0.5), in: Capsule())
+                    }
+                    .padding(.top, 60)
+
+                    section(title: "What you're using") {
+                        FlowTags(items: recipe.uses, color: .fridjGreen)
+                    }
+
+                    if !recipe.needs.isEmpty {
+                        section(title: "You'll also need") {
+                            FlowTags(items: recipe.needs, color: .fridjOrange)
+                        }
+                    }
+
+                    section(title: "How to make it") {
+                        VStack(alignment: .leading, spacing: FridjSpacing.md) {
+                            ForEach(Array(recipe.steps.enumerated()), id: \.offset) { idx, step in
+                                HStack(alignment: .top, spacing: FridjSpacing.md) {
+                                    Text("\(idx + 1)")
+                                        .font(FridjFont.size(13, weight: .bold))
+                                        .foregroundColor(.white)
+                                        .frame(width: 26, height: 26)
+                                        .background(Color.fridjGreen, in: Circle())
+
+                                    Text(step)
+                                        .font(FridjFont.size(15))
+                                        .foregroundColor(.fridjText.opacity(0.85))
+                                        .fixedSize(horizontal: false, vertical: true)
+                                }
+                            }
+                        }
+                    }
+                }
+                .padding(FridjSpacing.lg)
+                .padding(.bottom, FridjSpacing.xl)
+            }
+
+            Button { dismiss() } label: {
+                Image(systemName: "xmark")
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundColor(.fridjText.opacity(0.6))
+                    .frame(width: 32, height: 32)
+                    .background(.white, in: Circle())
+            }
+            .padding(FridjSpacing.lg)
+            .padding(.top, 8)
+        }
+    }
+
+    private func section<Content: View>(title: String, @ViewBuilder content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: FridjSpacing.sm) {
+            Text(title)
+                .font(FridjFont.size(13, weight: .bold))
+                .foregroundColor(.fridjText.opacity(0.4))
+                .textCase(.uppercase)
+                .kerning(0.8)
+            content()
+        }
+        .padding(FridjSpacing.md)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.white, in: RoundedRectangle(cornerRadius: FridjRadius.md, style: .continuous))
+    }
+}
+
+struct FlowTags: View {
+    let items: [String]
+    let color: Color
+
+    var body: some View {
+        LazyVGrid(columns: [GridItem(.adaptive(minimum: 90), spacing: 8)], alignment: .leading, spacing: 8) {
+            ForEach(items, id: \.self) { item in
+                Text(item)
+                    .font(FridjFont.size(13, weight: .medium))
+                    .foregroundColor(color)
+                    .padding(.horizontal, 12).padding(.vertical, 7)
+                    .background(color.opacity(0.12), in: Capsule())
+            }
+        }
     }
 }
 
@@ -110,6 +191,6 @@ struct RecipesView: View {
     RecipesView(recipes: [
         Recipe(name: "Cheddar Quesadillas", cookTime: "15 min",
                uses: ["cheddar cheese", "sour cream"], needs: ["tortillas"],
-               steps: ["Heat a skillet.", "Add cheese to a tortilla.", "Fold and cook until golden.", "Serve with sour cream."])
+               steps: ["Heat a skillet over medium heat.", "Add cheese to a tortilla.", "Fold and cook until golden.", "Serve with sour cream."])
     ])
 }
