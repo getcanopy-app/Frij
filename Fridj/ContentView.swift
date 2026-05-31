@@ -14,7 +14,7 @@ struct ContentView: View {
                 case .home:      HomeView()
                 case .scan:      ScanView()
                 case .recipes:   RecipesView()
-                case .bookmarks: BookmarksView()
+                case .bookmarks: PantryView()   // <- was BookmarksView (placeholder)
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -30,11 +30,13 @@ struct ContentView: View {
 struct CustomTabBar: View {
     @Binding var selectedTab: AppTab
 
+    // The fourth tab is now the pantry. Using a refrigerator icon since
+    // that's what it represents. Ardalan can adjust the icon if he wants.
     private let items: [(icon: String, tab: AppTab)] = [
         ("house",                 .home),
         ("viewfinder",            .scan),
         ("list.bullet.rectangle", .recipes),
-        ("bookmark",              .bookmarks)
+        ("refrigerator",          .bookmarks)
     ]
 
     var body: some View {

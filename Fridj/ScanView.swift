@@ -1,19 +1,21 @@
 import SwiftUI
 import PhotosUI
 
-// Replaces the "Coming soon" ScanView placeholder.
-// Flow: pick a fridge photo -> backend scans it -> user confirms the
-// detected items (confidence-driven) -> hands the list to recipes.
-
 struct ScanView: View {
+    @State private var store = PantryStore.shared
+
     @State private var pickerItem: PhotosPickerItem?
     @State private var pickedImage: UIImage?
-    @State private var items: [DetectedItem] = []
-    @State private var checked: Set<String> = []          // which items are included
+
+    @State private var detected: [DetectedItem] = []
+    @State private var newlyAddedNames: Set<String> = []
+
     @State private var newItem: String = ""
     @State private var diet: String = ""
     @State private var isScanning = false
+    @State private var isValidating = false
     @State private var errorText: String?
+    @State private var rejectionText: String?
     @State private var recipes: [Recipe] = []
     @State private var isCooking = false
     @State private var showRecipes = false
@@ -61,9 +63,18 @@ struct ScanView: View {
                             .foregroundColor(.fridjCoral)
                     }
 
-                    if !items.isEmpty {
-                        ingredientSection
+                    if !detected.isEmpty {
+                        detectedSection
+                    }
+
+                    if !store.items.isEmpty {
+                        pantrySection
                         addRow
+                        if let rejectionText {
+                            Text(rejectionText)
+                                .font(FridjFont.size(13))
+                                .foregroundColor(.fridjCoral)
+                        }
                         dietField
                         cookButton
                     }
@@ -80,30 +91,90 @@ struct ScanView: View {
         }
     }
 
-    // MARK: pieces
-
     private var header: some View {
         VStack(alignment: .leading, spacing: 4) {
             Text("Scan your fridge")
                 .font(FridjFont.style(.title, weight: .bold))
                 .foregroundColor(.fridjText)
-            Text("Snap it, confirm what's inside, get dinner.")
+            Text("New items get added to your pantry. Frij remembers.")
                 .font(FridjFont.size(14))
                 .foregroundColor(.fridjText.opacity(0.5))
         }
         .padding(.top, 60)
     }
 
-    private var ingredientSection: some View {
+    private var detectedSection: some View {
         VStack(alignment: .leading, spacing: FridjSpacing.sm) {
-            Text("What's inside")
+            Text("Just spotted")
                 .font(FridjFont.size(18, weight: .bold))
                 .foregroundColor(.fridjText)
-            Text("Tap to include or skip. We pre-checked the ones we're sure about.")
+
+            HStack(spacing: 14) {
+                Text("\(newlyAddedNames.count) new")
+                    .font(FridjFont.size(12, weight: .bold))
+                    .foregroundColor(.fridjGreen)
+                Text("\(detected.count - newlyAddedNames.count) already in pantry")
+                    .font(FridjFont.size(12, weight: .medium))
+                    .foregroundColor(.fridjText.opacity(0.5))
+            }
+
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 100), spacing: 8)],
+                      alignment: .leading, spacing: 8) {
+                ForEach(detected) { item in
+                    chip(for: item)
+                }
+            }
+        }
+    }
+
+    private func chip(for item: DetectedItem) -> some View {
+        let isNew = newlyAddedNames.contains(item.item)
+        return HStack(spacing: 6) {
+            Circle().fill(dotColor(item.confidence)).frame(width: 7, height: 7)
+            Text(item.item).font(FridjFont.size(14, weight: .medium)).lineLimit(1)
+        }
+        .foregroundColor(isNew ? .white : .fridjText.opacity(0.7))
+        .padding(.horizontal, 14).padding(.vertical, 10)
+        .background(isNew ? Color.fridjGreen : .white, in: Capsule())
+        .overlay(Capsule().stroke(Color.fridjText.opacity(isNew ? 0 : 0.12), lineWidth: 1))
+    }
+
+    private var pantrySection: some View {
+        VStack(alignment: .leading, spacing: FridjSpacing.sm) {
+            HStack {
+                Text("In your pantry")
+                    .font(FridjFont.size(18, weight: .bold))
+                    .foregroundColor(.fridjText)
+                Spacer()
+                Text("\(store.items.count)")
+                    .font(FridjFont.size(14, weight: .bold))
+                    .foregroundColor(.fridjText.opacity(0.4))
+            }
+            Text("Tap × to remove anything that's not actually there.")
                 .font(FridjFont.size(13))
                 .foregroundColor(.fridjText.opacity(0.5))
 
-            FlowChips(items: items, checked: $checked)
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 100), spacing: 8)],
+                      alignment: .leading, spacing: 8) {
+                ForEach(store.items) { item in
+                    HStack(spacing: 6) {
+                        Text(item.name).font(FridjFont.size(14, weight: .medium)).lineLimit(1)
+                        Button {
+                            withAnimation(.easeOut(duration: 0.15)) {
+                                store.remove(id: item.id)
+                                newlyAddedNames.remove(item.name)
+                            }
+                        } label: {
+                            Image(systemName: "xmark")
+                                .font(.system(size: 10, weight: .bold))
+                                .foregroundColor(.fridjText.opacity(0.5))
+                        }
+                    }
+                    .padding(.horizontal, 12).padding(.vertical, 9)
+                    .background(.white, in: Capsule())
+                    .overlay(Capsule().stroke(Color.fridjText.opacity(0.12), lineWidth: 1))
+                }
+            }
         }
     }
 
@@ -113,17 +184,21 @@ struct ScanView: View {
                 .font(FridjFont.size(15))
                 .padding(.horizontal, 16).padding(.vertical, 12)
                 .background(.white, in: RoundedRectangle(cornerRadius: FridjRadius.sm, style: .continuous))
+                .onSubmit { Task { await addItem() } }
+                .disabled(isValidating)
             Button {
-                let v = newItem.lowercased().trimmingCharacters(in: .whitespaces)
-                guard !v.isEmpty, !items.contains(where: { $0.item == v }) else { newItem = ""; return }
-                items.append(DetectedItem(item: v, confidence: .high))
-                checked.insert(v)
-                newItem = ""
+                Task { await addItem() }
             } label: {
-                Text("Add").font(FridjFont.size(15, weight: .bold)).foregroundColor(.white)
-                    .padding(.horizontal, 18).padding(.vertical, 12)
-                    .background(Color.fridjText, in: RoundedRectangle(cornerRadius: FridjRadius.sm, style: .continuous))
+                HStack(spacing: 6) {
+                    if isValidating { ProgressView().tint(.white).scaleEffect(0.8) }
+                    Text(isValidating ? "Checking" : "Add")
+                        .font(FridjFont.size(15, weight: .bold))
+                        .foregroundColor(.white)
+                }
+                .padding(.horizontal, 18).padding(.vertical, 12)
+                .background(Color.fridjText, in: RoundedRectangle(cornerRadius: FridjRadius.sm, style: .continuous))
             }
+            .disabled(isValidating)
         }
     }
 
@@ -146,18 +221,19 @@ struct ScanView: View {
             .foregroundColor(.white)
             .frame(maxWidth: .infinity)
             .padding(.vertical, 17)
-            .background(checked.isEmpty ? Color.fridjText.opacity(0.3) : Color.fridjGreen,
-                        in: RoundedRectangle(cornerRadius: FridjRadius.scanButton, style: .continuous))
+            .background(
+                store.items.isEmpty ? Color.fridjText.opacity(0.3) : Color.fridjGreen,
+                in: RoundedRectangle(cornerRadius: FridjRadius.scanButton, style: .continuous)
+            )
         }
-        .disabled(checked.isEmpty || isCooking)
+        .disabled(store.items.isEmpty || isCooking)
     }
-
-    // MARK: actions
 
     private func loadAndScan(_ item: PhotosPickerItem?) async {
         guard let item else { return }
         errorText = nil
-        items = []; checked = []
+        detected = []
+        newlyAddedNames = []
         do {
             guard let data = try await item.loadTransferable(type: Data.self),
                   let img = UIImage(data: data) else {
@@ -166,66 +242,48 @@ struct ScanView: View {
             }
             pickedImage = img
             isScanning = true
-            let detected = try await FrijAPI.scan(image: img)
-            items = detected
-            // pre-check only the high-confidence ones
-            checked = Set(detected.filter { $0.confidence == .high }.map { $0.item })
+            let items = try await FrijAPI.scan(image: img)
+            detected = items
+            let highConfidence = items.filter { $0.confidence == .high }
+            let added = store.mergeScan(highConfidence)
+            newlyAddedNames = Set(added)
         } catch {
             errorText = error.localizedDescription
         }
         isScanning = false
     }
 
+    private func addItem() async {
+        let v = newItem.trimmingCharacters(in: .whitespaces)
+        guard !v.isEmpty else { return }
+        rejectionText = nil
+        isValidating = true
+        let result = await store.addValidated(name: v)
+        isValidating = false
+        if result.valid {
+            newItem = ""
+        } else {
+            rejectionText = "Hmm, \"\(v)\" doesn't look like a food item. (\(result.reason ?? "not recognized"))"
+        }
+    }
+
     private func cook() async {
         errorText = nil
         isCooking = true
         do {
-            let chosen = items.map(\.item).filter { checked.contains($0) }
-            recipes = try await FrijAPI.recipes(ingredients: chosen, diet: diet)
+            recipes = try await FrijAPI.recipes(ingredients: store.allNames, diet: diet)
             showRecipes = true
         } catch {
             errorText = error.localizedDescription
         }
         isCooking = false
     }
-}
-
-// Wrapping chips with a checked state + confidence dot.
-struct FlowChips: View {
-    let items: [DetectedItem]
-    @Binding var checked: Set<String>
-
-    var body: some View {
-        // Simple wrapping layout using a LazyVGrid of adaptive width.
-        LazyVGrid(columns: [GridItem(.adaptive(minimum: 90), spacing: 8)], alignment: .leading, spacing: 8) {
-            ForEach(items) { item in
-                let isOn = checked.contains(item.item)
-                Button {
-                    if isOn { checked.remove(item.item) } else { checked.insert(item.item) }
-                } label: {
-                    HStack(spacing: 6) {
-                        Circle()
-                            .fill(dotColor(item.confidence))
-                            .frame(width: 7, height: 7)
-                        Text(item.item)
-                            .font(FridjFont.size(14, weight: .medium))
-                            .lineLimit(1)
-                    }
-                    .foregroundColor(isOn ? .white : .fridjText.opacity(0.7))
-                    .padding(.horizontal, 14).padding(.vertical, 10)
-                    .background(isOn ? Color.fridjGreen : .white,
-                                in: Capsule())
-                    .overlay(Capsule().stroke(Color.fridjText.opacity(isOn ? 0 : 0.12), lineWidth: 1))
-                }
-            }
-        }
-    }
 
     private func dotColor(_ c: Confidence) -> Color {
         switch c {
-        case .high:   return .fridjGreen
+        case .high: return .fridjGreen
         case .medium: return .fridjOrange
-        case .low:    return .fridjCoral
+        case .low: return .fridjCoral
         }
     }
 }
