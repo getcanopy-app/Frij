@@ -10,14 +10,13 @@ struct ScanView: View {
     @State private var detected: [DetectedItem] = []
     @State private var newlyAddedNames: Set<String> = []
 
+    @Bindable private var session = ScanSession.shared
+
     @State private var newItem: String = ""
     @State private var isScanning = false
     @State private var isValidating = false
     @State private var errorText: String?
     @State private var rejectionText: String?
-    @State private var recipes: [Recipe] = []
-    @State private var isCooking = false
-    @State private var showRecipes = false
 
     var body: some View {
         ZStack {
@@ -56,8 +55,8 @@ struct ScanView: View {
                         }
                     }
 
-                    if let errorText {
-                        Text(errorText)
+                    if let err = errorText ?? session.cookError {
+                        Text(err)
                             .font(FridjFont.size(14))
                             .foregroundColor(.fridjCoral)
                     }
@@ -84,8 +83,8 @@ struct ScanView: View {
         .onChange(of: pickerItem) { _, newValue in
             Task { await loadAndScan(newValue) }
         }
-        .sheet(isPresented: $showRecipes) {
-            RecipesView(recipes: recipes)
+        .sheet(isPresented: $session.showRecipes) {
+            RecipesView(recipes: session.recipes)
         }
     }
 
@@ -202,11 +201,11 @@ struct ScanView: View {
 
     private var cookButton: some View {
         Button {
-            Task { await cook() }
+            session.cook(ingredients: store.allNames)
         } label: {
             HStack {
-                if isCooking { ProgressView().tint(.white) }
-                Text(isCooking ? "Cooking up ideas…" : "Get 3 dinners")
+                if session.isCooking { ProgressView().tint(.white) }
+                Text(session.isCooking ? "Cooking up ideas…" : "Get 3 dinners")
                     .font(FridjFont.size(17, weight: .bold))
             }
             .foregroundColor(.white)
@@ -217,7 +216,7 @@ struct ScanView: View {
                 in: RoundedRectangle(cornerRadius: FridjRadius.scanButton, style: .continuous)
             )
         }
-        .disabled(store.items.isEmpty || isCooking)
+        .disabled(store.items.isEmpty || session.isCooking)
     }
 
     private func loadAndScan(_ item: PhotosPickerItem?) async {
@@ -256,18 +255,6 @@ struct ScanView: View {
         } else {
             rejectionText = "Hmm, \"\(v)\" doesn't look like a food item. (\(result.reason ?? "not recognized"))"
         }
-    }
-
-    private func cook() async {
-        errorText = nil
-        isCooking = true
-        do {
-            recipes = try await FrijAPI.recipes(ingredients: store.allNames)
-            showRecipes = true
-        } catch {
-            errorText = error.localizedDescription
-        }
-        isCooking = false
     }
 
     private func dotColor(_ c: Confidence) -> Color {

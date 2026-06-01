@@ -1,0 +1,32 @@
+import Foundation
+
+// Owns the recipe-generation task so it survives tab switches.
+// ScanView reads from this; the Task runs on the main actor and
+// persists even if ScanView is torn down and recreated.
+@MainActor
+@Observable
+final class ScanSession {
+    static let shared = ScanSession()
+    private init() {}
+
+    var isCooking = false
+    var recipes: [Recipe] = []
+    var cookError: String?
+    var showRecipes = false
+
+    func cook(ingredients: [String]) {
+        guard !isCooking else { return }
+        isCooking = true
+        cookError = nil
+        Task {
+            do {
+                let result = try await FrijAPI.recipes(ingredients: ingredients)
+                recipes = result
+                showRecipes = true
+            } catch {
+                cookError = error.localizedDescription
+            }
+            isCooking = false
+        }
+    }
+}

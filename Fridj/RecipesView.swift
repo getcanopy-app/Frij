@@ -1,16 +1,13 @@
 import SwiftUI
 
-// 3 dinners from the backend. Each card expands to show steps and the
-// "I cooked this" button that subtracts the recipe's uses from the pantry.
-
 struct RecipesView: View {
     var recipes: [Recipe] = []
     @State private var expanded: String?
     @State private var store = PantryStore.shared
+    @State private var favorites = FavoritesStore.shared
 
-    // After cooking, we hold the just-removed items briefly so the user can undo.
     @State private var lastRemoved: [String] = []
-    @State private var showUndoFor: String?  // recipe id while undo banner is showing
+    @State private var showUndoFor: String?
 
     var body: some View {
         ZStack {
@@ -36,7 +33,6 @@ struct RecipesView: View {
                 }
             }
 
-            // Undo banner — slides up from the bottom when something was just removed.
             if let recipeId = showUndoFor, !lastRemoved.isEmpty {
                 VStack {
                     Spacer()
@@ -83,12 +79,28 @@ struct RecipesView: View {
 
     private func card(_ recipe: Recipe) -> some View {
         let isOpen = expanded == recipe.id
+        let isFav = favorites.isFavorite(recipe)
         return VStack(alignment: .leading, spacing: FridjSpacing.sm) {
-            HStack(alignment: .top) {
+            HStack(alignment: .top, spacing: 10) {
                 Text(recipe.name)
                     .font(FridjFont.size(18, weight: .bold))
                     .foregroundColor(.fridjText)
+
                 Spacer()
+
+                // Favorite heart — sits next to the cook time
+                Button {
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.55)) {
+                        _ = favorites.toggle(recipe)
+                    }
+                } label: {
+                    Image(systemName: isFav ? "heart.fill" : "heart")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundColor(isFav ? .fridjCoral : .fridjText.opacity(0.35))
+                        .scaleEffect(isFav ? 1.0 : 1.0)
+                }
+                .buttonStyle(.plain)
+
                 Text(recipe.cookTime)
                     .font(FridjFont.size(12, weight: .bold))
                     .foregroundColor(.fridjGreen)
@@ -133,7 +145,6 @@ struct RecipesView: View {
                 }
                 .padding(.top, 4)
 
-                // I cooked this button — the satisfying tap.
                 Button {
                     markCooked(recipe)
                 } label: {
@@ -153,19 +164,16 @@ struct RecipesView: View {
             }
         }
         .padding(FridjSpacing.md)
-        .background(.white, in: RoundedRectangle(cornerRadius: FridjRadius.recipeCard, style: .continuous))
+        .background(RoundedRectangle(cornerRadius: FridjRadius.recipeCard, style: .continuous).fill(Color(white: 1)))
     }
 
     private func markCooked(_ recipe: Recipe) {
-        // Subtract the recipe's uses from the pantry. Keep a snapshot so the
-        // undo banner can put them back if the user tapped by accident.
         let removed = recipe.uses.filter { store.contains($0) }
         guard !removed.isEmpty else { return }
         for name in removed { store.remove(name: name) }
         lastRemoved = removed
         showUndoFor = recipe.id
 
-        // Auto-hide the undo banner after 5 seconds.
         Task {
             try? await Task.sleep(nanoseconds: 5_000_000_000)
             await MainActor.run {
