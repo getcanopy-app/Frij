@@ -1,8 +1,16 @@
 import SwiftUI
 
+// 3 dinners from the backend. Each card expands to show steps and the
+// "I cooked this" button that subtracts the recipe's uses from the pantry.
+
 struct RecipesView: View {
     var recipes: [Recipe] = []
-    @State private var selected: Recipe?
+    @State private var expanded: String?
+    @State private var store = PantryStore.shared
+
+    // After cooking, we hold the just-removed items briefly so the user can undo.
+    @State private var lastRemoved: [String] = []
+    @State private var showUndoFor: String?  // recipe id while undo banner is showing
 
     var body: some View {
         ZStack {
@@ -21,16 +29,41 @@ struct RecipesView: View {
 
                         ForEach(recipes) { recipe in
                             card(recipe)
-                                .onTapGesture { selected = recipe }
                         }
                     }
                     .padding(FridjSpacing.lg)
-                    .padding(.bottom, FridjSpacing.lg)
+                    .padding(.bottom, 120)
                 }
             }
-        }
-        .sheet(item: $selected) { recipe in
-            RecipeDetailView(recipe: recipe)
+
+            // Undo banner — slides up from the bottom when something was just removed.
+            if let recipeId = showUndoFor, !lastRemoved.isEmpty {
+                VStack {
+                    Spacer()
+                    HStack {
+                        Text("Removed \(lastRemoved.count) \(lastRemoved.count == 1 ? "item" : "items") from pantry")
+                            .font(FridjFont.size(14, weight: .medium))
+                            .foregroundColor(.white)
+                        Spacer()
+                        Button("Undo") {
+                            for name in lastRemoved {
+                                store.addLocal(name: name, source: .scanned)
+                            }
+                            lastRemoved = []
+                            showUndoFor = nil
+                        }
+                        .font(FridjFont.size(14, weight: .bold))
+                        .foregroundColor(.fridjOrange)
+                    }
+                    .padding(.horizontal, 18).padding(.vertical, 14)
+                    .background(Color.fridjText, in: RoundedRectangle(cornerRadius: FridjRadius.md, style: .continuous))
+                    .padding(.horizontal, FridjSpacing.lg)
+                    .padding(.bottom, 30)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                    .id(recipeId)
+                }
+                .animation(.spring(response: 0.4, dampingFraction: 0.8), value: showUndoFor)
+            }
         }
     }
 
@@ -49,7 +82,8 @@ struct RecipesView: View {
     }
 
     private func card(_ recipe: Recipe) -> some View {
-        VStack(alignment: .leading, spacing: FridjSpacing.sm) {
+        let isOpen = expanded == recipe.id
+        return VStack(alignment: .leading, spacing: FridjSpacing.sm) {
             HStack(alignment: .top) {
                 Text(recipe.name)
                     .font(FridjFont.size(18, weight: .bold))
@@ -72,116 +106,73 @@ struct RecipesView: View {
                     .foregroundColor(.fridjOrange)
             }
 
-            HStack {
-                Spacer()
-                Label("View recipe", systemImage: "chevron.right")
-                    .font(FridjFont.size(13, weight: .bold))
+            Button {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    expanded = isOpen ? nil : recipe.id
+                }
+            } label: {
+                Text(isOpen ? "hide steps ↑" : "make this ↓")
+                    .font(FridjFont.size(14, weight: .bold))
                     .foregroundColor(.fridjOrange)
             }
-            .padding(.top, 2)
-        }
-        .padding(FridjSpacing.md)
-        .background(.white, in: RoundedRectangle(cornerRadius: FridjRadius.recipeCard, style: .continuous))
-        .contentShape(RoundedRectangle(cornerRadius: FridjRadius.recipeCard, style: .continuous))
-    }
-}
 
-struct RecipeDetailView: View {
-    let recipe: Recipe
-    @Environment(\.dismiss) private var dismiss
-
-    var body: some View {
-        ZStack(alignment: .topTrailing) {
-            Color.fridjBg.ignoresSafeArea()
-
-            ScrollView {
-                VStack(alignment: .leading, spacing: FridjSpacing.xl) {
-
-                    VStack(alignment: .leading, spacing: FridjSpacing.sm) {
-                        Text(recipe.name)
-                            .font(FridjFont.style(.largeTitle, weight: .bold))
-                            .foregroundColor(.fridjText)
-
-                        Text(recipe.cookTime)
-                            .font(FridjFont.size(14, weight: .bold))
-                            .foregroundColor(.fridjGreen)
-                            .padding(.horizontal, 12).padding(.vertical, 6)
-                            .background(Color.fridjMint.opacity(0.5), in: Capsule())
-                    }
-                    .padding(.top, 60)
-
-                    section(title: "What you're using") {
-                        FlowTags(items: recipe.uses, color: .fridjGreen)
-                    }
-
-                    if !recipe.needs.isEmpty {
-                        section(title: "You'll also need") {
-                            FlowTags(items: recipe.needs, color: .fridjOrange)
-                        }
-                    }
-
-                    section(title: "How to make it") {
-                        VStack(alignment: .leading, spacing: FridjSpacing.md) {
-                            ForEach(Array(recipe.steps.enumerated()), id: \.offset) { idx, step in
-                                HStack(alignment: .top, spacing: FridjSpacing.md) {
-                                    Text("\(idx + 1)")
-                                        .font(FridjFont.size(13, weight: .bold))
-                                        .foregroundColor(.white)
-                                        .frame(width: 26, height: 26)
-                                        .background(Color.fridjGreen, in: Circle())
-
-                                    Text(step)
-                                        .font(FridjFont.size(15))
-                                        .foregroundColor(.fridjText.opacity(0.85))
-                                        .fixedSize(horizontal: false, vertical: true)
-                                }
-                            }
+            if isOpen {
+                VStack(alignment: .leading, spacing: 10) {
+                    ForEach(Array(recipe.steps.enumerated()), id: \.offset) { idx, step in
+                        HStack(alignment: .top, spacing: 10) {
+                            Text("\(idx + 1)")
+                                .font(FridjFont.size(12, weight: .bold))
+                                .foregroundColor(.white)
+                                .frame(width: 22, height: 22)
+                                .background(Color.fridjGreen, in: Circle())
+                            Text(step)
+                                .font(FridjFont.size(14))
+                                .foregroundColor(.fridjText.opacity(0.8))
                         }
                     }
                 }
-                .padding(FridjSpacing.lg)
-                .padding(.bottom, FridjSpacing.xl)
-            }
+                .padding(.top, 4)
 
-            Button { dismiss() } label: {
-                Image(systemName: "xmark")
-                    .font(.system(size: 14, weight: .bold))
-                    .foregroundColor(.fridjText.opacity(0.6))
-                    .frame(width: 32, height: 32)
-                    .background(.white, in: Circle())
+                // I cooked this button — the satisfying tap.
+                Button {
+                    markCooked(recipe)
+                } label: {
+                    HStack(spacing: 8) {
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.system(size: 17, weight: .bold))
+                        Text("I cooked this")
+                            .font(FridjFont.size(16, weight: .bold))
+                    }
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 14)
+                    .background(Color.fridjGreen,
+                                in: RoundedRectangle(cornerRadius: FridjRadius.sm, style: .continuous))
+                }
+                .padding(.top, 8)
             }
-            .padding(FridjSpacing.lg)
-            .padding(.top, 8)
-        }
-    }
-
-    private func section<Content: View>(title: String, @ViewBuilder content: () -> Content) -> some View {
-        VStack(alignment: .leading, spacing: FridjSpacing.sm) {
-            Text(title)
-                .font(FridjFont.size(13, weight: .bold))
-                .foregroundColor(.fridjText.opacity(0.4))
-                .textCase(.uppercase)
-                .kerning(0.8)
-            content()
         }
         .padding(FridjSpacing.md)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(.white, in: RoundedRectangle(cornerRadius: FridjRadius.md, style: .continuous))
+        .background(.white, in: RoundedRectangle(cornerRadius: FridjRadius.recipeCard, style: .continuous))
     }
-}
 
-struct FlowTags: View {
-    let items: [String]
-    let color: Color
+    private func markCooked(_ recipe: Recipe) {
+        // Subtract the recipe's uses from the pantry. Keep a snapshot so the
+        // undo banner can put them back if the user tapped by accident.
+        let removed = recipe.uses.filter { store.contains($0) }
+        guard !removed.isEmpty else { return }
+        for name in removed { store.remove(name: name) }
+        lastRemoved = removed
+        showUndoFor = recipe.id
 
-    var body: some View {
-        LazyVGrid(columns: [GridItem(.adaptive(minimum: 90), spacing: 8)], alignment: .leading, spacing: 8) {
-            ForEach(items, id: \.self) { item in
-                Text(item)
-                    .font(FridjFont.size(13, weight: .medium))
-                    .foregroundColor(color)
-                    .padding(.horizontal, 12).padding(.vertical, 7)
-                    .background(color.opacity(0.12), in: Capsule())
+        // Auto-hide the undo banner after 5 seconds.
+        Task {
+            try? await Task.sleep(nanoseconds: 5_000_000_000)
+            await MainActor.run {
+                if showUndoFor == recipe.id {
+                    showUndoFor = nil
+                    lastRemoved = []
+                }
             }
         }
     }
@@ -191,6 +182,6 @@ struct FlowTags: View {
     RecipesView(recipes: [
         Recipe(name: "Cheddar Quesadillas", cookTime: "15 min",
                uses: ["cheddar cheese", "sour cream"], needs: ["tortillas"],
-               steps: ["Heat a skillet over medium heat.", "Add cheese to a tortilla.", "Fold and cook until golden.", "Serve with sour cream."])
+               steps: ["Heat a skillet.", "Add cheese to a tortilla.", "Fold and cook until golden.", "Serve with sour cream."])
     ])
 }
