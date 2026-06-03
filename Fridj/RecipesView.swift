@@ -9,73 +9,119 @@ struct RecipesView: View {
     @State private var lastRemoved: [String] = []
     @State private var showUndoFor: String?
 
+    // Used by the empty state's "scan now" button.
+    var onJumpToScan: (() -> Void)? = nil
+
+    private var hasSaved: Bool { !favorites.recipes.isEmpty }
+    private var hasFresh: Bool { !recipes.isEmpty }
+    private var isCompletelyEmpty: Bool { !hasSaved && !hasFresh }
+
     var body: some View {
         ZStack {
             Color.fridjBg.ignoresSafeArea()
 
-            if recipes.isEmpty {
+            if isCompletelyEmpty {
                 emptyState
             } else {
                 ScrollView {
-                    VStack(spacing: FridjSpacing.md) {
-                        Text("Tonight's options")
-                            .font(FridjFont.style(.title, weight: .bold))
-                            .foregroundColor(.fridjText)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.top, 60)
-
-                        ForEach(recipes) { recipe in
-                            card(recipe)
+                    VStack(alignment: .leading, spacing: FridjSpacing.lg) {
+                        if hasSaved {
+                            savedSection
+                        }
+                        if hasFresh {
+                            tonightSection
                         }
                     }
                     .padding(FridjSpacing.lg)
+                    .padding(.top, 60)
                     .padding(.bottom, 120)
                 }
             }
 
             if let recipeId = showUndoFor, !lastRemoved.isEmpty {
-                VStack {
-                    Spacer()
-                    HStack {
-                        Text("Removed \(lastRemoved.count) \(lastRemoved.count == 1 ? "item" : "items") from pantry")
-                            .font(FridjFont.size(14, weight: .medium))
-                            .foregroundColor(.white)
-                        Spacer()
-                        Button("Undo") {
-                            for name in lastRemoved {
-                                store.addLocal(name: name, source: .scanned)
-                            }
-                            lastRemoved = []
-                            showUndoFor = nil
-                        }
-                        .font(FridjFont.size(14, weight: .bold))
-                        .foregroundColor(.fridjOrange)
-                    }
-                    .padding(.horizontal, 18).padding(.vertical, 14)
-                    .background(Color.fridjText, in: RoundedRectangle(cornerRadius: FridjRadius.md, style: .continuous))
-                    .padding(.horizontal, FridjSpacing.lg)
-                    .padding(.bottom, 30)
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
-                    .id(recipeId)
-                }
-                .animation(.spring(response: 0.4, dampingFraction: 0.8), value: showUndoFor)
+                undoBanner(recipeId: recipeId)
             }
         }
     }
 
-    private var emptyState: some View {
-        VStack(spacing: FridjSpacing.md) {
-            Image(systemName: "list.bullet.rectangle")
-                .font(.system(size: 64))
-                .foregroundColor(.fridjOrange)
-            Text("No recipes yet")
-                .font(FridjFont.style(.title2, weight: .bold))
-                .foregroundColor(.fridjText)
-            Text("Scan your fridge to get dinner ideas.")
-                .font(FridjFont.size(14))
-                .foregroundColor(.fridjText.opacity(0.4))
+    // MARK: Saved
+
+    private var savedSection: some View {
+        VStack(alignment: .leading, spacing: FridjSpacing.sm) {
+            HStack {
+                Text("Saved")
+                    .font(FridjFont.style(.title, weight: .bold))
+                    .foregroundColor(.fridjText)
+                Spacer()
+                Text("\(favorites.recipes.count)")
+                    .font(FridjFont.size(14, weight: .bold))
+                    .foregroundColor(.fridjText.opacity(0.4))
+            }
+            Text("Your hearted meals, ready to cook again.")
+                .font(FridjFont.size(13))
+                .foregroundColor(.fridjText.opacity(0.5))
+
+            ForEach(favorites.recipes) { recipe in
+                card(recipe)
+            }
         }
     }
+
+    // MARK: Tonight
+
+    private var tonightSection: some View {
+        VStack(alignment: .leading, spacing: FridjSpacing.sm) {
+            Text(hasSaved ? "Tonight's options" : "Tonight's options")
+                .font(FridjFont.style(.title, weight: .bold))
+                .foregroundColor(.fridjText)
+                .padding(.top, hasSaved ? FridjSpacing.md : 0)
+
+            ForEach(recipes) { recipe in
+                card(recipe)
+            }
+        }
+    }
+
+    // MARK: Empty
+
+    private var emptyState: some View {
+        VStack(spacing: FridjSpacing.md) {
+            Image(systemName: "fork.knife.circle.fill")
+                .font(.system(size: 72))
+                .foregroundColor(.fridjOrange.opacity(0.7))
+
+            Text("No recipes yet")
+                .font(FridjFont.style(.title, weight: .bold))
+                .foregroundColor(.fridjText)
+
+            Text("Scan your kitchen to get tonight's dinner ideas.\nYour saved favorites will show up here too.")
+                .font(FridjFont.size(14))
+                .foregroundColor(.fridjText.opacity(0.55))
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 32)
+
+            if let onJumpToScan {
+                Button {
+                    onJumpToScan()
+                } label: {
+                    HStack(spacing: 8) {
+                        Image(systemName: "camera.fill")
+                            .font(.system(size: 15, weight: .bold))
+                        Text("Scan your kitchen")
+                            .font(FridjFont.size(15, weight: .bold))
+                    }
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 22).padding(.vertical, 14)
+                    .background(Color.fridjOrange,
+                                in: RoundedRectangle(cornerRadius: FridjRadius.scanButton, style: .continuous))
+                }
+                .padding(.top, FridjSpacing.sm)
+            }
+        }
+        .padding(.horizontal, FridjSpacing.lg)
+    }
+
+    // MARK: Card (unchanged)
 
     private func card(_ recipe: Recipe) -> some View {
         let isOpen = expanded == recipe.id
@@ -85,10 +131,7 @@ struct RecipesView: View {
                 Text(recipe.name)
                     .font(FridjFont.size(18, weight: .bold))
                     .foregroundColor(.fridjText)
-
                 Spacer()
-
-                // Favorite heart — sits next to the cook time
                 Button {
                     withAnimation(.spring(response: 0.3, dampingFraction: 0.55)) {
                         _ = favorites.toggle(recipe)
@@ -97,7 +140,6 @@ struct RecipesView: View {
                     Image(systemName: isFav ? "heart.fill" : "heart")
                         .font(.system(size: 18, weight: .semibold))
                         .foregroundColor(isFav ? .fridjCoral : .fridjText.opacity(0.35))
-                        .scaleEffect(isFav ? 1.0 : 1.0)
                 }
                 .buttonStyle(.plain)
 
@@ -164,7 +206,39 @@ struct RecipesView: View {
             }
         }
         .padding(FridjSpacing.md)
-        .background(RoundedRectangle(cornerRadius: FridjRadius.recipeCard, style: .continuous).fill(Color(white: 1)))
+        .background(Color(white: 1),
+                    in: RoundedRectangle(cornerRadius: FridjRadius.recipeCard, style: .continuous))
+    }
+
+    // MARK: Undo banner
+
+    private func undoBanner(recipeId: String) -> some View {
+        VStack {
+            Spacer()
+            HStack {
+                Text("Removed \(lastRemoved.count) \(lastRemoved.count == 1 ? "item" : "items") from pantry")
+                    .font(FridjFont.size(14, weight: .medium))
+                    .foregroundColor(.white)
+                Spacer()
+                Button("Undo") {
+                    for name in lastRemoved {
+                        store.addLocal(name: name, source: .scanned)
+                    }
+                    lastRemoved = []
+                    showUndoFor = nil
+                }
+                .font(FridjFont.size(14, weight: .bold))
+                .foregroundColor(.fridjOrange)
+            }
+            .padding(.horizontal, 18).padding(.vertical, 14)
+            .background(Color.fridjText,
+                        in: RoundedRectangle(cornerRadius: FridjRadius.md, style: .continuous))
+            .padding(.horizontal, FridjSpacing.lg)
+            .padding(.bottom, 30)
+            .transition(.move(edge: .bottom).combined(with: .opacity))
+            .id(recipeId)
+        }
+        .animation(.spring(response: 0.4, dampingFraction: 0.8), value: showUndoFor)
     }
 
     private func markCooked(_ recipe: Recipe) {
@@ -187,9 +261,5 @@ struct RecipesView: View {
 }
 
 #Preview {
-    RecipesView(recipes: [
-        Recipe(name: "Cheddar Quesadillas", cookTime: "15 min",
-               uses: ["cheddar cheese", "sour cream"], needs: ["tortillas"],
-               steps: ["Heat a skillet.", "Add cheese to a tortilla.", "Fold and cook until golden.", "Serve with sour cream."])
-    ])
+    RecipesView(recipes: [])
 }
