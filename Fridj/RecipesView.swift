@@ -245,6 +245,7 @@ struct RecipesView: View {
         let removed = recipe.uses.filter { store.contains($0) }
         guard !removed.isEmpty else { return }
         for name in removed { store.remove(name: name) }
+        CookingStore.shared.logToday()
         lastRemoved = removed
         showUndoFor = recipe.id
 

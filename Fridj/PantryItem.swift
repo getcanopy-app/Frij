@@ -2,29 +2,27 @@
 //  PantryItem.swift
 //  Fridj
 //
-//  A single thing that lives in the user's pantry.
-//  Persisted across app sessions so Frij doesn't forget.
-//
 
 import Foundation
 
-struct PantryItem: Codable, Identifiable, Hashable {
-    let id: UUID
-    var name: String          // lowercase, e.g. "yogurt"
-    var addedAt: Date         // when first seen
-    var lastSeenAt: Date      // updated every time it's re-confirmed in a scan
-    var source: Source
-
+struct PantryItem: Codable, Identifiable, Equatable {
     enum Source: String, Codable {
-        case scanned
-        case manual
+        case scanned   // detected by /api/scan
+        case manual    // user typed it in
+        case `default` // pre-loaded on first launch (salt, pepper, olive oil, sugar)
     }
 
-    init(name: String, source: Source, now: Date = Date()) {
-        self.id = UUID()
-        self.name = name.lowercased().trimmingCharacters(in: .whitespaces)
-        self.addedAt = now
-        self.lastSeenAt = now
+    let id: UUID
+    var name: String        // lowercase, normalized
+    var source: Source
+    var firstSeenAt: Date
+    var lastSeenAt: Date
+
+    init(name: String, source: Source = .manual, id: UUID = UUID(), now: Date = Date()) {
+        self.id = id
+        self.name = name
         self.source = source
+        self.firstSeenAt = now
+        self.lastSeenAt = now
     }
 }

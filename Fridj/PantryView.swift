@@ -85,7 +85,7 @@ struct PantryView: View {
             TextField("add an ingredient", text: $newItem)
                 .font(FridjFont.size(15))
                 .padding(.horizontal, 16).padding(.vertical, 12)
-                .background(.white, in: RoundedRectangle(cornerRadius: FridjRadius.sm, style: .continuous))
+                .background(Color(white: 1), in: RoundedRectangle(cornerRadius: FridjRadius.sm, style: .continuous))
                 .onSubmit { Task { await addItem() } }
                 .disabled(isValidating)
             Button {
@@ -113,11 +113,18 @@ struct PantryView: View {
             ForEach(store.items) { item in
                 HStack {
                     Circle()
-                        .fill(item.source == .scanned ? Color.fridjGreen : Color.fridjOrange)
+                        .fill(dotColor(for: item.source))
                         .frame(width: 8, height: 8)
                     Text(item.name)
                         .font(FridjFont.size(15, weight: .medium))
                         .foregroundColor(.fridjText)
+                    if item.source == .default {
+                        Text("default")
+                            .font(FridjFont.size(11, weight: .bold))
+                            .foregroundColor(.fridjText.opacity(0.4))
+                            .padding(.horizontal, 7).padding(.vertical, 2)
+                            .background(Color.fridjText.opacity(0.08), in: Capsule())
+                    }
                     Spacer()
                     Button {
                         withAnimation(.easeOut(duration: 0.15)) {
@@ -130,7 +137,7 @@ struct PantryView: View {
                     }
                 }
                 .padding(.horizontal, 14).padding(.vertical, 12)
-                .background(.white, in: RoundedRectangle(cornerRadius: FridjRadius.md, style: .continuous))
+                .background(Color(white: 1), in: RoundedRectangle(cornerRadius: FridjRadius.md, style: .continuous))
             }
         }
     }
@@ -150,6 +157,14 @@ struct PantryView: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 40)
+    }
+
+    private func dotColor(for source: PantryItem.Source) -> Color {
+        switch source {
+        case .scanned: return .fridjGreen
+        case .manual:  return .fridjOrange
+        case .default: return .fridjText.opacity(0.3)
+        }
     }
 
     private func addItem() async {

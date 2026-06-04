@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct HomeView: View {
+    var onScanTap: (() -> Void)? = nil
     @State private var showProfile = false
 
     var body: some View {
@@ -52,7 +53,7 @@ struct HomeView: View {
             Color.clear
                 .frame(width: 22, height: 22)
         }
-        .padding(.top, 88)
+        .padding(.top, 16)
     }
 
     private var scanBar: some View {
@@ -63,11 +64,13 @@ struct HomeView: View {
 
             Spacer()
 
-            Image(systemName: "plus")
-                .font(.system(size: 18, weight: .bold))
-                .foregroundStyle(.primary)
-                .frame(width: 52, height: 42)
-                .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 18))
+            Button { onScanTap?() } label: {
+                Image(systemName: "plus")
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundStyle(.primary)
+                    .frame(width: 52, height: 42)
+                    .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 18))
+            }
         }
         .padding(.leading, 22)
         .padding(.trailing, 10)
@@ -104,26 +107,36 @@ struct HomeView: View {
     }
 
     private var progressSection: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        let cooking = CookingStore.shared
+        let calendar = Calendar.current
+        let today = Date()
+        // Build the 7 dates for the current week (Sun–Sat)
+        let weekStart = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: today))!
+        let weekDates = (0..<7).compactMap { calendar.date(byAdding: .day, value: $0, to: weekStart) }
+        let labels = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"]
+        let todayLabel = labels[calendar.component(.weekday, from: today) - 1]
+
+        return VStack(alignment: .leading, spacing: 14) {
             Text("This week's progress")
                 .font(.system(size: 18, weight: .bold, design: .rounded))
                 .foregroundStyle(.black.opacity(0.82))
 
             VStack(spacing: 10) {
                 HStack {
-                    ForEach(["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"], id: \.self) { day in
+                    ForEach(labels, id: \.self) { day in
                         Text(day)
                             .font(.system(size: 12, weight: .bold, design: .rounded))
-                            .foregroundStyle(day == "Sa" ? .orange : .black.opacity(0.45))
+                            .foregroundStyle(day == todayLabel ? .orange : .black.opacity(0.45))
                             .frame(maxWidth: .infinity)
                     }
                 }
 
                 HStack {
-                    ForEach(0..<7) { _ in
+                    ForEach(Array(weekDates.enumerated()), id: \.offset) { _, date in
+                        let cooked = cooking.hasCooked(on: date)
                         Image(systemName: "checkmark")
                             .font(.system(size: 13, weight: .bold))
-                            .foregroundStyle(.white.opacity(0.82))
+                            .foregroundStyle(.white.opacity(cooked ? 0.9 : 0.25))
                             .frame(maxWidth: .infinity)
                     }
                 }

@@ -11,7 +11,7 @@ struct ContentView: View {
         ZStack(alignment: .bottom) {
             Group {
                 switch selectedTab {
-                case .home:      HomeView()
+                case .home:      HomeView(onScanTap: { selectedTab = .scan })
                 case .scan:      ScanView()
                 case .recipes:   RecipesView()
                 case .bookmarks: PantryView()   // <- was BookmarksView (placeholder)
