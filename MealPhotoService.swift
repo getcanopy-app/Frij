@@ -1,7 +1,8 @@
 import Foundation
 
-// Fetches food photos from TheMealDB (free, no API key).
-// Searches by recipe name, caches results so each name is only fetched once.
+// Fetches AI-generated food photos from the Frij backend (/api/recipe-image).
+// The backend generates via OpenAI, caches in Supabase, so first call is slow
+// (~10-15s) and every subsequent call for the same dish is instant.
 @MainActor
 @Observable
 final class MealPhotoService {
@@ -16,20 +17,18 @@ final class MealPhotoService {
         guard !fetching.contains(name) else { return }
         fetching.insert(name)
 
-        // Use first 3 words of the name for a broader search match.
-        let query = name
-            .components(separatedBy: .whitespaces)
-            .prefix(3)
-            .joined(separator: " ")
-            .addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
+        guard let endpoint = URL(string: "\(FrijAPI.baseURL)/api/recipe-image") else { return }
 
-        guard let endpoint = URL(string: "https://www.themealdb.com/api/json/v1/1/search.php?s=\(query)"),
-              let (data, _) = try? await URLSession.shared.data(from: endpoint),
+        var req = URLRequest(url: endpoint)
+        req.httpMethod = "POST"
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        req.timeoutInterval = 90   // generation can take ~15s on first call
+        req.httpBody = try? JSONSerialization.data(withJSONObject: ["name": name])
+
+        guard let (data, _) = try? await URLSession.shared.data(for: req),
               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-              let meals = json["meals"] as? [[String: Any]],
-              let first = meals.first,
-              let thumb = first["strMealThumb"] as? String,
-              let url = URL(string: thumb)
+              let imageURL = json["imageURL"] as? String,
+              let url = URL(string: imageURL)
         else { return }
 
         urls[name] = url

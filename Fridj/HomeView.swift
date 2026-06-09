@@ -174,8 +174,6 @@ struct RecipeGlassCard: View {
     let difficultyColor: Color
     var tint: Color? = nil
 
-    @State private var photos = MealPhotoService.shared
-
     private let imageHeight: CGFloat = 200
     private let imageOverflow: CGFloat = 60
     private let cardHeight: CGFloat = 220
@@ -208,18 +206,11 @@ struct RecipeGlassCard: View {
             .glassEffect(tint.map { .regular.tint($0) } ?? .regular, in: .rect(cornerRadius: 26))
             .padding(.top, imageOverflow)
 
-            AsyncImage(url: photos.urls[title]) { image in
-                image.resizable().scaledToFill()
-            } placeholder: {
-                Color.black.opacity(0.06)
-            }
-            .frame(height: imageHeight)
-            .clipShape(.rect(cornerRadius: 20))
-            .padding(.horizontal, 10)
-            .animation(.easeIn(duration: 0.25), value: photos.urls[title] != nil)
+            MealImageView(dish: title, cornerRadius: 20)
+                .frame(height: imageHeight)
+                .padding(.horizontal, 10)
         }
         .frame(height: cardHeight + imageOverflow)
-        .task { await photos.fetch(for: title) }
     }
 }
 

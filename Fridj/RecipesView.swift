@@ -302,25 +302,12 @@ struct RecipesView: View {
 
 private struct RecipeMealPhoto: View {
     let recipeName: String
-    @State private var photos = MealPhotoService.shared
 
     var body: some View {
-        AsyncImage(url: photos.urls[recipeName]) { image in
-            image
-                .resizable()
-                .scaledToFill()
-                .frame(maxWidth: .infinity)
-                .frame(height: 160)
-                .clipped()
-                .clipShape(.rect(topLeadingRadius: FridjRadius.recipeCard, topTrailingRadius: FridjRadius.recipeCard))
-                .transition(.opacity.animation(.easeIn(duration: 0.3)))
-        } placeholder: {
-            Color.fridjText.opacity(0.05)
-                .frame(maxWidth: .infinity)
-                .frame(height: 160)
-                .clipShape(.rect(topLeadingRadius: FridjRadius.recipeCard, topTrailingRadius: FridjRadius.recipeCard))
-        }
-        .task { await photos.fetch(for: recipeName) }
+        MealImageView(dish: recipeName, cornerRadius: 0)
+            .frame(maxWidth: .infinity)
+            .frame(height: 160)
+            .clipShape(.rect(topLeadingRadius: FridjRadius.recipeCard, topTrailingRadius: FridjRadius.recipeCard))
     }
 }
 

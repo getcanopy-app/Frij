@@ -59,6 +59,20 @@ enum FrijAPI {
         return try JSONDecoder().decode(RecipeResponse.self, from: data).recipes
     }
 
+    static func mealImage(dish: String) async throws -> URL {
+        var req = URLRequest(url: URL(string: baseURL + "/api/recipe-image")!)
+        req.httpMethod = "POST"
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        req.timeoutInterval = 90
+        req.httpBody = try JSONSerialization.data(withJSONObject: ["name": dish])
+        let (data, _) = try await URLSession.shared.data(for: req)
+        guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let str = json["imageURL"] as? String,
+              let url = URL(string: str)
+        else { throw FrijAPIError.badResponse("No imageURL in response") }
+        return url
+    }
+
     static func validate(name: String) async throws -> ValidationResult {
         let body: [String: Any] = ["name": name]
         let data = try await post("/api/validate", body: body)
