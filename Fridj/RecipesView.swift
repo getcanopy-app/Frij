@@ -1,16 +1,19 @@
 import SwiftUI
 
 struct RecipesView: View {
-    var recipes: [Recipe] = []
     @State private var expanded: String?
     @State private var store = PantryStore.shared
     @State private var favorites = FavoritesStore.shared
+    @Bindable private var session = ScanSession.shared
 
     @State private var lastRemoved: [String] = []
     @State private var showUndoFor: String?
 
     // Used by the empty state's "scan now" button.
     var onJumpToScan: (() -> Void)? = nil
+
+    // Fresh recipes come from the session (produced by session.cook).
+    private var recipes: [Recipe] { session.recipes }
 
     private var hasSaved: Bool { !favorites.recipes.isEmpty }
     private var hasFresh: Bool { !recipes.isEmpty }
@@ -20,7 +23,9 @@ struct RecipesView: View {
         ZStack {
             Color.fridjBg.ignoresSafeArea()
 
-            if isCompletelyEmpty {
+            if session.isCooking {
+                cookingState
+            } else if isCompletelyEmpty {
                 emptyState
             } else {
                 ScrollView {
@@ -42,6 +47,25 @@ struct RecipesView: View {
                 undoBanner(recipeId: recipeId)
             }
         }
+    }
+
+    // MARK: Cooking (loading) state
+
+    private var cookingState: some View {
+        VStack(spacing: FridjSpacing.md) {
+            ProgressView()
+                .scaleEffect(1.4)
+                .tint(.fridjOrange)
+            Text("Cooking up ideas…")
+                .font(FridjFont.style(.title, weight: .bold))
+                .foregroundColor(.fridjText)
+            Text("Looking at what's in your kitchen and finding three dinners you can make tonight.")
+                .font(FridjFont.size(14))
+                .foregroundColor(.fridjText.opacity(0.55))
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 32)
+        }
+        .padding(.horizontal, FridjSpacing.lg)
     }
 
     // MARK: Saved
@@ -71,7 +95,7 @@ struct RecipesView: View {
 
     private var tonightSection: some View {
         VStack(alignment: .leading, spacing: FridjSpacing.sm) {
-            Text(hasSaved ? "Tonight's options" : "Tonight's options")
+            Text("Tonight's options")
                 .font(FridjFont.style(.title, weight: .bold))
                 .foregroundColor(.fridjText)
                 .padding(.top, hasSaved ? FridjSpacing.md : 0)
@@ -121,7 +145,7 @@ struct RecipesView: View {
         .padding(.horizontal, FridjSpacing.lg)
     }
 
-    // MARK: Card (unchanged)
+    // MARK: Card
 
     private func card(_ recipe: Recipe) -> some View {
         let isOpen = expanded == recipe.id
@@ -262,5 +286,5 @@ struct RecipesView: View {
 }
 
 #Preview {
-    RecipesView(recipes: [])
+    RecipesView()
 }

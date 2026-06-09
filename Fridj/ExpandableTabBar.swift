@@ -23,8 +23,7 @@ struct ExpandableTabBar: View {
                 FoundInlinePanel(
                     detected: session.scanDetectedItems,
                     onContinue: {
-                        // Simple path: close the panel and take the user straight
-                        // to their dinner ideas. No intermediate Overview page.
+                        // Close the panel and take the user to dinner ideas.
                         session.showScanFound = false
                         session.cook(ingredients: store.allNames)
                         selectedTab = .recipes
@@ -57,8 +56,9 @@ struct ExpandableTabBar: View {
                 .transition(.opacity.animation(.easeInOut(duration: 0.18)))
             }
         }
-        // Glass effect with a dark tint when expanded — gives Ardalan's mock contrast.
-        // Collapsed pill keeps its light/neutral glass for the standard tab bar look.
+        // Clamp the whole bar to the available width so neither the collapsed
+        // pill nor the expanded panel can bleed past the screen edges.
+        .frame(maxWidth: .infinity)
         .glassEffect(
             isExpanded
                 ? .regular.tint(Color.black.opacity(0.55))
@@ -66,8 +66,6 @@ struct ExpandableTabBar: View {
             in: .rect(cornerRadius: isExpanded ? 28 : 40)
         )
         .animation(.spring(response: 0.48, dampingFraction: 0.78), value: isExpanded)
-        // When the user leaves the scan tab, collapse the panel so it doesn't
-        // linger when they return.
         .onChange(of: selectedTab) { _, newTab in
             if newTab != .scan && session.showScanFound {
                 withAnimation(.spring(response: 0.48, dampingFraction: 0.78)) {
@@ -85,7 +83,6 @@ struct FoundInlinePanel: View {
     let onContinue: () -> Void
     let onDismiss: () -> Void
 
-    // The items that actually got added to the pantry are the high-confidence ones.
     private var addedCount: Int {
         detected.filter { $0.confidence == .high }.count
     }
@@ -114,10 +111,13 @@ struct FoundInlinePanel: View {
 
             // Two-column ingredient list
             let halves = splitHalves(detected)
-            HStack(alignment: .top, spacing: 0) {
-                ingredientColumn(halves.0)
-                ingredientColumn(halves.1)
+            ScrollView(.vertical, showsIndicators: false) {
+                HStack(alignment: .top, spacing: 12) {
+                    ingredientColumn(halves.0)
+                    ingredientColumn(halves.1)
+                }
             }
+            .frame(maxHeight: 110)
 
             // "Added to pantry" confirmation
             if addedCount > 0 {
@@ -157,6 +157,7 @@ struct FoundInlinePanel: View {
             }
         }
         .padding(20)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private func ingredientColumn(_ items: [DetectedItem]) -> some View {
@@ -165,6 +166,7 @@ struct FoundInlinePanel: View {
                 Text("• \(item.item.capitalized)")
                     .font(.system(size: 13, design: .rounded))
                     .foregroundStyle(.white.opacity(0.9))
+                    .lineLimit(1)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)

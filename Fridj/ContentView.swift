@@ -27,7 +27,7 @@ struct ContentView: View {
             // "We found" panel bleeds past the iPhone's rounded edges.
             ExpandableTabBar(selectedTab: $selectedTab)
                 .frame(maxWidth: .infinity)
-                .padding(.horizontal, 16)
+                .padding(.horizontal, 28)
                 .padding(.bottom, 8)
         }
     }

@@ -2,13 +2,10 @@ import SwiftUI
 
 struct PantryView: View {
     @State private var store = PantryStore.shared
+    @Bindable private var session = ScanSession.shared
     @State private var newItem: String = ""
-    @State private var recipes: [Recipe] = []
-    @State private var isCooking = false
     @State private var isValidating = false
-    @State private var errorText: String?
     @State private var rejectionText: String?
-    @State private var showRecipes = false
 
     var body: some View {
         ZStack {
@@ -19,8 +16,8 @@ struct PantryView: View {
                     header
                     cookButton
 
-                    if let errorText {
-                        Text(errorText)
+                    if let err = session.cookError {
+                        Text(err)
                             .font(FridjFont.size(14))
                             .foregroundColor(.fridjCoral)
                     }
@@ -43,8 +40,8 @@ struct PantryView: View {
                 .padding(.bottom, 120)
             }
         }
-        .sheet(isPresented: $showRecipes) {
-            RecipesView(recipes: recipes)
+        .sheet(isPresented: $session.showRecipes) {
+            RecipesView()
         }
     }
 
@@ -62,11 +59,11 @@ struct PantryView: View {
 
     private var cookButton: some View {
         Button {
-            Task { await cook() }
+            session.cook(ingredients: store.allNames)
         } label: {
             HStack {
-                if isCooking { ProgressView().tint(.white) }
-                Text(isCooking ? "Cooking up ideas…" : "Get 3 dinners from this")
+                if session.isCooking { ProgressView().tint(.white) }
+                Text(session.isCooking ? "Cooking up ideas…" : "Get 3 dinners from this")
                     .font(FridjFont.size(17, weight: .bold))
             }
             .foregroundColor(.white)
@@ -77,7 +74,7 @@ struct PantryView: View {
                 in: RoundedRectangle(cornerRadius: FridjRadius.scanButton, style: .continuous)
             )
         }
-        .disabled(store.items.isEmpty || isCooking)
+        .disabled(store.items.isEmpty || session.isCooking)
     }
 
     private var addRow: some View {
@@ -179,18 +176,6 @@ struct PantryView: View {
         } else {
             rejectionText = "Hmm, \"\(v)\" doesn't look like a food item. (\(result.reason ?? "not recognized"))"
         }
-    }
-
-    private func cook() async {
-        errorText = nil
-        isCooking = true
-        do {
-            recipes = try await FrijAPI.recipes(ingredients: store.allNames)
-            showRecipes = true
-        } catch {
-            errorText = error.localizedDescription
-        }
-        isCooking = false
     }
 }
 

@@ -12,38 +12,50 @@ struct ScanFlowCoordinator: View {
     @State private var store = PantryStore.shared
     @Bindable private var session = ScanSession.shared
 
-    // Single source of truth for "showing results": the session flag plus a
-    // photo to show behind it. There is no separate `.review` stage to desync.
+    // Reviewing = found panel up. Photo stays behind it the whole time.
     private var isReviewing: Bool { session.showScanFound && capturedImage != nil }
+
+    // Show the fridge photo during scanning AND review. Keeping this as one
+    // condition (not a stored stage) means the photo never flickers off
+    // between scan-complete and panel-appear.
+    private var showPhotoBackground: Bool {
+        (localStage == .scanning || isReviewing) && capturedImage != nil
+    }
 
     var body: some View {
         ZStack {
             // ── Background ────────────────────────────────────────────
-            if (localStage == .scanning || isReviewing), let img = capturedImage {
+            // Cream base is always there; the photo crossfades in over it.
+            Color.fridjBg.ignoresSafeArea()
+
+            if showPhotoBackground, let img = capturedImage {
                 Image(uiImage: img)
                     .resizable()
                     .scaledToFill()
                     .ignoresSafeArea()
-                Color.black.opacity(0.2)
-                    .ignoresSafeArea()
-            } else {
-                Color.fridjBg.ignoresSafeArea()
+                    .overlay(Color.black.opacity(0.2).ignoresSafeArea())
+                    .transition(.opacity)  // smooth fade in/out of the photo
             }
 
             // ── Overlay ───────────────────────────────────────────────
             if localStage == .scanning {
                 ScanningView()
+                    .transition(.opacity)
             } else if isReviewing {
                 EmptyView() // ExpandableTabBar shows the found panel over the photo
             } else {
                 entryView
+                    .transition(.opacity)
             }
         }
+        // Animate background + overlay swaps so the photo→panel change is smooth.
+        .animation(.easeInOut(duration: 0.35), value: showPhotoBackground)
+        .animation(.easeInOut(duration: 0.35), value: localStage)
         .sheet(isPresented: $session.showScanOverview, onDismiss: resetToEntry) {
             OverviewView(onDismiss: { session.showScanOverview = false })
         }
         .sheet(isPresented: $session.showRecipes) {
-            RecipesView(recipes: session.recipes)
+            RecipesView()
         }
         .sheet(isPresented: $showCamera) {
             CameraCapture { image in Task { await handleImage(image) } }
@@ -51,13 +63,23 @@ struct ScanFlowCoordinator: View {
         .onChange(of: pickerItem) { _, newValue in
             Task { await handlePhoto(newValue) }
         }
-        // When the found panel closes (× tapped, tab switched, or "Get dinners"),
-        // clear the local photo + picker so the entry view returns cleanly.
         .onChange(of: session.showScanFound) { _, isShowing in
             if !isShowing && !session.showScanOverview {
-                capturedImage = nil
-                pickerItem = nil
-                localStage = .entry
+                // Fade the photo out smoothly, then clear it after the fade.
+                withAnimation(.easeInOut(duration: 0.35)) {
+                    localStage = .entry
+                }
+                Task {
+                    try? await Task.sleep(nanoseconds: 360_000_000)
+                    await MainActor.run {
+                        // Only clear if we're still not reviewing (user didn't
+                        // immediately start another scan).
+                        if !session.showScanFound {
+                            capturedImage = nil
+                            pickerItem = nil
+                        }
+                    }
+                }
             }
         }
     }
@@ -194,16 +216,16 @@ struct ScanFlowCoordinator: View {
     }
 
     private func handleImage(_ img: UIImage) async {
-        // CRITICAL: fully reset any stale review state from a previous scan
-        // BEFORE starting a new one. Without this, showScanFound may still be
-        // true from last time, so setting it true again is a no-op and the
-        // panel never re-triggers — which is the freeze.
+        // Always start from a clean slate so showScanFound flips false→true
+        // (a no-op true→true would never re-trigger the panel).
         session.showScanFound = false
         session.showScanOverview = false
 
-        capturedImage = img
+        withAnimation(.easeInOut(duration: 0.35)) {
+            capturedImage = img
+            localStage = .scanning
+        }
         pickerItem = nil
-        localStage = .scanning
 
         do {
             let items = try await FrijAPI.scan(image: img)
@@ -211,16 +233,18 @@ struct ScanFlowCoordinator: View {
             store.mergeScan(highConfidence)
             session.scanDetectedItems = items
 
-            // Leave scanning, raise the found panel. isReviewing becomes true
-            // because showScanFound is now true AND capturedImage is set.
-            localStage = .entry
-            withAnimation(.spring(response: 0.48, dampingFraction: 0.78)) {
-                session.showScanFound = true
+            // Photo STAYS up (capturedImage is still set, isReviewing becomes
+            // true). Only the scanning overlay goes away and the panel rises.
+            withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+                localStage = .entry        // leaves the scanning overlay
+                session.showScanFound = true  // raises the found panel; photo stays
             }
         } catch {
             scanError = error.localizedDescription
-            localStage = .entry
-            capturedImage = nil
+            withAnimation(.easeInOut(duration: 0.35)) {
+                localStage = .entry
+                capturedImage = nil
+            }
             session.showScanFound = false
         }
     }
