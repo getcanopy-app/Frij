@@ -14,6 +14,11 @@ final class ScanSession {
     var cookError: String?
     var showRecipes = false
 
+    // Scan result state — read by ExpandableTabBar to morph from tab bar → found panel
+    var scanDetectedItems: [DetectedItem] = []
+    var showScanFound = false
+    var showScanOverview = false
+
     func cook(ingredients: [String]) {
         guard !isCooking else { return }
         isCooking = true

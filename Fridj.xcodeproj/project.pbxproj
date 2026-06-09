@@ -29,9 +29,22 @@
 		22CAEA112FC70BA4005D79CE /* FridjUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FridjUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		996599EA2FD5B4C500ED4B22 /* Exceptions for "Fridj" folder in "Fridj" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 22CAE9F92FC70BA2005D79CE /* Fridj */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		22CAE9FC2FC70BA2005D79CE /* Fridj */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				996599EA2FD5B4C500ED4B22 /* Exceptions for "Fridj" folder in "Fridj" target */,
+			);
 			path = Fridj;
 			sourceTree = "<group>";
 		};
@@ -400,6 +413,7 @@
 				DEVELOPMENT_TEAM = 5SAX25WKUQ;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Fridj/Info.plist;
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Frij scans your fridge photos.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -434,6 +448,7 @@
 				DEVELOPMENT_TEAM = 5SAX25WKUQ;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Fridj/Info.plist;
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Frij scans your fridge photos.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;

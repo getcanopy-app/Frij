@@ -9,29 +9,33 @@ struct ContentView: View {
 
     var body: some View {
         ZStack(alignment: .bottom) {
+            // Main content fills the whole screen (so the fridge photo can go
+            // full-bleed during scan/review).
             Group {
                 switch selectedTab {
                 case .home:      HomeView(onScanTap: { selectedTab = .scan })
                 case .scan:      ScanView()
                 case .recipes:   RecipesView()
-                case .bookmarks: PantryView()   // <- was BookmarksView (placeholder)
+                case .bookmarks: PantryView()
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .ignoresSafeArea(edges: .bottom)  // only the content ignores safe area
 
-            CustomTabBar(selectedTab: $selectedTab)
-                .padding(.horizontal, 24)
-                .padding(.bottom, 28)
+            // The tab bar stays WITHIN the safe area and is constrained to the
+            // screen width, so neither the collapsed pill nor the expanded
+            // "We found" panel bleeds past the iPhone's rounded edges.
+            ExpandableTabBar(selectedTab: $selectedTab)
+                .frame(maxWidth: .infinity)
+                .padding(.horizontal, 16)
+                .padding(.bottom, 8)
         }
-        .ignoresSafeArea(edges: .bottom)
     }
 }
 
 struct CustomTabBar: View {
     @Binding var selectedTab: AppTab
 
-    // The fourth tab is now the pantry. Using a refrigerator icon since
-    // that's what it represents. Ardalan can adjust the icon if he wants.
     private let items: [(icon: String, selectedIcon: String, tab: AppTab)] = [
         ("house",                 "house.fill",                 .home),
         ("viewfinder",            "viewfinder",                 .scan),
