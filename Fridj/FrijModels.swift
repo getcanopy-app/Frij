@@ -5,7 +5,6 @@
 //  Created by Gabriel Nejad on 5/28/26.
 //
 //  Data models matching the Frij backend contract.
-//  These decode exactly what https://frij-backend.vercel.app returns.
 //
 
 import Foundation
@@ -16,10 +15,27 @@ enum Confidence: String, Codable {
     case high, medium, low
 }
 
+struct BoundingBox: Codable, Hashable {
+    let x: Double
+    let y: Double
+    let w: Double
+    let h: Double
+
+    var centerX: Double { x + w / 2 }
+    var centerY: Double { y + h / 2 }
+}
+
 struct DetectedItem: Codable, Identifiable, Hashable {
     var id: String { item }
     let item: String
     let confidence: Confidence
+    var box: BoundingBox? = nil
+
+    init(item: String, confidence: Confidence, box: BoundingBox? = nil) {
+        self.item = item
+        self.confidence = confidence
+        self.box = box
+    }
 }
 
 struct ScanResponse: Codable {
