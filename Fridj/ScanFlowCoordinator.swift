@@ -42,18 +42,7 @@ struct ScanFlowCoordinator: View {
                 ScanningView()
                     .transition(.opacity)
             } else if isReviewing {
-                GeometryReader { geo in
-                    ForEach(Array(session.scanDetectedItems.enumerated()), id: \.element.id) { index, item in
-                        detectionLabel(item.item)
-                            .position(labelPosition(for: item, index: index, in: geo.size))
-                            .transition(.opacity.combined(with: .scale(scale: 0.7)))
-                            .animation(
-                                .spring(response: 0.4, dampingFraction: 0.7)
-                                    .delay(Double(index) * 0.06),
-                                value: isReviewing
-                            )
-                    }
-                }
+                EmptyView()
             } else {
                 entryView
                     .transition(.opacity)
@@ -204,60 +193,6 @@ struct ScanFlowCoordinator: View {
             )
         }
         .disabled(store.items.isEmpty || session.isCooking)
-    }
-
-    // MARK: Detection labels
-
-    // Fallback scattered positions for items the model couldn't place.
-    private static let labelPositions: [(CGFloat, CGFloat)] = [
-        (0.65, 0.18), (0.22, 0.38), (0.58, 0.52), (0.32, 0.16),
-        (0.72, 0.40), (0.18, 0.55), (0.48, 0.28), (0.38, 0.62),
-        (0.60, 0.08), (0.28, 0.72), (0.75, 0.60), (0.15, 0.22),
-    ]
-
-    private func labelPosition(for item: DetectedItem, index: Int, in size: CGSize) -> CGPoint {
-        // DEBUG: print the raw box so we can judge gpt-4o's accuracy.
-        if let b = item.box {
-            print("📦 \(item.item): x=\(String(format: "%.2f", b.x)) y=\(String(format: "%.2f", b.y)) w=\(String(format: "%.2f", b.w)) h=\(String(format: "%.2f", b.h)) → center(\(String(format: "%.2f", b.centerX)), \(String(format: "%.2f", b.centerY)))")
-        } else {
-            print("📦 \(item.item): NO BOX (using fallback position)")
-        }
-
-        // If the model gave us a box, place the dot at its center, scaled to the
-        // actual on-screen photo size. The photo uses .scaledToFill in a
-        // full-screen frame, so fractions map directly to screen width/height.
-        if let b = item.box {
-            let x = b.centerX * size.width
-            let y = b.centerY * size.height
-            // Clamp so labels never sit under the found panel or off-screen.
-            let clampedX = min(max(x, 60), size.width - 60)
-            let clampedY = min(max(y, 70), size.height - 280)
-            return CGPoint(x: clampedX, y: clampedY)
-        }
-
-        // Fallback: scattered position for items with no box.
-        let topInset: CGFloat = 70
-        let bottomInset: CGFloat = 260
-        let sidePadding: CGFloat = 50
-        let usableW = size.width - sidePadding * 2
-        let usableH = size.height - topInset - bottomInset
-        let (xRatio, yRatio) = Self.labelPositions[index % Self.labelPositions.count]
-        return CGPoint(x: sidePadding + xRatio * usableW, y: topInset + yRatio * usableH)
-    }
-
-    private func detectionLabel(_ name: String) -> some View {
-        HStack(spacing: 5) {
-            Circle()
-                .fill(Color.white)
-                .frame(width: 6, height: 6)
-            Text(name.capitalized)
-                .font(.system(size: 13, weight: .semibold, design: .rounded))
-                .foregroundStyle(Color(white: 0.08))
-        }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 6)
-        .background(.regularMaterial, in: Capsule())
-        .shadow(color: .black.opacity(0.25), radius: 4, x: 0, y: 2)
     }
 
     // MARK: Helpers

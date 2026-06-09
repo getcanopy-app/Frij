@@ -18,6 +18,22 @@ final class CookingStore {
         cookedDates.contains(Self.dateKey(for: date))
     }
 
+    var currentStreak: Int {
+        let cal = Calendar.current
+        var streak = 0
+        var date = Date()
+        if !hasCooked(on: date) {
+            guard let yesterday = cal.date(byAdding: .day, value: -1, to: date) else { return 0 }
+            date = yesterday
+        }
+        while hasCooked(on: date) {
+            streak += 1
+            guard let prev = cal.date(byAdding: .day, value: -1, to: date) else { break }
+            date = prev
+        }
+        return streak
+    }
+
     private static func dateKey(for date: Date) -> String {
         let f = DateFormatter()
         f.dateFormat = "yyyy-MM-dd"

@@ -82,12 +82,11 @@ struct HomeView: View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 36) {
                 RecipeGlassCard(
-                    title: "Mediterranean\nbreakfast bowl",
+                    title: "Mediterranean breakfast bowl",
                     time: "~21 min",
                     difficulty: "Medium",
                     difficultyColor: .orange,
-                    tint: Color(red: 0.72, green: 0.82, blue: 0.68),
-                    imageName: "MediterraneanBowl"
+                    tint: Color(red: 0.72, green: 0.82, blue: 0.68)
                 )
                 .frame(width: 245)
 
@@ -174,7 +173,8 @@ struct RecipeGlassCard: View {
     let difficulty: String
     let difficultyColor: Color
     var tint: Color? = nil
-    var imageName: String? = nil
+
+    @State private var photos = MealPhotoService.shared
 
     private let imageHeight: CGFloat = 200
     private let imageOverflow: CGFloat = 60
@@ -208,16 +208,18 @@ struct RecipeGlassCard: View {
             .glassEffect(tint.map { .regular.tint($0) } ?? .regular, in: .rect(cornerRadius: 26))
             .padding(.top, imageOverflow)
 
-            if let imageName {
-                Image(imageName)
-                    .resizable()
-                    .scaledToFill()
-                    .frame(height: imageHeight)
-                    .clipShape(.rect(cornerRadius: 20))
-                    .padding(.horizontal, 10)
+            AsyncImage(url: photos.urls[title]) { image in
+                image.resizable().scaledToFill()
+            } placeholder: {
+                Color.black.opacity(0.06)
             }
+            .frame(height: imageHeight)
+            .clipShape(.rect(cornerRadius: 20))
+            .padding(.horizontal, 10)
+            .animation(.easeIn(duration: 0.25), value: photos.urls[title] != nil)
         }
         .frame(height: cardHeight + imageOverflow)
+        .task { await photos.fetch(for: title) }
     }
 }
 

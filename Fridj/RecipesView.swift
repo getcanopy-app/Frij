@@ -25,8 +25,10 @@ struct RecipesView: View {
 
             if session.isCooking {
                 cookingState
+                    .transition(.opacity)
             } else if isCompletelyEmpty {
                 emptyState
+                    .transition(.opacity)
             } else {
                 ScrollView {
                     VStack(alignment: .leading, spacing: FridjSpacing.lg) {
@@ -41,12 +43,17 @@ struct RecipesView: View {
                     .padding(.top, 60)
                     .padding(.bottom, 120)
                 }
+                .transition(.asymmetric(
+                    insertion: .opacity.combined(with: .offset(y: 24)),
+                    removal: .opacity
+                ))
             }
 
             if let recipeId = showUndoFor, !lastRemoved.isEmpty {
                 undoBanner(recipeId: recipeId)
             }
         }
+        .animation(.easeOut(duration: 0.45), value: session.isCooking)
     }
 
     // MARK: Cooking (loading) state
@@ -151,6 +158,8 @@ struct RecipesView: View {
         let isOpen = expanded == recipe.id
         let isFav = favorites.isFavorite(recipe)
         return VStack(alignment: .leading, spacing: FridjSpacing.sm) {
+            RecipeMealPhoto(recipeName: recipe.name)
+
             HStack(alignment: .top, spacing: 10) {
                 Text(recipe.name)
                     .font(FridjFont.size(18, weight: .bold))
@@ -270,6 +279,10 @@ struct RecipesView: View {
         guard !removed.isEmpty else { return }
         for name in removed { store.remove(name: name) }
         CookingStore.shared.logToday()
+        Task {
+            try? await Task.sleep(nanoseconds: 350_000_000)
+            CelebrationCoordinator.shared.show(streak: CookingStore.shared.currentStreak)
+        }
         lastRemoved = removed
         showUndoFor = recipe.id
 
@@ -282,6 +295,32 @@ struct RecipesView: View {
                 }
             }
         }
+    }
+}
+
+// MARK: - Recipe photo header
+
+private struct RecipeMealPhoto: View {
+    let recipeName: String
+    @State private var photos = MealPhotoService.shared
+
+    var body: some View {
+        AsyncImage(url: photos.urls[recipeName]) { image in
+            image
+                .resizable()
+                .scaledToFill()
+                .frame(maxWidth: .infinity)
+                .frame(height: 160)
+                .clipped()
+                .clipShape(.rect(topLeadingRadius: FridjRadius.recipeCard, topTrailingRadius: FridjRadius.recipeCard))
+                .transition(.opacity.animation(.easeIn(duration: 0.3)))
+        } placeholder: {
+            Color.fridjText.opacity(0.05)
+                .frame(maxWidth: .infinity)
+                .frame(height: 160)
+                .clipShape(.rect(topLeadingRadius: FridjRadius.recipeCard, topTrailingRadius: FridjRadius.recipeCard))
+        }
+        .task { await photos.fetch(for: recipeName) }
     }
 }
 

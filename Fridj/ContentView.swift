@@ -6,6 +6,7 @@ enum AppTab: Int {
 
 struct ContentView: View {
     @State private var selectedTab: AppTab = .home
+    @Bindable private var celebration = CelebrationCoordinator.shared
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -29,6 +30,11 @@ struct ContentView: View {
                 .frame(maxWidth: .infinity)
                 .padding(.horizontal, 28)
                 .padding(.bottom, 8)
+
+            if celebration.isShowing {
+                StreakCelebrationView()
+                    .zIndex(999)
+            }
         }
     }
 }

@@ -6,6 +6,12 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		99E71FF92FD83C71001D2920 /* CelebrationCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99E71FF82FD83C71001D2920 /* CelebrationCoordinator.swift */; };
+		99E71FFB2FD83C8B001D2920 /* StreakCelebrationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99E71FFA2FD83C8B001D2920 /* StreakCelebrationView.swift */; };
+		99E71FFD2FD83ECD001D2920 /* MealPhotoService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99E71FFC2FD83ECD001D2920 /* MealPhotoService.swift */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		22CAEA082FC70BA4005D79CE /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -27,6 +33,9 @@
 		22CAE9FA2FC70BA2005D79CE /* Fridj.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Fridj.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		22CAEA072FC70BA4005D79CE /* FridjTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FridjTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		22CAEA112FC70BA4005D79CE /* FridjUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FridjUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		99E71FF82FD83C71001D2920 /* CelebrationCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CelebrationCoordinator.swift; sourceTree = "<group>"; };
+		99E71FFA2FD83C8B001D2920 /* StreakCelebrationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreakCelebrationView.swift; sourceTree = "<group>"; };
+		99E71FFC2FD83ECD001D2920 /* MealPhotoService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MealPhotoService.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -92,6 +101,9 @@
 				22CAEA0A2FC70BA4005D79CE /* FridjTests */,
 				22CAEA142FC70BA4005D79CE /* FridjUITests */,
 				22CAE9FB2FC70BA2005D79CE /* Products */,
+				99E71FF82FD83C71001D2920 /* CelebrationCoordinator.swift */,
+				99E71FFA2FD83C8B001D2920 /* StreakCelebrationView.swift */,
+				99E71FFC2FD83ECD001D2920 /* MealPhotoService.swift */,
 			);
 			sourceTree = "<group>";
 		};
@@ -249,6 +261,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				99E71FFB2FD83C8B001D2920 /* StreakCelebrationView.swift in Sources */,
+				99E71FF92FD83C71001D2920 /* CelebrationCoordinator.swift in Sources */,
+				99E71FFD2FD83ECD001D2920 /* MealPhotoService.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
