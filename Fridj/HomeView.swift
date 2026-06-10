@@ -174,17 +174,18 @@ struct RecipeGlassCard: View {
     let difficultyColor: Color
     var tint: Color? = nil
 
-    private let imageHeight: CGFloat = 200
-    private let imageOverflow: CGFloat = 60
-    private let cardHeight: CGFloat = 220
-
     var body: some View {
-        ZStack(alignment: .top) {
-            VStack(alignment: .leading, spacing: 8) {
-                Spacer()
+        VStack(alignment: .leading, spacing: 0) {
+            MealImageView(dish: title, cornerRadius: 0)
+                .frame(maxWidth: .infinity)
+                .frame(height: 160)
+                .clipShape(.rect(topLeadingRadius: 26, topTrailingRadius: 26))
+
+            VStack(alignment: .leading, spacing: 6) {
                 Text(title)
                     .font(.system(size: 15, weight: .bold, design: .rounded))
                     .foregroundStyle(.black.opacity(0.82))
+                    .lineLimit(2)
                     .lineSpacing(2)
 
                 HStack {
@@ -200,17 +201,10 @@ struct RecipeGlassCard: View {
                 }
             }
             .padding(.horizontal, 14)
-            .padding(.bottom, 16)
-            .frame(height: cardHeight)
-            .frame(maxWidth: .infinity)
-            .glassEffect(tint.map { .regular.tint($0) } ?? .regular, in: .rect(cornerRadius: 26))
-            .padding(.top, imageOverflow)
-
-            MealImageView(dish: title, cornerRadius: 20)
-                .frame(height: imageHeight)
-                .padding(.horizontal, 10)
+            .padding(.vertical, 14)
         }
-        .frame(height: cardHeight + imageOverflow)
+        .frame(maxWidth: .infinity)
+        .glassEffect(tint.map { .regular.tint($0) } ?? .regular, in: .rect(cornerRadius: 26))
     }
 }
 
