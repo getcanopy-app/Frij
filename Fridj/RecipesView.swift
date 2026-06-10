@@ -102,10 +102,28 @@ struct RecipesView: View {
 
     private var tonightSection: some View {
         VStack(alignment: .leading, spacing: FridjSpacing.sm) {
-            Text("Tonight's options")
-                .font(FridjFont.style(.title, weight: .bold))
-                .foregroundColor(.fridjText)
-                .padding(.top, hasSaved ? FridjSpacing.md : 0)
+            HStack {
+                Text("Tonight's options")
+                    .font(FridjFont.style(.title, weight: .bold))
+                    .foregroundColor(.fridjText)
+
+                Spacer()
+
+                Button {
+                    session.cook(ingredients: store.items.map(\.name))
+                } label: {
+                    HStack(spacing: 5) {
+                        Image(systemName: "arrow.clockwise")
+                            .font(.system(size: 12, weight: .bold))
+                        Text("more options")
+                            .font(FridjFont.size(13, weight: .bold))
+                    }
+                    .foregroundColor(.fridjOrange)
+                    .opacity(session.canCook ? 1 : 0.35)
+                }
+                .disabled(!session.canCook)
+            }
+            .padding(.top, hasSaved ? FridjSpacing.md : 0)
 
             ForEach(recipes) { recipe in
                 card(recipe)
