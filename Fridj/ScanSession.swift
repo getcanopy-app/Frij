@@ -19,8 +19,19 @@ final class ScanSession {
     var showScanFound = false
     var showScanOverview = false
 
+    private var lastCookTime: Date?
+    private let cookCooldown: TimeInterval = 30
+
+    // True when the user is allowed to request new recipes.
+    var canCook: Bool {
+        guard !isCooking else { return false }
+        guard let last = lastCookTime else { return true }
+        return Date().timeIntervalSince(last) >= cookCooldown
+    }
+
     func cook(ingredients: [String]) {
-        guard !isCooking else { return }
+        guard canCook else { return }
+        lastCookTime = Date()
         isCooking = true
         cookError = nil
         Task {

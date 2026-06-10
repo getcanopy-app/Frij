@@ -87,12 +87,28 @@ struct ShimmerView: View {
     }
 }
 
-// Session-scoped cache of dish -> resolved image URL.
+// Persistent cache of dish name -> resolved image URL. Survives app restarts.
 final class MealImageCache {
     static let shared = MealImageCache()
-    private init() {}
-    private var map: [String: URL] = [:]
+    private let defaultsKey = "com.frij.mealImageURLs"
+    private var map: [String: URL]
+
+    private init() {
+        if let data = UserDefaults.standard.data(forKey: defaultsKey),
+           let saved = try? JSONDecoder().decode([String: String].self, from: data) {
+            map = saved.compactMapValues { URL(string: $0) }
+        } else {
+            map = [:]
+        }
+    }
 
     func url(for dish: String) -> URL? { map[dish.lowercased()] }
-    func set(_ url: URL, for dish: String) { map[dish.lowercased()] = url }
+
+    func set(_ url: URL, for dish: String) {
+        map[dish.lowercased()] = url
+        let strings = map.mapValues { $0.absoluteString }
+        if let data = try? JSONEncoder().encode(strings) {
+            UserDefaults.standard.set(data, forKey: defaultsKey)
+        }
+    }
 }
