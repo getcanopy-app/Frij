@@ -3,6 +3,10 @@ import SwiftUI
 struct HomeView: View {
     var onScanTap: (() -> Void)? = nil
     @State private var showProfile = false
+    @State private var selectedRecipe: Recipe?
+    @Bindable private var session = ScanSession.shared
+
+    private var recipes: [Recipe] { session.recipes }
 
     var body: some View {
         ZStack {
@@ -29,6 +33,11 @@ struct HomeView: View {
         .sheet(isPresented: $showProfile) {
             ProfileView()
         }
+        .sheet(item: $selectedRecipe) { recipe in
+            RecipeDetailSheet(recipe: recipe) {
+                selectedRecipe = nil
+            }
+        }
     }
 
     private var topBar: some View {
@@ -49,7 +58,6 @@ struct HomeView: View {
 
             Spacer()
 
-            // Keep symmetry with the leading icon
             Color.clear
                 .frame(width: 22, height: 22)
         }
@@ -79,37 +87,60 @@ struct HomeView: View {
     }
 
     private var recipeCards: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 36) {
-                RecipeGlassCard(
-                    title: "Mediterranean breakfast bowl",
-                    time: "~21 min",
-                    difficulty: "Medium",
-                    difficultyColor: .orange,
-                    tint: Color(red: 0.72, green: 0.82, blue: 0.68)
-                )
-                .frame(width: 245)
-
-                RecipeGlassCard(
-                    title: "Avo Toast and\nEgg",
-                    time: "~10 mins",
-                    difficulty: "Easy",
-                    difficultyColor: Color(red: 0.35, green: 0.65, blue: 0.52)
-                )
-                .frame(width: 245)
+        Group {
+            if recipes.isEmpty {
+                emptyRecipeCard
+            } else {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 16) {
+                        ForEach(recipes) { recipe in
+                            Button {
+                                selectedRecipe = recipe
+                            } label: {
+                                RecipeGlassCard(recipe: recipe)
+                                    .frame(width: 245)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                    .scrollTargetLayout()
+                }
+                .scrollTargetBehavior(.viewAligned)
+                .contentMargins(.horizontal, 20, for: .scrollContent)
+                .padding(.horizontal, -20)
             }
-            .scrollTargetLayout()
         }
-        .scrollTargetBehavior(.viewAligned)
-        .contentMargins(.horizontal, 20, for: .scrollContent)
-        .padding(.horizontal, -20)
+    }
+
+    private var emptyRecipeCard: some View {
+        Button { onScanTap?() } label: {
+            HStack(spacing: 14) {
+                Image(systemName: "camera.viewfinder")
+                    .font(.system(size: 28, weight: .light))
+                    .foregroundStyle(.black.opacity(0.35))
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Scan your kitchen")
+                        .font(.system(size: 16, weight: .bold, design: .rounded))
+                        .foregroundStyle(.black.opacity(0.75))
+                    Text("Get tonight's dinner ideas")
+                        .font(.system(size: 13, weight: .regular, design: .rounded))
+                        .foregroundStyle(.black.opacity(0.4))
+                }
+                Spacer()
+            }
+            .padding(.horizontal, 20)
+            .frame(maxWidth: .infinity)
+            .frame(height: 80)
+            .glassEffect(in: .rect(cornerRadius: 26))
+        }
+        .buttonStyle(.plain)
     }
 
     private var progressSection: some View {
         let cooking = CookingStore.shared
         let calendar = Calendar.current
         let today = Date()
-        // Build the 7 dates for the current week (Sun–Sat)
         let weekStart = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: today))!
         let weekDates = (0..<7).compactMap { calendar.date(byAdding: .day, value: $0, to: weekStart) }
         let labels = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"]
@@ -142,13 +173,11 @@ struct HomeView: View {
                 .frame(height: 38)
                 .background {
                     Capsule()
-                        .fill(
-                            LinearGradient(
-                                colors: [.orange, .yellow.opacity(0.92)],
-                                startPoint: .leading,
-                                endPoint: .trailing
-                            )
-                        )
+                        .fill(LinearGradient(
+                            colors: [.orange, .yellow.opacity(0.92)],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        ))
                 }
             }
             .padding(.horizontal, 16)
@@ -168,43 +197,41 @@ struct HomeView: View {
 }
 
 struct RecipeGlassCard: View {
-    let title: String
-    let time: String
-    let difficulty: String
-    let difficultyColor: Color
-    var tint: Color? = nil
+    let recipe: Recipe
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            MealImageView(dish: title, cornerRadius: 0)
+            MealImageView(dish: recipe.name, cornerRadius: 0)
                 .frame(maxWidth: .infinity)
                 .frame(height: 160)
                 .clipShape(.rect(topLeadingRadius: 26, topTrailingRadius: 26))
 
             VStack(alignment: .leading, spacing: 6) {
-                Text(title)
+                Text(recipe.name)
                     .font(.system(size: 15, weight: .bold, design: .rounded))
                     .foregroundStyle(.black.opacity(0.82))
                     .lineLimit(2)
                     .lineSpacing(2)
 
                 HStack {
-                    Text(time)
+                    Text(recipe.cookTime)
                         .font(.system(size: 12, weight: .medium, design: .rounded))
                         .foregroundStyle(.black.opacity(0.42))
 
                     Spacer()
 
-                    Text(difficulty)
-                        .font(.system(size: 12, weight: .bold, design: .rounded))
-                        .foregroundStyle(difficultyColor.opacity(0.9))
+                    if !recipe.needs.isEmpty {
+                        Text("needs \(recipe.needs.count) item\(recipe.needs.count == 1 ? "" : "s")")
+                            .font(.system(size: 11, weight: .bold, design: .rounded))
+                            .foregroundStyle(.orange.opacity(0.85))
+                    }
                 }
             }
             .padding(.horizontal, 14)
             .padding(.vertical, 14)
         }
         .frame(maxWidth: .infinity)
-        .glassEffect(tint.map { .regular.tint($0) } ?? .regular, in: .rect(cornerRadius: 26))
+        .glassEffect(.regular, in: .rect(cornerRadius: 26))
     }
 }
 
