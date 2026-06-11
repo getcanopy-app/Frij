@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct RecipesView: View {
-    @State private var expanded: String?
+    @State private var selectedRecipe: Recipe?
     @State private var store = PantryStore.shared
     @State private var favorites = FavoritesStore.shared
     @Bindable private var session = ScanSession.shared
@@ -9,12 +9,9 @@ struct RecipesView: View {
     @State private var lastRemoved: [String] = []
     @State private var showUndoFor: String?
 
-    // Used by the empty state's "scan now" button.
     var onJumpToScan: (() -> Void)? = nil
 
-    // Fresh recipes come from the session (produced by session.cook).
     private var recipes: [Recipe] { session.recipes }
-
     private var hasSaved: Bool { !favorites.recipes.isEmpty }
     private var hasFresh: Bool { !recipes.isEmpty }
     private var isCompletelyEmpty: Bool { !hasSaved && !hasFresh }
@@ -32,12 +29,8 @@ struct RecipesView: View {
             } else {
                 ScrollView {
                     VStack(alignment: .leading, spacing: FridjSpacing.lg) {
-                        if hasSaved {
-                            savedSection
-                        }
-                        if hasFresh {
-                            tonightSection
-                        }
+                        if hasSaved { savedSection }
+                        if hasFresh { tonightSection }
                     }
                     .padding(FridjSpacing.lg)
                     .padding(.top, 60)
@@ -54,9 +47,15 @@ struct RecipesView: View {
             }
         }
         .animation(.easeOut(duration: 0.45), value: session.isCooking)
+        .sheet(item: $selectedRecipe) { recipe in
+            RecipeDetailSheet(recipe: recipe) {
+                markCooked(recipe)
+                selectedRecipe = nil
+            }
+        }
     }
 
-    // MARK: Cooking (loading) state
+    // MARK: Cooking state
 
     private var cookingState: some View {
         VStack(spacing: FridjSpacing.md) {
@@ -106,9 +105,7 @@ struct RecipesView: View {
                 Text("Tonight's options")
                     .font(FridjFont.style(.title, weight: .bold))
                     .foregroundColor(.fridjText)
-
                 Spacer()
-
                 Button {
                     session.cook(ingredients: store.items.map(\.name))
                 } label: {
@@ -138,21 +135,16 @@ struct RecipesView: View {
             Image(systemName: "fork.knife.circle.fill")
                 .font(.system(size: 72))
                 .foregroundColor(.fridjOrange.opacity(0.7))
-
             Text("No recipes yet")
                 .font(FridjFont.style(.title, weight: .bold))
                 .foregroundColor(.fridjText)
-
             Text("Scan your kitchen to get tonight's dinner ideas.\nYour saved favorites will show up here too.")
                 .font(FridjFont.size(14))
                 .foregroundColor(.fridjText.opacity(0.55))
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 32)
-
             if let onJumpToScan {
-                Button {
-                    onJumpToScan()
-                } label: {
+                Button { onJumpToScan() } label: {
                     HStack(spacing: 8) {
                         Image(systemName: "camera.fill")
                             .font(.system(size: 15, weight: .bold))
@@ -173,92 +165,58 @@ struct RecipesView: View {
     // MARK: Card
 
     private func card(_ recipe: Recipe) -> some View {
-        let isOpen = expanded == recipe.id
         let isFav = favorites.isFavorite(recipe)
-        return VStack(alignment: .leading, spacing: FridjSpacing.sm) {
-            RecipeMealPhoto(recipeName: recipe.name)
-
-            HStack(alignment: .top, spacing: 10) {
-                Text(recipe.name)
-                    .font(FridjFont.size(18, weight: .bold))
-                    .foregroundColor(.fridjText)
-                Spacer()
-                Button {
-                    withAnimation(.spring(response: 0.3, dampingFraction: 0.55)) {
-                        _ = favorites.toggle(recipe)
-                    }
-                } label: {
-                    Image(systemName: isFav ? "heart.fill" : "heart")
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundColor(isFav ? .fridjCoral : .fridjText.opacity(0.35))
-                }
-                .buttonStyle(.plain)
-
-                Text(recipe.cookTime)
-                    .font(FridjFont.size(12, weight: .bold))
-                    .foregroundColor(.fridjGreen)
-                    .padding(.horizontal, 10).padding(.vertical, 5)
-                    .background(Color.fridjMint.opacity(0.5), in: Capsule())
-            }
-
-            Text("uses " + recipe.uses.joined(separator: ", "))
-                .font(FridjFont.size(13))
-                .foregroundColor(.fridjText.opacity(0.5))
-
-            if !recipe.needs.isEmpty {
-                Text("you'll need: " + recipe.needs.joined(separator: ", "))
-                    .font(FridjFont.size(13, weight: .medium))
-                    .foregroundColor(.fridjOrange)
-            }
-
-            Button {
-                withAnimation(.easeInOut(duration: 0.2)) {
-                    expanded = isOpen ? nil : recipe.id
-                }
-            } label: {
-                Text(isOpen ? "hide steps ↑" : "make this ↓")
-                    .font(FridjFont.size(14, weight: .bold))
-                    .foregroundColor(.fridjOrange)
-            }
-
-            if isOpen {
-                VStack(alignment: .leading, spacing: 10) {
-                    ForEach(Array(recipe.steps.enumerated()), id: \.offset) { idx, step in
-                        HStack(alignment: .top, spacing: 10) {
-                            Text("\(idx + 1)")
-                                .font(FridjFont.size(12, weight: .bold))
-                                .foregroundColor(.white)
-                                .frame(width: 22, height: 22)
-                                .background(Color.fridjGreen, in: Circle())
-                            Text(step)
-                                .font(FridjFont.size(14))
-                                .foregroundColor(.fridjText.opacity(0.8))
-                        }
-                    }
-                }
-                .padding(.top, 4)
-
-                Button {
-                    markCooked(recipe)
-                } label: {
-                    HStack(spacing: 8) {
-                        Image(systemName: "checkmark.circle.fill")
-                            .font(.system(size: 17, weight: .bold))
-                        Text("I cooked this")
-                            .font(FridjFont.size(16, weight: .bold))
-                    }
-                    .foregroundColor(.white)
+        return Button {
+            selectedRecipe = recipe
+        } label: {
+            VStack(alignment: .leading, spacing: 0) {
+                MealImageView(dish: recipe.name, cornerRadius: 0)
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 14)
-                    .background(Color.fridjGreen,
-                                in: RoundedRectangle(cornerRadius: FridjRadius.sm, style: .continuous))
+                    .frame(height: 160)
+                    .clipShape(.rect(topLeadingRadius: FridjRadius.recipeCard,
+                                    topTrailingRadius: FridjRadius.recipeCard))
+
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack(alignment: .top, spacing: 10) {
+                        Text(recipe.name)
+                            .font(FridjFont.size(18, weight: .bold))
+                            .foregroundColor(.fridjText)
+                            .multilineTextAlignment(.leading)
+                        Spacer()
+                        Button {
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.55)) {
+                                _ = favorites.toggle(recipe)
+                            }
+                        } label: {
+                            Image(systemName: isFav ? "heart.fill" : "heart")
+                                .font(.system(size: 18, weight: .semibold))
+                                .foregroundColor(isFav ? .fridjCoral : .fridjText.opacity(0.35))
+                        }
+                        .buttonStyle(.plain)
+
+                        Text(recipe.cookTime)
+                            .font(FridjFont.size(12, weight: .bold))
+                            .foregroundColor(.fridjGreen)
+                            .padding(.horizontal, 10).padding(.vertical, 5)
+                            .background(Color.fridjMint.opacity(0.5), in: Capsule())
+                    }
+
+                    Text("uses " + recipe.uses.joined(separator: ", "))
+                        .font(FridjFont.size(13))
+                        .foregroundColor(.fridjText.opacity(0.5))
+
+                    if !recipe.needs.isEmpty {
+                        Text("you'll need: " + recipe.needs.joined(separator: ", "))
+                            .font(FridjFont.size(13, weight: .medium))
+                            .foregroundColor(.fridjOrange)
+                    }
                 }
-                .padding(.top, 8)
+                .padding(FridjSpacing.md)
             }
+            .background(Color(white: 1),
+                        in: RoundedRectangle(cornerRadius: FridjRadius.recipeCard, style: .continuous))
         }
-        .padding(FridjSpacing.md)
-        .background(Color(white: 1),
-                    in: RoundedRectangle(cornerRadius: FridjRadius.recipeCard, style: .continuous))
+        .buttonStyle(.plain)
     }
 
     // MARK: Undo banner
@@ -272,9 +230,7 @@ struct RecipesView: View {
                     .foregroundColor(.white)
                 Spacer()
                 Button("Undo") {
-                    for name in lastRemoved {
-                        store.addLocal(name: name, source: .scanned)
-                    }
+                    for name in lastRemoved { store.addLocal(name: name, source: .scanned) }
                     lastRemoved = []
                     showUndoFor = nil
                 }
@@ -316,16 +272,124 @@ struct RecipesView: View {
     }
 }
 
-// MARK: - Recipe photo header
+// MARK: - Recipe Detail Sheet
 
-private struct RecipeMealPhoto: View {
-    let recipeName: String
+struct RecipeDetailSheet: View {
+    let recipe: Recipe
+    let onCooked: () -> Void
+    @Environment(\.dismiss) private var dismiss
+    @State private var favorites = FavoritesStore.shared
 
     var body: some View {
-        MealImageView(dish: recipeName, cornerRadius: 0)
-            .frame(maxWidth: .infinity)
-            .frame(height: 160)
-            .clipShape(.rect(topLeadingRadius: FridjRadius.recipeCard, topTrailingRadius: FridjRadius.recipeCard))
+        VStack(spacing: 0) {
+            Capsule()
+                .fill(Color.black.opacity(0.12))
+                .frame(width: 36, height: 4)
+                .padding(.top, 14)
+                .padding(.bottom, 4)
+
+            ScrollView(showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 0) {
+                    MealImageView(dish: recipe.name, cornerRadius: 0)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 260)
+                        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+                        .padding(.horizontal, 20)
+                        .padding(.top, 8)
+
+                    VStack(alignment: .leading, spacing: 16) {
+                        HStack(alignment: .top) {
+                            Text(recipe.name)
+                                .font(FridjFont.size(26, weight: .bold))
+                                .foregroundColor(.fridjText)
+                            Spacer()
+                            let isFav = favorites.isFavorite(recipe)
+                            Button {
+                                withAnimation(.spring(response: 0.3, dampingFraction: 0.55)) {
+                                    _ = favorites.toggle(recipe)
+                                }
+                            } label: {
+                                Image(systemName: isFav ? "heart.fill" : "heart")
+                                    .font(.system(size: 22, weight: .semibold))
+                                    .foregroundColor(isFav ? .fridjCoral : .fridjText.opacity(0.3))
+                            }
+                        }
+
+                        Text(recipe.cookTime)
+                            .font(FridjFont.size(13, weight: .bold))
+                            .foregroundColor(.fridjGreen)
+                            .padding(.horizontal, 12).padding(.vertical, 6)
+                            .background(Color.fridjMint.opacity(0.5), in: Capsule())
+
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("uses " + recipe.uses.joined(separator: ", "))
+                                .font(FridjFont.size(14))
+                                .foregroundColor(.fridjText.opacity(0.5))
+                            if !recipe.needs.isEmpty {
+                                HStack(spacing: 6) {
+                                    Image(systemName: "cart")
+                                        .font(.system(size: 13))
+                                        .foregroundColor(.fridjOrange)
+                                    Text("you'll need: " + recipe.needs.joined(separator: ", "))
+                                        .font(FridjFont.size(14, weight: .medium))
+                                        .foregroundColor(.fridjOrange)
+                                }
+                            }
+                        }
+
+                        Divider()
+
+                        Text("How to make it")
+                            .font(FridjFont.size(18, weight: .bold))
+                            .foregroundColor(.fridjText)
+
+                        VStack(alignment: .leading, spacing: 16) {
+                            ForEach(Array(recipe.steps.enumerated()), id: \.offset) { idx, step in
+                                HStack(alignment: .top, spacing: 14) {
+                                    Text("\(idx + 1)")
+                                        .font(FridjFont.size(13, weight: .bold))
+                                        .foregroundColor(.white)
+                                        .frame(width: 28, height: 28)
+                                        .background(Color.fridjGreen, in: Circle())
+                                    Text(step)
+                                        .font(FridjFont.size(15))
+                                        .foregroundColor(.fridjText.opacity(0.8))
+                                        .fixedSize(horizontal: false, vertical: true)
+                                }
+                            }
+                        }
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 20)
+                    .padding(.bottom, 130)
+                }
+            }
+        }
+        .overlay(alignment: .bottom) {
+            VStack(spacing: 0) {
+                Button { onCooked() } label: {
+                    HStack(spacing: 8) {
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.system(size: 18, weight: .bold))
+                        Text("I cooked this")
+                            .font(FridjFont.size(17, weight: .bold))
+                    }
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 16)
+                    .background(Color.fridjGreen,
+                                in: RoundedRectangle(cornerRadius: FridjRadius.sm, style: .continuous))
+                    .padding(.horizontal, 20)
+                }
+                .padding(.top, 16)
+                .padding(.bottom, 36)
+                .background(.ultraThinMaterial)
+            }
+        }
+        .presentationDetents([.large])
+        .presentationCornerRadius(32)
+        .presentationDragIndicator(.hidden)
+        .presentationBackground(Color.fridjBg)
     }
 }
 
