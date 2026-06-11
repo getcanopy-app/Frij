@@ -7,8 +7,14 @@ enum AppTab: Int {
 struct ContentView: View {
     @State private var selectedTab: AppTab = .home
     @Bindable private var celebration = CelebrationCoordinator.shared
+    @AppStorage("hasSeenOnboarding") private var hasSeenOnboarding = false
 
     var body: some View {
+        if !hasSeenOnboarding {
+            OnboardingView {
+                hasSeenOnboarding = true
+            }
+        } else {
         ZStack(alignment: .bottom) {
             // Main content fills the whole screen (so the fridge photo can go
             // full-bleed during scan/review).
@@ -35,6 +41,7 @@ struct ContentView: View {
                 StreakCelebrationView()
                     .zIndex(999)
             }
+        }
         }
     }
 }
