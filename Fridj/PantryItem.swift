@@ -25,4 +25,22 @@ struct PantryItem: Codable, Identifiable, Equatable {
         self.firstSeenAt = now
         self.lastSeenAt = now
     }
+
+    var daysSinceLastSeen: Int {
+        Calendar.current.dateComponents([.day], from: lastSeenAt, to: Date()).day ?? 0
+    }
+
+    enum FreshnessWarning {
+        case none, watch, old, stale
+    }
+
+    var freshnessWarning: FreshnessWarning {
+        guard source != .default else { return .none }
+        switch daysSinceLastSeen {
+        case 0..<4:  return .none
+        case 4..<7:  return .watch
+        case 7..<14: return .old
+        default:     return .stale
+        }
+    }
 }

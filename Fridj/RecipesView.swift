@@ -279,6 +279,8 @@ struct RecipeDetailSheet: View {
     let onCooked: () -> Void
     @Environment(\.dismiss) private var dismiss
     @State private var favorites = FavoritesStore.shared
+    @State private var grocery = GroceryStore.shared
+    @State private var addedToList = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -321,19 +323,37 @@ struct RecipeDetailSheet: View {
                             .padding(.horizontal, 12).padding(.vertical, 6)
                             .background(Color.fridjMint.opacity(0.5), in: Capsule())
 
-                        VStack(alignment: .leading, spacing: 6) {
+                        VStack(alignment: .leading, spacing: 10) {
                             Text("uses " + recipe.uses.joined(separator: ", "))
                                 .font(FridjFont.size(14))
                                 .foregroundColor(.fridjText.opacity(0.5))
                             if !recipe.needs.isEmpty {
-                                HStack(spacing: 6) {
-                                    Image(systemName: "cart")
-                                        .font(.system(size: 13))
-                                        .foregroundColor(.fridjOrange)
-                                    Text("you'll need: " + recipe.needs.joined(separator: ", "))
-                                        .font(FridjFont.size(14, weight: .medium))
-                                        .foregroundColor(.fridjOrange)
+                                Button {
+                                    grocery.add(recipe.needs)
+                                    withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                                        addedToList = true
+                                    }
+                                    Task {
+                                        try? await Task.sleep(nanoseconds: 2_000_000_000)
+                                        addedToList = false
+                                    }
+                                } label: {
+                                    HStack(spacing: 8) {
+                                        Image(systemName: addedToList ? "checkmark.circle.fill" : "cart.badge.plus")
+                                            .font(.system(size: 14, weight: .semibold))
+                                        Text(addedToList ? "Added to grocery list" : "Add \(recipe.needs.joined(separator: ", ")) to list")
+                                            .font(FridjFont.size(13, weight: .semibold))
+                                            .lineLimit(1)
+                                            .truncationMode(.tail)
+                                    }
+                                    .foregroundColor(addedToList ? .fridjGreen : .fridjOrange)
+                                    .padding(.horizontal, 14).padding(.vertical, 10)
+                                    .background(
+                                        (addedToList ? Color.fridjGreen : Color.fridjOrange).opacity(0.1),
+                                        in: RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                    )
                                 }
+                                .buttonStyle(.plain)
                             }
                         }
 

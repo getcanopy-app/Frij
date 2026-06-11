@@ -12,6 +12,7 @@ final class CookingStore {
     func logToday() {
         cookedDates.insert(Self.dateKey(for: Date()))
         save()
+        NotificationScheduler.shared.scheduleStreakReminder()
     }
 
     func hasCooked(on date: Date) -> Bool {

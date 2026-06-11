@@ -2,6 +2,7 @@ import SwiftUI
 
 struct PantryView: View {
     @State private var store = PantryStore.shared
+    @State private var grocery = GroceryStore.shared
     @Bindable private var session = ScanSession.shared
     @State private var newItem: String = ""
     @State private var isValidating = false
@@ -34,6 +35,10 @@ struct PantryView: View {
                         emptyState
                     } else {
                         itemsList
+                    }
+
+                    if grocery.hasItems {
+                        grocerySection
                     }
                 }
                 .padding(FridjSpacing.lg)
@@ -122,6 +127,13 @@ struct PantryView: View {
                             .padding(.horizontal, 7).padding(.vertical, 2)
                             .background(Color.fridjText.opacity(0.08), in: Capsule())
                     }
+                    if item.freshnessWarning != .none {
+                        Text("\(item.daysSinceLastSeen)d")
+                            .font(FridjFont.size(11, weight: .bold))
+                            .foregroundColor(freshnessColor(item.freshnessWarning))
+                            .padding(.horizontal, 7).padding(.vertical, 2)
+                            .background(freshnessColor(item.freshnessWarning).opacity(0.12), in: Capsule())
+                    }
                     Spacer()
                     Button {
                         withAnimation(.easeOut(duration: 0.15)) {
@@ -131,6 +143,78 @@ struct PantryView: View {
                         Image(systemName: "xmark.circle.fill")
                             .font(.system(size: 20))
                             .foregroundColor(.fridjText.opacity(0.25))
+                    }
+                }
+                .padding(.horizontal, 14).padding(.vertical, 12)
+                .background(Color(white: 1), in: RoundedRectangle(cornerRadius: FridjRadius.md, style: .continuous))
+            }
+        }
+    }
+
+    private var grocerySection: some View {
+        VStack(alignment: .leading, spacing: FridjSpacing.sm) {
+            HStack {
+                Text("Grocery list")
+                    .font(FridjFont.style(.title, weight: .bold))
+                    .foregroundColor(.fridjText)
+                Spacer()
+                Text("\(grocery.uncheckedCount) left")
+                    .font(FridjFont.size(13))
+                    .foregroundColor(.fridjText.opacity(0.4))
+                if grocery.items.contains(where: { $0.isChecked }) {
+                    Button("Clear checked") {
+                        withAnimation(.easeOut(duration: 0.2)) {
+                            grocery.clearChecked()
+                        }
+                    }
+                    .font(FridjFont.size(13, weight: .bold))
+                    .foregroundColor(.fridjCoral)
+                }
+            }
+
+            ForEach(grocery.items) { item in
+                HStack(spacing: 12) {
+                    Button {
+                        withAnimation(.spring(response: 0.25, dampingFraction: 0.7)) {
+                            grocery.toggle(item)
+                        }
+                    } label: {
+                        Image(systemName: item.isChecked ? "checkmark.circle.fill" : "circle")
+                            .font(.system(size: 22))
+                            .foregroundColor(item.isChecked ? .fridjGreen : .fridjText.opacity(0.25))
+                    }
+
+                    Text(item.name)
+                        .font(FridjFont.size(15))
+                        .foregroundColor(item.isChecked ? .fridjText.opacity(0.35) : .fridjText)
+                        .strikethrough(item.isChecked, color: .fridjText.opacity(0.35))
+                        .animation(.easeOut(duration: 0.15), value: item.isChecked)
+
+                    Spacer()
+
+                    if item.isChecked {
+                        Button {
+                            withAnimation(.easeOut(duration: 0.15)) {
+                                store.addLocal(name: item.name, source: .manual)
+                                grocery.remove(item)
+                            }
+                        } label: {
+                            Text("Add to pantry")
+                                .font(FridjFont.size(11, weight: .bold))
+                                .foregroundColor(.fridjGreen)
+                                .padding(.horizontal, 8).padding(.vertical, 4)
+                                .background(Color.fridjMint.opacity(0.5), in: Capsule())
+                        }
+                    }
+
+                    Button {
+                        withAnimation(.easeOut(duration: 0.15)) {
+                            grocery.remove(item)
+                        }
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 18))
+                            .foregroundColor(.fridjText.opacity(0.2))
                     }
                 }
                 .padding(.horizontal, 14).padding(.vertical, 12)
@@ -154,6 +238,15 @@ struct PantryView: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 40)
+    }
+
+    private func freshnessColor(_ warning: PantryItem.FreshnessWarning) -> Color {
+        switch warning {
+        case .none:  return .clear
+        case .watch: return Color(red: 0.95, green: 0.75, blue: 0.1)
+        case .old:   return .fridjOrange
+        case .stale: return .fridjCoral
+        }
     }
 
     private func dotColor(for source: PantryItem.Source) -> Color {

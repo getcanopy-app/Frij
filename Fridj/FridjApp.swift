@@ -13,6 +13,10 @@ struct FridjApp: App {
         WindowGroup {
             ContentView()
                 .preferredColorScheme(.light)
+                .task {
+                    NotificationScheduler.shared.requestPermission()
+                    NotificationScheduler.shared.scheduleStreakReminder()
+                }
         }
     }
 }

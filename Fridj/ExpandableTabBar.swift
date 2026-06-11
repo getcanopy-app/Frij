@@ -7,6 +7,7 @@ struct ExpandableTabBar: View {
     @Binding var selectedTab: AppTab
     @Bindable private var session = ScanSession.shared
     @State private var store = PantryStore.shared
+    @State private var grocery = GroceryStore.shared
 
     private let items: [(icon: String, selectedIcon: String, tab: AppTab)] = [
         ("house",                 "house.fill",                 .home),
@@ -42,11 +43,22 @@ struct ExpandableTabBar: View {
                             selectedTab = item.tab
                         } label: {
                             VStack(spacing: 4) {
-                                Image(systemName: selectedTab == item.tab ? item.selectedIcon : item.icon)
-                                    .font(.system(size: 22, weight: .semibold))
-                                    .foregroundStyle(selectedTab == item.tab ? .primary : .secondary)
-                                    .scaleEffect(selectedTab == item.tab ? 1.15 : 1.0)
-                                    .animation(.spring(response: 0.3, dampingFraction: 0.55), value: selectedTab)
+                                ZStack(alignment: .topTrailing) {
+                                    Image(systemName: selectedTab == item.tab ? item.selectedIcon : item.icon)
+                                        .font(.system(size: 22, weight: .semibold))
+                                        .foregroundStyle(selectedTab == item.tab ? .primary : .secondary)
+                                        .scaleEffect(selectedTab == item.tab ? 1.15 : 1.0)
+                                        .animation(.spring(response: 0.3, dampingFraction: 0.55), value: selectedTab)
+
+                                    if item.tab == .bookmarks, grocery.uncheckedCount > 0 {
+                                        Text("\(grocery.uncheckedCount)")
+                                            .font(.system(size: 9, weight: .bold))
+                                            .foregroundColor(.white)
+                                            .frame(minWidth: 14, minHeight: 14)
+                                            .background(Color.fridjOrange, in: Circle())
+                                            .offset(x: 8, y: -6)
+                                    }
+                                }
                             }
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 20)
