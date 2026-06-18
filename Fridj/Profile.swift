@@ -32,6 +32,8 @@ struct Profile: Codable, Equatable {
     var dislikes: String = ""       // e.g. "no cilantro, no mushrooms"
 
     var isEmpty: Bool {
-        diet.isEmpty && household == nil && dislikes.isEmpty
+        diet.trimmingCharacters(in: .whitespaces).isEmpty &&
+        household == nil &&
+        dislikes.trimmingCharacters(in: .whitespaces).isEmpty
     }
 }

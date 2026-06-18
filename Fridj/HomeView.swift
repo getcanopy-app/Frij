@@ -90,10 +90,11 @@ struct HomeView: View {
         Group {
             if recipes.isEmpty {
                 emptyRecipeCard
+                    .transition(.opacity)
             } else {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 16) {
-                        ForEach(recipes) { recipe in
+                        ForEach(Array(recipes.enumerated()), id: \.element.id) { index, recipe in
                             Button {
                                 selectedRecipe = recipe
                             } label: {
@@ -101,6 +102,14 @@ struct HomeView: View {
                                     .frame(width: 245)
                             }
                             .buttonStyle(.plain)
+                            .transition(.asymmetric(
+                                insertion: .opacity.combined(with: .offset(x: 20)),
+                                removal: .opacity
+                            ))
+                            .animation(
+                                .spring(response: 0.5, dampingFraction: 0.82).delay(Double(index) * 0.06),
+                                value: recipes.count
+                            )
                         }
                     }
                     .scrollTargetLayout()
@@ -108,8 +117,13 @@ struct HomeView: View {
                 .scrollTargetBehavior(.viewAligned)
                 .contentMargins(.horizontal, 20, for: .scrollContent)
                 .padding(.horizontal, -20)
+                .transition(.asymmetric(
+                    insertion: .opacity.combined(with: .offset(y: 8)),
+                    removal: .opacity
+                ))
             }
         }
+        .animation(.spring(response: 0.5, dampingFraction: 0.82), value: recipes.isEmpty)
     }
 
     private var emptyRecipeCard: some View {
@@ -141,7 +155,10 @@ struct HomeView: View {
         let cooking = CookingStore.shared
         let calendar = Calendar.current
         let today = Date()
-        let weekStart = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: today))!
+        // Anchor on the most recent Sunday regardless of locale's firstWeekday,
+        // so weekDates[0] always matches the "Su" label.
+        let weekdayIndex = calendar.component(.weekday, from: today) - 1 // 0=Sun … 6=Sat
+        let weekStart = calendar.date(byAdding: .day, value: -weekdayIndex, to: today)!
         let weekDates = (0..<7).compactMap { calendar.date(byAdding: .day, value: $0, to: weekStart) }
         let labels = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"]
         let todayLabel = labels[calendar.component(.weekday, from: today) - 1]

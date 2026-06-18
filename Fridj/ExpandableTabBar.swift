@@ -24,10 +24,11 @@ struct ExpandableTabBar: View {
                 FoundInlinePanel(
                     detected: session.scanDetectedItems,
                     onContinue: {
-                        // Close the panel and take the user to dinner ideas.
-                        session.showScanFound = false
-                        session.cook(ingredients: store.allNames)
-                        selectedTab = .recipes
+                        withAnimation(.spring(response: 0.38, dampingFraction: 0.88)) {
+                            session.showScanFound = false
+                            session.cook(ingredients: store.allNames)
+                            selectedTab = .recipes
+                        }
                     },
                     onDismiss: {
                         withAnimation(.spring(response: 0.48, dampingFraction: 0.78)) {
@@ -40,7 +41,9 @@ struct ExpandableTabBar: View {
                 HStack(spacing: 0) {
                     ForEach(items, id: \.tab.rawValue) { item in
                         Button {
-                            selectedTab = item.tab
+                            withAnimation(.spring(response: 0.38, dampingFraction: 0.88)) {
+                                selectedTab = item.tab
+                            }
                         } label: {
                             VStack(spacing: 4) {
                                 ZStack(alignment: .topTrailing) {
@@ -61,22 +64,24 @@ struct ExpandableTabBar: View {
                                 }
                             }
                             .frame(maxWidth: .infinity)
-                            .padding(.vertical, 20)
+                            .padding(.vertical, 14)
                         }
                     }
                 }
                 .transition(.opacity.animation(.easeInOut(duration: 0.18)))
             }
         }
-        // Clamp the whole bar to the available width so neither the collapsed
-        // pill nor the expanded panel can bleed past the screen edges.
-        .frame(maxWidth: .infinity)
+        // containerRelativeFrame computes an explicit pixel width at layout time
+        // (unlike .frame(maxWidth: .infinity)), which is what glassEffect needs
+        // to constrain its scene-level rendering.
+        .containerRelativeFrame(.horizontal) { width, _ in width - 44 }
         .glassEffect(
             isExpanded
                 ? .regular.tint(Color.black.opacity(0.55))
                 : .regular,
             in: .rect(cornerRadius: isExpanded ? 28 : 40)
         )
+        .clipShape(.rect(cornerRadius: isExpanded ? 28 : 40))
         .animation(.spring(response: 0.48, dampingFraction: 0.78), value: isExpanded)
         .onChange(of: selectedTab) { _, newTab in
             if newTab != .scan && session.showScanFound {
@@ -100,92 +105,67 @@ struct FoundInlinePanel: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: 10) {
             // Header
             HStack {
-                HStack(spacing: 6) {
+                HStack(spacing: 5) {
                     Image(systemName: "sparkles")
-                        .font(.system(size: 14, weight: .bold))
+                        .font(.system(size: 13, weight: .bold))
                         .foregroundStyle(.yellow)
-                    Text("We found")
-                        .font(.system(size: 16, weight: .bold, design: .rounded))
+                    Text("We found \(detected.count) items")
+                        .font(.system(size: 15, weight: .bold, design: .rounded))
                         .foregroundStyle(.white)
                 }
                 Spacer()
                 Button(action: onDismiss) {
                     Image(systemName: "xmark")
-                        .font(.system(size: 13, weight: .bold))
-                        .foregroundStyle(.white)
-                        .frame(width: 28, height: 28)
-                        .background(.white.opacity(0.18), in: Circle())
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundStyle(.white.opacity(0.6))
+                        .frame(width: 26, height: 26)
                 }
             }
 
-            // Two-column ingredient list
-            let halves = splitHalves(detected)
-            ScrollView(.vertical, showsIndicators: false) {
-                HStack(alignment: .top, spacing: 12) {
-                    ingredientColumn(halves.0)
-                    ingredientColumn(halves.1)
-                }
-            }
-            .frame(maxHeight: 110)
+            // Ingredient list
+            Text(detected.map { "• \($0.item.capitalized)" }.joined(separator: "  "))
+                .font(.system(size: 13, design: .rounded))
+                .foregroundStyle(.white.opacity(0.9))
+                .lineLimit(2)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, alignment: .leading)
 
-            // "Added to pantry" confirmation
-            if addedCount > 0 {
-                HStack(spacing: 6) {
-                    Image(systemName: "checkmark.circle.fill")
-                        .font(.system(size: 13, weight: .bold))
-                        .foregroundStyle(.green)
-                    Text("Added \(addedCount) to your pantry")
-                        .font(.system(size: 13, weight: .semibold, design: .rounded))
-                        .foregroundStyle(.white.opacity(0.9))
-                }
-            }
-
-            // Footer: count + continue (to recipes)
-            HStack(alignment: .bottom) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("x\(detected.count)")
-                        .font(.system(size: 32, weight: .bold, design: .rounded))
-                        .foregroundStyle(.white)
+            // Footer: status + continue button
+            HStack(alignment: .center) {
+                if addedCount > 0 {
+                    HStack(spacing: 5) {
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundStyle(.green)
+                        Text("Added \(addedCount) to pantry")
+                            .font(.system(size: 12, weight: .semibold, design: .rounded))
+                            .foregroundStyle(.white.opacity(0.9))
+                    }
+                } else {
                     Text("ingredients detected")
-                        .font(.system(size: 11, design: .rounded))
-                        .foregroundStyle(.white.opacity(0.7))
+                        .font(.system(size: 12, design: .rounded))
+                        .foregroundStyle(.white.opacity(0.55))
                 }
                 Spacer()
                 Button(action: onContinue) {
-                    HStack(spacing: 6) {
+                    HStack(spacing: 5) {
                         Text("Get dinners")
                             .font(.system(size: 14, weight: .bold, design: .rounded))
                         Image(systemName: "chevron.right")
-                            .font(.system(size: 14, weight: .bold))
+                            .font(.system(size: 13, weight: .bold))
                     }
                     .foregroundStyle(.white)
-                    .padding(.horizontal, 18)
-                    .frame(height: 48)
+                    .padding(.horizontal, 16)
+                    .frame(height: 42)
                     .background(Color.fridjOrange, in: Capsule())
                 }
             }
         }
-        .padding(20)
+        .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    private func ingredientColumn(_ items: [DetectedItem]) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            ForEach(items) { item in
-                Text("• \(item.item.capitalized)")
-                    .font(.system(size: 13, design: .rounded))
-                    .foregroundStyle(.white.opacity(0.9))
-                    .lineLimit(1)
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    private func splitHalves(_ items: [DetectedItem]) -> ([DetectedItem], [DetectedItem]) {
-        let mid = (items.count + 1) / 2
-        return (Array(items.prefix(mid)), Array(items.dropFirst(mid)))
-    }
 }

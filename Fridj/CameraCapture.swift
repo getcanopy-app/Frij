@@ -3,10 +3,10 @@ import UIKit
 
 struct CameraCapture: UIViewControllerRepresentable {
     let onCapture: (UIImage) -> Void
-    @Environment(\.dismiss) private var dismiss
+    let onDismiss: () -> Void
 
     func makeCoordinator() -> Coordinator {
-        Coordinator(onCapture: onCapture, dismiss: dismiss)
+        Coordinator(onCapture: onCapture, onDismiss: onDismiss)
     }
 
     func makeUIViewController(context: Context) -> UIImagePickerController {
@@ -20,11 +20,11 @@ struct CameraCapture: UIViewControllerRepresentable {
 
     final class Coordinator: NSObject, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
         let onCapture: (UIImage) -> Void
-        let dismiss: DismissAction
+        let onDismiss: () -> Void
 
-        init(onCapture: @escaping (UIImage) -> Void, dismiss: DismissAction) {
+        init(onCapture: @escaping (UIImage) -> Void, onDismiss: @escaping () -> Void) {
             self.onCapture = onCapture
-            self.dismiss = dismiss
+            self.onDismiss = onDismiss
         }
 
         func imagePickerController(
@@ -34,11 +34,11 @@ struct CameraCapture: UIViewControllerRepresentable {
             if let image = info[.originalImage] as? UIImage {
                 onCapture(image)
             }
-            dismiss()
+            onDismiss()
         }
 
         func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
-            dismiss()
+            onDismiss()
         }
     }
 }

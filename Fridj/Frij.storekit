@@ -1,0 +1,66 @@
+{
+  "identifier" : "FridjSubscriptions",
+  "nonConsumableProducts" : [],
+  "nonRenewingSubscriptions" : [],
+  "products" : [],
+  "settings" : {
+    "_locale" : "en_US",
+    "_storeCountry" : "USA",
+    "_storeKitVersion" : "StoreKit2"
+  },
+  "subscriptionGroups" : [
+    {
+      "id" : "20000001",
+      "localizations" : [],
+      "name" : "Frij Plus",
+      "subscriptions" : [
+        {
+          "adHocOffers" : [],
+          "codeOffers" : [],
+          "displayPrice" : "2.99",
+          "familySharable" : false,
+          "groupNumber" : 1,
+          "internalID" : "1001",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "Unlimited recipe ideas, kitchen scans, saved favorites, grocery lists, and streak tracking.",
+              "displayName" : "Frij+ Monthly",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "com.frij.plus.monthly",
+          "recurringSubscriptionPeriod" : "P1M",
+          "referenceName" : "Frij+ Monthly",
+          "subscriptionGroupID" : "20000001",
+          "type" : "RecurringSubscription"
+        },
+        {
+          "adHocOffers" : [],
+          "codeOffers" : [],
+          "displayPrice" : "19.99",
+          "familySharable" : false,
+          "groupNumber" : 2,
+          "internalID" : "1002",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "Unlimited recipe ideas, kitchen scans, saved favorites, grocery lists, and streak tracking.",
+              "displayName" : "Frij+ Annual",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "com.frij.plus.annual",
+          "recurringSubscriptionPeriod" : "P1Y",
+          "referenceName" : "Frij+ Annual",
+          "subscriptionGroupID" : "20000001",
+          "type" : "RecurringSubscription"
+        }
+      ]
+    }
+  ],
+  "version" : {
+    "formatVersion" : "2.0",
+    "storeKitVersion" : "2"
+  }
+}

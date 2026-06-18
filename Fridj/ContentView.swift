@@ -7,7 +7,9 @@ enum AppTab: Int {
 struct ContentView: View {
     @State private var selectedTab: AppTab = .home
     @Bindable private var celebration = CelebrationCoordinator.shared
+    @Bindable private var subscription = SubscriptionManager.shared
     @AppStorage("hasSeenOnboarding") private var hasSeenOnboarding = false
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
         if !hasSeenOnboarding {
@@ -16,30 +18,60 @@ struct ContentView: View {
             }
         } else {
         ZStack(alignment: .bottom) {
-            // Main content fills the whole screen (so the fridge photo can go
-            // full-bleed during scan/review).
-            Group {
-                switch selectedTab {
-                case .home:      HomeView(onScanTap: { selectedTab = .scan })
-                case .scan:      ScanView()
-                case .recipes:   RecipesView()
-                case .bookmarks: PantryView()
+            ZStack {
+                if selectedTab == .home {
+                    HomeView(onScanTap: {
+                        withAnimation(.spring(response: 0.38, dampingFraction: 0.88)) {
+                            selectedTab = .scan
+                        }
+                    })
+                    .transition(.asymmetric(
+                        insertion: .opacity.combined(with: .offset(y: 10)),
+                        removal: .opacity
+                    ))
+                }
+                if selectedTab == .scan {
+                    ScanView()
+                        .transition(.asymmetric(
+                            insertion: .opacity.combined(with: .offset(y: 10)),
+                            removal: .opacity
+                        ))
+                }
+                if selectedTab == .recipes {
+                    RecipesView()
+                        .transition(.asymmetric(
+                            insertion: .opacity.combined(with: .offset(y: 10)),
+                            removal: .opacity
+                        ))
+                }
+                if selectedTab == .bookmarks {
+                    PantryView()
+                        .transition(.asymmetric(
+                            insertion: .opacity.combined(with: .offset(y: 10)),
+                            removal: .opacity
+                        ))
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .ignoresSafeArea(edges: .bottom)  // only the content ignores safe area
+            .ignoresSafeArea(edges: .bottom)
 
-            // The tab bar stays WITHIN the safe area and is constrained to the
-            // screen width, so neither the collapsed pill nor the expanded
-            // "We found" panel bleeds past the iPhone's rounded edges.
             ExpandableTabBar(selectedTab: $selectedTab)
-                .frame(maxWidth: .infinity)
-                .padding(.horizontal, 28)
-                .padding(.bottom, 8)
+                .padding(.bottom, 24)
 
             if celebration.isShowing {
                 StreakCelebrationView()
                     .zIndex(999)
+            }
+        }
+        // Present paywall whenever any feature triggers it.
+        .sheet(isPresented: $subscription.showPaywall) {
+            PaywallView()
+        }
+        // Re-verify subscription every time the app comes to the foreground.
+        // This catches refunds, expirations, and family-sharing changes.
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active {
+                Task { await SubscriptionManager.shared.refreshStatus() }
             }
         }
         }

@@ -35,11 +35,15 @@ final class CookingStore {
         return streak
     }
 
-    private static func dateKey(for date: Date) -> String {
+    private static let dateFormatter: DateFormatter = {
         let f = DateFormatter()
         f.dateFormat = "yyyy-MM-dd"
         f.locale = Locale(identifier: "en_US_POSIX")
-        return f.string(from: date)
+        return f
+    }()
+
+    private static func dateKey(for date: Date) -> String {
+        dateFormatter.string(from: date)
     }
 
     private func save() {

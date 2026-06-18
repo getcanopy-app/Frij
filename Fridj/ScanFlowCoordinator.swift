@@ -1,16 +1,20 @@
 import SwiftUI
 import PhotosUI
+import Photos
 
 struct ScanFlowCoordinator: View {
     private enum LocalStage { case entry, scanning }
 
     @State private var localStage: LocalStage = .entry
     @State private var capturedImage: UIImage?
+    @State private var pendingImage: UIImage?
     @State private var pickerItem: PhotosPickerItem?
     @State private var showCamera = false
     @State private var scanError: String?
     @State private var store = PantryStore.shared
     @Bindable private var session = ScanSession.shared
+    @State private var sub = SubscriptionManager.shared
+    @State private var usage = UsageStore.shared
 
     // Reviewing = found panel up. Photo stays behind it the whole time.
     private var isReviewing: Bool { session.showScanFound && capturedImage != nil }
@@ -57,8 +61,18 @@ struct ScanFlowCoordinator: View {
         .sheet(isPresented: $session.showRecipes) {
             RecipesView()
         }
-        .sheet(isPresented: $showCamera) {
-            CameraCapture { image in Task { await handleImage(image) } }
+        .sheet(isPresented: $showCamera, onDismiss: {
+            guard let img = pendingImage else { return }
+            pendingImage = nil
+            withAnimation(.spring(response: 0.55, dampingFraction: 0.82)) {
+                capturedImage = img
+                if !session.showScanFound { localStage = .scanning }
+            }
+        }) {
+            CameraCapture(
+                onCapture: { image in Task { await handleImage(image, saveToLibrary: true) } },
+                onDismiss: { showCamera = false }
+            )
         }
         .onChange(of: pickerItem) { _, newValue in
             Task { await handlePhoto(newValue) }
@@ -72,9 +86,11 @@ struct ScanFlowCoordinator: View {
                 Task {
                     try? await Task.sleep(nanoseconds: 360_000_000)
                     await MainActor.run {
-                        // Only clear if we're still not reviewing (user didn't
-                        // immediately start another scan).
-                        if !session.showScanFound {
+                        // Only clear if still not reviewing AND not mid-scan —
+                        // without the localStage guard, a new scan started while
+                        // the found panel was visible would have its photo cleared
+                        // after the 360ms window while showScanFound is still false.
+                        if !session.showScanFound && localStage != .scanning {
                             capturedImage = nil
                             pickerItem = nil
                         }
@@ -178,21 +194,51 @@ struct ScanFlowCoordinator: View {
     }
 
     private var cookButton: some View {
-        Button { session.cook(ingredients: store.allNames) } label: {
-            HStack {
-                if session.isCooking { ProgressView().tint(.white) }
-                Text(session.isCooking ? "Cooking up ideas…" : "Get 3 dinners")
-                    .font(FridjFont.size(17, weight: .bold))
+        VStack(spacing: 8) {
+            Button { session.cook(ingredients: store.allNames) } label: {
+                HStack {
+                    if session.isCooking { ProgressView().tint(.white) }
+                    Text(session.isCooking ? "Cooking up ideas…" : "Get 3 dinners")
+                        .font(FridjFont.size(17, weight: .bold))
+                }
+                .foregroundColor(.white)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 17)
+                .background(
+                    store.items.isEmpty ? Color.fridjText.opacity(0.3) : Color.fridjGreen,
+                    in: RoundedRectangle(cornerRadius: FridjRadius.scanButton, style: .continuous)
+                )
             }
-            .foregroundColor(.white)
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 17)
-            .background(
-                store.items.isEmpty ? Color.fridjText.opacity(0.3) : Color.fridjGreen,
-                in: RoundedRectangle(cornerRadius: FridjRadius.scanButton, style: .continuous)
-            )
+            .disabled(store.items.isEmpty || session.isCooking)
+
+            if !sub.isSubscribed && !store.items.isEmpty {
+                freeUsageHint
+            }
         }
-        .disabled(store.items.isEmpty || session.isCooking)
+    }
+
+    @ViewBuilder
+    private var freeUsageHint: some View {
+        if session.isPremiumGated {
+            Button { sub.showPaywall = true } label: {
+                HStack(spacing: 5) {
+                    Image(systemName: "lock.fill")
+                        .font(.system(size: 11, weight: .bold))
+                    Text("Unlock unlimited with Frij+")
+                        .font(FridjFont.size(12, weight: .bold))
+                }
+                .foregroundColor(.fridjOrange)
+            }
+        } else if usage.remaining <= UsageStore.freeLimit {
+            HStack(spacing: 5) {
+                Image(systemName: "sparkles")
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundColor(.fridjOrange)
+                Text("\(usage.remaining) free idea\(usage.remaining == 1 ? "" : "s") remaining")
+                    .font(FridjFont.size(12))
+                    .foregroundColor(.fridjText.opacity(0.45))
+            }
+        }
     }
 
     // MARK: Helpers
@@ -215,32 +261,52 @@ struct ScanFlowCoordinator: View {
         await handleImage(img)
     }
 
-    private func handleImage(_ img: UIImage) async {
-        // Always start from a clean slate so showScanFound flips false→true
-        // (a no-op true→true would never re-trigger the panel).
+    private func handleImage(_ img: UIImage, saveToLibrary: Bool = false) async {
+        if saveToLibrary {
+            try? await PHPhotoLibrary.shared().performChanges({
+                PHAssetChangeRequest.creationRequestForAsset(from: img)
+            })
+        }
+        // Downscale for display/scan — original full-res ref is no longer needed after library save.
+        let displayImage = ImagePrep.downscale(img, maxEdge: 1200)
+
         session.showScanFound = false
         session.showScanOverview = false
 
-        withAnimation(.easeInOut(duration: 0.35)) {
-            capturedImage = img
-            localStage = .scanning
+        if showCamera {
+            // Camera path: stash the photo and close the sheet.
+            // The sheet's onDismiss springs the photo into view once the
+            // UIKit sheet animation finishes — no jarring cut.
+            pendingImage = displayImage
+            showCamera = false
+        } else {
+            // Photo picker path: no sheet to dismiss, animate directly.
+            withAnimation(.spring(response: 0.55, dampingFraction: 0.82)) {
+                capturedImage = displayImage
+                localStage = .scanning
+            }
         }
         pickerItem = nil
 
         do {
-            let items = try await FrijAPI.scan(image: img)
+            let items = try await FrijAPI.scan(image: displayImage)
             let highConfidence = items.filter { $0.confidence == .high }
             store.mergeScan(highConfidence)
             session.scanDetectedItems = items
 
-            // Photo STAYS up (capturedImage is still set, isReviewing becomes
-            // true). Only the scanning overlay goes away and the panel rises.
+            // Safety: if onDismiss hasn't fired yet, set the photo now.
+            if capturedImage == nil {
+                capturedImage = pendingImage ?? displayImage
+                pendingImage = nil
+            }
+
             withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
-                localStage = .entry        // leaves the scanning overlay
-                session.showScanFound = true  // raises the found panel; photo stays
+                localStage = .entry
+                session.showScanFound = true
             }
         } catch {
             scanError = error.localizedDescription
+            pendingImage = nil
             withAnimation(.easeInOut(duration: 0.35)) {
                 localStage = .entry
                 capturedImage = nil

@@ -2,6 +2,8 @@ import SwiftUI
 
 struct ProfileView: View {
     @State private var store = ProfileStore.shared
+    @State private var sub = SubscriptionManager.shared
+    @State private var usage = UsageStore.shared
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
@@ -11,6 +13,9 @@ struct ProfileView: View {
 
                 ScrollView {
                     VStack(alignment: .leading, spacing: FridjSpacing.xl) {
+                        subscriptionCard
+                            .padding(.top, FridjSpacing.md)
+
                         VStack(alignment: .leading, spacing: 4) {
                             Text("About you")
                                 .font(FridjFont.style(.title, weight: .bold))
@@ -19,7 +24,6 @@ struct ProfileView: View {
                                 .font(FridjFont.size(14))
                                 .foregroundColor(.fridjText.opacity(0.5))
                         }
-                        .padding(.top, FridjSpacing.md)
 
                         // Diet
                         VStack(alignment: .leading, spacing: FridjSpacing.sm) {
@@ -97,6 +101,91 @@ struct ProfileView: View {
                         .foregroundColor(.fridjOrange)
                 }
             }
+        }
+    }
+
+    // MARK: Subscription card
+
+    @ViewBuilder
+    private var subscriptionCard: some View {
+        if sub.isSubscribed {
+            // Active subscriber — show status
+            HStack(spacing: 14) {
+                ZStack {
+                    Circle()
+                        .fill(Color.fridjGreen.opacity(0.15))
+                        .frame(width: 44, height: 44)
+                    Text("F+")
+                        .font(.system(size: 16, weight: .black, design: .rounded))
+                        .foregroundStyle(Color.fridjGreen)
+                }
+
+                VStack(alignment: .leading, spacing: 2) {
+                    HStack(spacing: 6) {
+                        Text("Frij+")
+                            .font(FridjFont.size(16, weight: .bold))
+                            .foregroundColor(.fridjText)
+                        Text("ACTIVE")
+                            .font(.system(size: 9, weight: .black, design: .rounded))
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 6).padding(.vertical, 2)
+                            .background(Color.fridjGreen, in: Capsule())
+                    }
+                    Text("Unlimited recipes · all features unlocked")
+                        .font(FridjFont.size(12))
+                        .foregroundColor(.fridjText.opacity(0.5))
+                }
+
+                Spacer()
+
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 22))
+                    .foregroundStyle(Color.fridjGreen)
+            }
+            .padding(16)
+            .background(.white, in: RoundedRectangle(cornerRadius: FridjRadius.md, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: FridjRadius.md, style: .continuous)
+                    .stroke(Color.fridjGreen.opacity(0.25), lineWidth: 1)
+            )
+        } else {
+            // Free tier — show upgrade card
+            Button { sub.showPaywall = true } label: {
+                HStack(spacing: 14) {
+                    ZStack {
+                        Circle()
+                            .fill(Color.fridjOrange.opacity(0.12))
+                            .frame(width: 44, height: 44)
+                        Text("F+")
+                            .font(.system(size: 16, weight: .black, design: .rounded))
+                            .foregroundStyle(Color.fridjOrange)
+                    }
+
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("Upgrade to Frij+")
+                            .font(FridjFont.size(16, weight: .bold))
+                            .foregroundColor(.fridjText)
+                        Text(usage.remaining > 0
+                             ? "\(usage.remaining) free idea\(usage.remaining == 1 ? "" : "s") left · $2.99/mo"
+                             : "Free ideas used up · unlock unlimited")
+                            .font(FridjFont.size(12))
+                            .foregroundColor(.fridjText.opacity(0.5))
+                    }
+
+                    Spacer()
+
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(Color.fridjOrange.opacity(0.7))
+                }
+                .padding(16)
+                .background(.white, in: RoundedRectangle(cornerRadius: FridjRadius.md, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: FridjRadius.md, style: .continuous)
+                        .stroke(Color.fridjOrange.opacity(0.2), lineWidth: 1)
+                )
+            }
+            .buttonStyle(.plain)
         }
     }
 }

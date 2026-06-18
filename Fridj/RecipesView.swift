@@ -5,6 +5,8 @@ struct RecipesView: View {
     @State private var store = PantryStore.shared
     @State private var favorites = FavoritesStore.shared
     @Bindable private var session = ScanSession.shared
+    @State private var sub = SubscriptionManager.shared
+    @State private var usage = UsageStore.shared
 
     @State private var lastRemoved: [String] = []
     @State private var showUndoFor: String?
@@ -29,9 +31,23 @@ struct RecipesView: View {
             } else {
                 ScrollView {
                     VStack(alignment: .leading, spacing: FridjSpacing.lg) {
-                        if hasSaved { savedSection }
-                        if hasFresh { tonightSection }
+                        if hasSaved {
+                            savedSection
+                                .transition(.asymmetric(
+                                    insertion: .opacity.combined(with: .offset(y: 16)),
+                                    removal: .opacity
+                                ))
+                        }
+                        if hasFresh {
+                            tonightSection
+                                .transition(.asymmetric(
+                                    insertion: .opacity.combined(with: .offset(y: 16)),
+                                    removal: .opacity
+                                ))
+                        }
                     }
+                    .animation(.spring(response: 0.5, dampingFraction: 0.82), value: hasFresh)
+                    .animation(.spring(response: 0.5, dampingFraction: 0.82), value: hasSaved)
                     .padding(FridjSpacing.lg)
                     .padding(.top, 60)
                     .padding(.bottom, 120)
@@ -91,8 +107,16 @@ struct RecipesView: View {
                 .font(FridjFont.size(13))
                 .foregroundColor(.fridjText.opacity(0.5))
 
-            ForEach(favorites.recipes) { recipe in
+            ForEach(Array(favorites.recipes.enumerated()), id: \.element.id) { index, recipe in
                 card(recipe)
+                    .transition(.asymmetric(
+                        insertion: .opacity.combined(with: .offset(y: 20)),
+                        removal: .opacity.combined(with: .offset(y: -10))
+                    ))
+                    .animation(
+                        .spring(response: 0.48, dampingFraction: 0.78).delay(Double(index) * 0.07),
+                        value: favorites.recipes.count
+                    )
             }
         }
     }
@@ -106,24 +130,49 @@ struct RecipesView: View {
                     .font(FridjFont.style(.title, weight: .bold))
                     .foregroundColor(.fridjText)
                 Spacer()
-                Button {
-                    session.cook(ingredients: store.items.map(\.name))
-                } label: {
-                    HStack(spacing: 5) {
-                        Image(systemName: "arrow.clockwise")
-                            .font(.system(size: 12, weight: .bold))
-                        Text("more options")
-                            .font(FridjFont.size(13, weight: .bold))
+                if session.isPremiumGated {
+                    Button { sub.showPaywall = true } label: {
+                        HStack(spacing: 5) {
+                            Image(systemName: "lock.fill")
+                                .font(.system(size: 11, weight: .bold))
+                            Text("Frij+")
+                                .font(FridjFont.size(13, weight: .bold))
+                        }
+                        .foregroundColor(.fridjOrange)
                     }
-                    .foregroundColor(.fridjOrange)
-                    .opacity(session.canCook ? 1 : 0.35)
+                } else {
+                    Button {
+                        session.cook(ingredients: store.items.map(\.name))
+                    } label: {
+                        HStack(spacing: 5) {
+                            Image(systemName: "arrow.clockwise")
+                                .font(.system(size: 12, weight: .bold))
+                            Text("more options")
+                                .font(FridjFont.size(13, weight: .bold))
+                            if !sub.isSubscribed && usage.remaining > 0 {
+                                Text("· \(usage.remaining) left")
+                                    .font(FridjFont.size(11))
+                                    .foregroundColor(.fridjOrange.opacity(0.6))
+                            }
+                        }
+                        .foregroundColor(.fridjOrange)
+                        .opacity(session.canCook ? 1 : 0.35)
+                    }
+                    .disabled(!session.canCook)
                 }
-                .disabled(!session.canCook)
             }
             .padding(.top, hasSaved ? FridjSpacing.md : 0)
 
-            ForEach(recipes) { recipe in
+            ForEach(Array(recipes.enumerated()), id: \.element.id) { index, recipe in
                 card(recipe)
+                    .transition(.asymmetric(
+                        insertion: .opacity.combined(with: .offset(y: 24)),
+                        removal: .opacity
+                    ))
+                    .animation(
+                        .spring(response: 0.5, dampingFraction: 0.8).delay(Double(index) * 0.08),
+                        value: recipes.count
+                    )
             }
         }
     }

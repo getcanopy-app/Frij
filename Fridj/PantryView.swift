@@ -33,16 +33,27 @@ struct PantryView: View {
 
                     if store.items.isEmpty {
                         emptyState
+                            .transition(.opacity)
                     } else {
                         itemsList
+                            .transition(.asymmetric(
+                                insertion: .opacity.combined(with: .offset(y: 12)),
+                                removal: .opacity
+                            ))
                     }
 
                     if grocery.hasItems {
                         grocerySection
+                            .transition(.asymmetric(
+                                insertion: .opacity.combined(with: .offset(y: 16)),
+                                removal: .opacity
+                            ))
                     }
                 }
                 .padding(FridjSpacing.lg)
                 .padding(.bottom, 120)
+                .animation(.spring(response: 0.45, dampingFraction: 0.82), value: store.items.isEmpty)
+                .animation(.spring(response: 0.45, dampingFraction: 0.82), value: grocery.hasItems)
             }
         }
         .sheet(isPresented: $session.showRecipes) {
@@ -136,7 +147,7 @@ struct PantryView: View {
                     }
                     Spacer()
                     Button {
-                        withAnimation(.easeOut(duration: 0.15)) {
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                             store.remove(id: item.id)
                         }
                     } label: {
@@ -147,8 +158,13 @@ struct PantryView: View {
                 }
                 .padding(.horizontal, 14).padding(.vertical, 12)
                 .background(Color(white: 1), in: RoundedRectangle(cornerRadius: FridjRadius.md, style: .continuous))
+                .transition(.asymmetric(
+                    insertion: .opacity.combined(with: .move(edge: .trailing)),
+                    removal: .opacity.combined(with: .move(edge: .leading))
+                ))
             }
         }
+        .animation(.spring(response: 0.4, dampingFraction: 0.82), value: store.items.count)
     }
 
     private var grocerySection: some View {
@@ -219,8 +235,13 @@ struct PantryView: View {
                 }
                 .padding(.horizontal, 14).padding(.vertical, 12)
                 .background(Color(white: 1), in: RoundedRectangle(cornerRadius: FridjRadius.md, style: .continuous))
+                .transition(.asymmetric(
+                    insertion: .opacity.combined(with: .move(edge: .trailing)),
+                    removal: .opacity.combined(with: .move(edge: .leading))
+                ))
             }
         }
+        .animation(.spring(response: 0.38, dampingFraction: 0.82), value: grocery.items.count)
     }
 
     private var emptyState: some View {

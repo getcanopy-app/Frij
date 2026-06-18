@@ -54,9 +54,13 @@ struct MealImageView: View {
         }
         do {
             let resolved = try await FrijAPI.mealImage(dish: dish)
+            // Guard against a stale result landing after the dish prop changed
+            // and the prior task was cancelled by .task(id: dish).
+            guard !Task.isCancelled else { return }
             MealImageCache.shared.set(resolved, for: dish)
             url = resolved
         } catch {
+            guard !Task.isCancelled else { return }
             loadFailed = true
         }
     }
@@ -106,6 +110,11 @@ final class MealImageCache {
 
     func set(_ url: URL, for dish: String) {
         map[dish.lowercased()] = url
+        // Cap at 150 entries to prevent unbounded UserDefaults growth.
+        if map.count > 150 {
+            let overflow = map.count - 150
+            map.keys.prefix(overflow).forEach { map.removeValue(forKey: $0) }
+        }
         let strings = map.mapValues { $0.absoluteString }
         if let data = try? JSONEncoder().encode(strings) {
             UserDefaults.standard.set(data, forKey: defaultsKey)

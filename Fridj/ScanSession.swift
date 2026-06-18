@@ -22,15 +22,35 @@ final class ScanSession {
     private var lastCookTime: Date?
     private let cookCooldown: TimeInterval = 30
 
-    // True when the user is allowed to request new recipes.
+    // True when the cooldown hasn't expired yet (separate from subscription gate).
     var canCook: Bool {
         guard !isCooking else { return false }
         guard let last = lastCookTime else { return true }
         return Date().timeIntervalSince(last) >= cookCooldown
     }
 
+    // True when the user is blocked specifically by the free-tier limit.
+    var isPremiumGated: Bool {
+        !SubscriptionManager.shared.isSubscribed && UsageStore.shared.hasReachedLimit
+    }
+
     func cook(ingredients: [String]) {
         guard canCook else { return }
+
+        let subMgr = SubscriptionManager.shared
+        let usage  = UsageStore.shared
+
+        // Block non-subscribers who've exhausted their free generations.
+        if !subMgr.isSubscribed && usage.hasReachedLimit {
+            subMgr.showPaywall = true
+            return
+        }
+
+        // Record usage before the API call so a crash mid-request still counts.
+        if !subMgr.isSubscribed {
+            usage.recordGeneration()
+        }
+
         lastCookTime = Date()
         isCooking = true
         cookError = nil
