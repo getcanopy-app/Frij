@@ -67,7 +67,7 @@ struct ContentView: View {
         .sheet(isPresented: $subscription.showPaywall) {
             PaywallView()
         }
-        // Re-verify subscription every time the app comes to the foreground.
+        // Re-verify subscription on every foreground.
         // This catches refunds, expirations, and family-sharing changes.
         .onChange(of: scenePhase) { _, phase in
             if phase == .active {

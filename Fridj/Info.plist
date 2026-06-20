@@ -1,5 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
-<dict/>
+<dict>
+	<key>NSCameraUsageDescription</key>
+	<string>Frij uses your camera to scan your fridge and identify ingredients.</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>Frij uses Face ID to keep your account secure.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Frij saves your fridge photos to your camera roll.</string>
+</dict>
 </plist>

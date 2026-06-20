@@ -321,6 +321,71 @@ struct RecipesView: View {
     }
 }
 
+// MARK: - Sides (local, zero API cost)
+
+struct SideDish: Identifiable {
+    var id: String { name }
+    let name: String
+    let emoji: String
+}
+
+enum SidesSuggester {
+    // Returns pairs of sides to rotate through. All data is local — no API calls.
+    static func sets(for recipeName: String) -> [[SideDish]] {
+        let pool = pool(for: recipeName.lowercased())
+        return stride(from: 0, to: pool.count, by: 2).map { i in
+            Array(pool[i..<min(i + 2, pool.count)])
+        }
+    }
+
+    private static func pool(for lower: String) -> [SideDish] {
+        if lower.contains("steak") || lower.contains("beef") || lower.contains("burger") || lower.contains("brisket") || lower.contains("ribeye") {
+            return [.init(name: "Mashed Potatoes", emoji: "🥔"), .init(name: "Roasted Asparagus", emoji: "🌿"),
+                    .init(name: "French Fries", emoji: "🍟"),   .init(name: "Garlic Bread", emoji: "🥖"),
+                    .init(name: "Side Salad", emoji: "🥗"),      .init(name: "Creamed Spinach", emoji: "🌱")]
+        }
+        if lower.contains("chicken") || lower.contains("turkey") || lower.contains("poultry") {
+            return [.init(name: "Steamed Rice", emoji: "🍚"),      .init(name: "Roasted Vegetables", emoji: "🥦"),
+                    .init(name: "Coleslaw", emoji: "🥬"),           .init(name: "Sweet Potato Fries", emoji: "🍠"),
+                    .init(name: "Green Beans", emoji: "🫛"),        .init(name: "Cornbread", emoji: "🌽")]
+        }
+        if lower.contains("fish") || lower.contains("salmon") || lower.contains("tuna") || lower.contains("shrimp") || lower.contains("cod") || lower.contains("tilapia") || lower.contains("seafood") {
+            return [.init(name: "Lemon Rice", emoji: "🍋"),         .init(name: "Roasted Asparagus", emoji: "🌿"),
+                    .init(name: "Corn Salad", emoji: "🌽"),          .init(name: "Garlic Bread", emoji: "🥖"),
+                    .init(name: "Coleslaw", emoji: "🥬"),            .init(name: "Roasted Potatoes", emoji: "🥔")]
+        }
+        if lower.contains("pasta") || lower.contains("spaghetti") || lower.contains("lasagna") || lower.contains("noodle") || lower.contains("linguine") || lower.contains("fettuccine") || lower.contains("penne") {
+            return [.init(name: "Garlic Bread", emoji: "🥖"),       .init(name: "Caesar Salad", emoji: "🥗"),
+                    .init(name: "Antipasto", emoji: "🫒"),            .init(name: "Roasted Tomatoes", emoji: "🍅"),
+                    .init(name: "Side Salad", emoji: "🥗"),           .init(name: "Bruschetta", emoji: "🍞")]
+        }
+        if lower.contains("soup") || lower.contains("stew") || lower.contains("chili") || lower.contains("chowder") {
+            return [.init(name: "Crusty Bread", emoji: "🥖"),       .init(name: "Side Salad", emoji: "🥗"),
+                    .init(name: "Grilled Cheese", emoji: "🧀"),      .init(name: "Cornbread", emoji: "🌽"),
+                    .init(name: "Crackers", emoji: "🫓"),             .init(name: "Dinner Rolls", emoji: "🍞")]
+        }
+        if lower.contains("taco") || lower.contains("burrito") || lower.contains("quesadilla") || lower.contains("enchilada") || lower.contains("fajita") {
+            return [.init(name: "Mexican Rice", emoji: "🍚"),        .init(name: "Refried Beans", emoji: "🫘"),
+                    .init(name: "Guacamole", emoji: "🥑"),            .init(name: "Pico de Gallo", emoji: "🍅"),
+                    .init(name: "Elote", emoji: "🌽"),                .init(name: "Chips & Salsa", emoji: "🫔")]
+        }
+        if lower.contains("curry") || lower.contains("stir") || lower.contains("ramen") || lower.contains("pho") || lower.contains("fried rice") || lower.contains("sushi") || lower.contains("dumpling") {
+            return [.init(name: "Spring Rolls", emoji: "🥟"),        .init(name: "Miso Soup", emoji: "🍜"),
+                    .init(name: "Edamame", emoji: "🫛"),              .init(name: "Cucumber Salad", emoji: "🥒"),
+                    .init(name: "Pickled Vegetables", emoji: "🥬"),   .init(name: "Sesame Noodles", emoji: "🍜")]
+        }
+        if lower.contains("pork") || lower.contains("ribs") || lower.contains("bacon") || lower.contains("ham") || lower.contains("sausage") {
+            return [.init(name: "Applesauce", emoji: "🍎"),          .init(name: "Roasted Potatoes", emoji: "🥔"),
+                    .init(name: "Coleslaw", emoji: "🥬"),             .init(name: "Cornbread", emoji: "🌽"),
+                    .init(name: "Baked Beans", emoji: "🫘"),          .init(name: "Steamed Broccoli", emoji: "🥦")]
+        }
+        // Generic fallback — works with anything
+        return [.init(name: "Steamed Rice", emoji: "🍚"),    .init(name: "Side Salad", emoji: "🥗"),
+                .init(name: "Roasted Vegetables", emoji: "🥦"), .init(name: "Garlic Bread", emoji: "🥖"),
+                .init(name: "Mashed Potatoes", emoji: "🥔"),    .init(name: "Steamed Broccoli", emoji: "🥦")]
+    }
+}
+
 // MARK: - Recipe Detail Sheet
 
 struct RecipeDetailSheet: View {
@@ -330,6 +395,9 @@ struct RecipeDetailSheet: View {
     @State private var favorites = FavoritesStore.shared
     @State private var grocery = GroceryStore.shared
     @State private var addedToList = false
+    @State private var sideSetIndex = 0
+
+    private var sideSets: [[SideDish]] { SidesSuggester.sets(for: recipe.name) }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -404,6 +472,58 @@ struct RecipeDetailSheet: View {
                                 }
                                 .buttonStyle(.plain)
                             }
+                        }
+
+                        if !sideSets.isEmpty {
+                            Divider()
+
+                            HStack {
+                                Text("Pair it with")
+                                    .font(FridjFont.size(17, weight: .bold))
+                                    .foregroundColor(.fridjText)
+                                Spacer()
+                                if sideSets.count > 1 {
+                                    Button {
+                                        withAnimation(.spring(response: 0.42, dampingFraction: 0.76)) {
+                                            sideSetIndex = (sideSetIndex + 1) % sideSets.count
+                                        }
+                                    } label: {
+                                        HStack(spacing: 4) {
+                                            Image(systemName: "arrow.2.circlepath")
+                                                .font(.system(size: 11, weight: .bold))
+                                            Text("rotate")
+                                                .font(FridjFont.size(12, weight: .bold))
+                                        }
+                                        .foregroundColor(.fridjOrange)
+                                    }
+                                }
+                            }
+
+                            HStack(spacing: 10) {
+                                ForEach(sideSets[sideSetIndex]) { side in
+                                    HStack(spacing: 8) {
+                                        Text(side.emoji)
+                                            .font(.system(size: 20))
+                                        Text(side.name)
+                                            .font(FridjFont.size(13, weight: .semibold))
+                                            .foregroundColor(.fridjText)
+                                            .lineLimit(1)
+                                    }
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .padding(.horizontal, 12).padding(.vertical, 13)
+                                    .background(Color(white: 1),
+                                                in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                            .stroke(Color.fridjText.opacity(0.08), lineWidth: 1)
+                                    )
+                                }
+                            }
+                            .id(sideSetIndex)
+                            .transition(.asymmetric(
+                                insertion: .move(edge: .trailing).combined(with: .opacity),
+                                removal: .move(edge: .leading).combined(with: .opacity)
+                            ))
                         }
 
                         Divider()
