@@ -24,6 +24,19 @@ struct ValidationResult: Codable {
     let reason: String?
 }
 
+// Stable per-device identity stored in Keychain — survives reinstalls.
+// Used to enforce the free tier server-side so deleting the app doesn't reset the count.
+enum DeviceID {
+    private static let key = "frij.deviceID"
+
+    static var current: String {
+        if let existing = KeychainHelper.load(key: key) { return existing }
+        let fresh = UUID().uuidString
+        KeychainHelper.save(key: key, value: fresh)
+        return fresh
+    }
+}
+
 enum FrijAPI {
     static let baseURL = "https://frij-backend.vercel.app"
 
@@ -63,6 +76,7 @@ enum FrijAPI {
         var req = URLRequest(url: URL(string: baseURL + "/api/recipe-image")!)
         req.httpMethod = "POST"
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        req.setValue(DeviceID.current, forHTTPHeaderField: "X-Device-ID")
         req.timeoutInterval = 90
         req.httpBody = try JSONSerialization.data(withJSONObject: ["name": dish])
         let (data, _) = try await URLSession.shared.data(for: req)
@@ -86,6 +100,7 @@ enum FrijAPI {
         var req = URLRequest(url: url)
         req.httpMethod = "POST"
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        req.setValue(DeviceID.current, forHTTPHeaderField: "X-Device-ID")
         req.httpBody = try JSONSerialization.data(withJSONObject: body)
         req.timeoutInterval = 60
 
