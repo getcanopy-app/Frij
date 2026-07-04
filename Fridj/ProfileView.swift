@@ -5,6 +5,9 @@ struct ProfileView: View {
     @State private var sub = SubscriptionManager.shared
     @State private var usage = UsageStore.shared
     @Environment(\.dismiss) private var dismiss
+    // Hidden admin toggle — 7 taps on "About you" flips isAdmin.
+    @State private var adminTapCount = 0
+    @State private var adminTapResetTask: Task<Void, Never>? = nil
 
     var body: some View {
         NavigationStack {
@@ -17,9 +20,20 @@ struct ProfileView: View {
                             .padding(.top, FridjSpacing.md)
 
                         VStack(alignment: .leading, spacing: 4) {
-                            Text("About you")
-                                .font(FridjFont.style(.title, weight: .bold))
-                                .foregroundColor(.fridjText)
+                            HStack(spacing: 8) {
+                                Text("About you")
+                                    .font(FridjFont.style(.title, weight: .bold))
+                                    .foregroundColor(.fridjText)
+                                    .contentShape(Rectangle())
+                                    .onTapGesture { handleAdminTap() }
+                                if usage.isAdmin {
+                                    Text("ADMIN")
+                                        .font(.system(size: 9, weight: .black, design: .rounded))
+                                        .foregroundStyle(.white)
+                                        .padding(.horizontal, 6).padding(.vertical, 2)
+                                        .background(Color.fridjOrange, in: Capsule())
+                                }
+                            }
                             Text("Frij uses this to make recipes that actually fit you.")
                                 .font(FridjFont.size(14))
                                 .foregroundColor(.fridjText.opacity(0.5))
@@ -149,8 +163,16 @@ struct ProfileView: View {
                     .stroke(Color.fridjGreen.opacity(0.25), lineWidth: 1)
             )
         } else {
-            // Free tier — show upgrade card
-            Button { sub.showPaywall = true } label: {
+            // Free tier — show upgrade card. Profile is a sheet, and iOS can't
+            // present a sheet ON TOP of another sheet. So we dismiss Profile
+            // first, then trigger the paywall after the dismiss animation
+            // completes (~0.35s system default).
+            Button {
+                dismiss()
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                    sub.showPaywall = true
+                }
+            } label: {
                 HStack(spacing: 14) {
                     ZStack {
                         Circle()
@@ -186,6 +208,24 @@ struct ProfileView: View {
                 )
             }
             .buttonStyle(.plain)
+        }
+    }
+
+    // 7 taps on the "About you" title within 3 seconds toggles admin mode.
+    private func handleAdminTap() {
+        adminTapCount += 1
+        adminTapResetTask?.cancel()
+        if adminTapCount >= 7 {
+            usage.toggleAdmin()
+            adminTapCount = 0
+            // Haptic feedback would go here if we had a helper — for now the
+            // ADMIN badge appearing/disappearing is the confirmation.
+            return
+        }
+        // Reset the counter if the user pauses for more than 3s.
+        adminTapResetTask = Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 3_000_000_000)
+            adminTapCount = 0
         }
     }
 }

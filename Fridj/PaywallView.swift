@@ -24,6 +24,10 @@ struct PaywallView: View {
     @State private var ctaOffset: CGFloat = 40
     @State private var ctaOpacity: Double = 0
 
+    // Error toast — swipe-to-dismiss offset + auto-fade timer.
+    @State private var toastDragOffset: CGFloat = 0
+    @State private var toastDismissTask: Task<Void, Never>? = nil
+
     enum Plan { case monthly, annual }
 
     private let features: [(icon: String, color: Color, title: String, detail: String)] = [
@@ -81,7 +85,11 @@ struct PaywallView: View {
                 .padding(.top, 16)
             }
 
-            // Error toast
+            // Error toast — auto-dismisses after 3s, or user can swipe down.
+            // Transition MUST be on the outermost view that's conditionally
+            // present (the VStack), otherwise SwiftUI removes the parent
+            // before the child's transition can fire — that's why the old
+            // version snapped out instead of fading.
             if let err = sub.purchaseError {
                 VStack {
                     Spacer()
@@ -94,14 +102,48 @@ struct PaywallView: View {
                                     in: RoundedRectangle(cornerRadius: 14, style: .continuous))
                         .padding(.horizontal, 24)
                         .padding(.bottom, 32)
-                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                        .offset(y: max(0, toastDragOffset))
+                        .gesture(
+                            DragGesture()
+                                .onChanged { value in
+                                    toastDragOffset = value.translation.height
+                                }
+                                .onEnded { value in
+                                    if value.translation.height > 40 || value.predictedEndTranslation.height > 100 {
+                                        toastDismissTask?.cancel()
+                                        withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
+                                            sub.purchaseError = nil
+                                        }
+                                    } else {
+                                        withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
+                                            toastDragOffset = 0
+                                        }
+                                    }
+                                }
+                        )
                 }
-                .animation(.spring(response: 0.4, dampingFraction: 0.8), value: sub.purchaseError)
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+                .animation(.spring(response: 0.45, dampingFraction: 0.82), value: sub.purchaseError)
             }
         }
         .presentationDragIndicator(.visible)
         .presentationCornerRadius(32)
         .onAppear { animateIn() }
+        // Auto-fade the error toast after 3 seconds. Reset the drag offset
+        // whenever a new error appears so a swipe-dismissed toast doesn't
+        // reappear off-screen the next time.
+        .onChange(of: sub.purchaseError) { _, newValue in
+            toastDismissTask?.cancel()
+            toastDragOffset = 0
+            guard newValue != nil else { return }
+            toastDismissTask = Task { @MainActor in
+                try? await Task.sleep(nanoseconds: 3_000_000_000)
+                guard !Task.isCancelled else { return }
+                withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) {
+                    sub.purchaseError = nil
+                }
+            }
+        }
     }
 
     // MARK: Hero

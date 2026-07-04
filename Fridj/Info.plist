@@ -4,8 +4,6 @@
 <dict>
 	<key>NSCameraUsageDescription</key>
 	<string>Frij uses your camera to scan your fridge and identify ingredients.</string>
-	<key>NSFaceIDUsageDescription</key>
-	<string>Frij uses Face ID to keep your account secure.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>Frij saves your fridge photos to your camera roll.</string>
 </dict>

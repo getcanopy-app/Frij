@@ -19,6 +19,10 @@ final class ScanSession {
     var showScanFound = false
     var showScanOverview = false
 
+    // Set by ScanFlowCoordinator when the camera panel is up so the tab bar
+    // (in ContentView) can swipe out of view.
+    var hidesTabBar = false
+
     private var lastCookTime: Date?
     private let cookCooldown: TimeInterval = 30
 

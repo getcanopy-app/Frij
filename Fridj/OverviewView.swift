@@ -49,17 +49,9 @@ struct OverviewView: View {
 
     private var mainCard: some View {
         VStack(alignment: .leading, spacing: 0) {
-            macrosHeader
-                .padding(.horizontal, 20)
-                .padding(.top, 20)
-                .padding(.bottom, 16)
-
-            Divider().overlay(Color.white.opacity(0.15))
-                .padding(.horizontal, 16)
-
             ingredientCountRow
                 .padding(.horizontal, 20)
-                .padding(.top, 16)
+                .padding(.top, 20)
                 .padding(.bottom, 12)
 
             if showAddField {
@@ -94,29 +86,6 @@ struct OverviewView: View {
                 .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
         }
         .environment(\.colorScheme, .dark)
-    }
-
-    // MARK: Macros header (decorative only)
-
-    private var macrosHeader: some View {
-        HStack(spacing: 12) {
-            ZStack {
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .fill(Color.fridjOrange.opacity(0.2))
-                    .frame(width: 40, height: 40)
-                Image(systemName: "flame.fill")
-                    .font(.system(size: 20, weight: .bold))
-                    .foregroundStyle(Color.fridjOrange)
-            }
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Macros")
-                    .font(.system(size: 15, weight: .bold, design: .rounded))
-                    .foregroundStyle(.white)
-                Text("Auto-detected ingredients")
-                    .font(.system(size: 12, design: .rounded))
-                    .foregroundStyle(.white.opacity(0.5))
-            }
-        }
     }
 
     private var ingredientCountRow: some View {

@@ -1,6 +1,8 @@
 import SwiftUI
 
 struct ScanningView: View {
+    var onCancel: (() -> Void)? = nil
+
     @State private var isPulsing = false
     @State private var scanLineY: CGFloat = -0.42
 
@@ -36,6 +38,20 @@ struct ScanningView: View {
                     .font(.system(size: 14, weight: .medium, design: .rounded))
                     .foregroundStyle(.white.opacity(0.85))
                     .multilineTextAlignment(.center)
+
+                if let onCancel {
+                    Button(action: onCancel) {
+                        Text("Cancel")
+                            .font(.system(size: 15, weight: .semibold, design: .rounded))
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 22)
+                            .padding(.vertical, 11)
+                            .background(Color.black.opacity(0.45), in: Capsule())
+                            .overlay(Capsule().stroke(Color.white.opacity(0.25), lineWidth: 1))
+                            .shadow(color: .black.opacity(0.3), radius: 8, y: 2)
+                    }
+                    .padding(.top, 20)
+                }
 
                 Spacer()
             }

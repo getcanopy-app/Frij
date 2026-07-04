@@ -9,14 +9,38 @@ struct ContentView: View {
     @Bindable private var celebration = CelebrationCoordinator.shared
     @Bindable private var subscription = SubscriptionManager.shared
     @AppStorage("hasSeenOnboarding") private var hasSeenOnboarding = false
+    // Local mirror of hasSeenOnboarding so the branch swap goes through a
+    // proper @State change (AppStorage writes don't reliably animate).
+    @State private var showOnboarding: Bool = !UserDefaults.standard.bool(forKey: "hasSeenOnboarding")
     @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
-        if !hasSeenOnboarding {
-            OnboardingView {
-                hasSeenOnboarding = true
+        ZStack {
+            if showOnboarding {
+                OnboardingView {
+                    // Persist first, then animate the branch swap.
+                    hasSeenOnboarding = true
+                    withAnimation(.smooth(duration: 0.6)) {
+                        showOnboarding = false
+                    }
+                }
+                .transition(.asymmetric(
+                    insertion: .opacity,
+                    removal: .opacity.combined(with: .move(edge: .top))
+                ))
+                .zIndex(1)
+            } else {
+                mainAppLayer
+                    .transition(.asymmetric(
+                        insertion: .opacity.combined(with: .move(edge: .bottom)),
+                        removal: .opacity
+                    ))
             }
-        } else {
+        }
+    }
+
+    @ViewBuilder
+    private var mainAppLayer: some View {
         ZStack(alignment: .bottom) {
             ZStack {
                 if selectedTab == .home {
@@ -57,6 +81,10 @@ struct ContentView: View {
 
             ExpandableTabBar(selectedTab: $selectedTab)
                 .padding(.bottom, 24)
+                // Duolingo-style swipe-down when the camera panel is open.
+                .offset(y: ScanSession.shared.hidesTabBar ? 180 : 0)
+                .opacity(ScanSession.shared.hidesTabBar ? 0 : 1)
+                .allowsHitTesting(!ScanSession.shared.hidesTabBar)
 
             if celebration.isShowing {
                 StreakCelebrationView()
@@ -74,39 +102,6 @@ struct ContentView: View {
                 Task { await SubscriptionManager.shared.refreshStatus() }
             }
         }
-        }
-    }
-}
-
-struct CustomTabBar: View {
-    @Binding var selectedTab: AppTab
-
-    private let items: [(icon: String, selectedIcon: String, tab: AppTab)] = [
-        ("house",                 "house.fill",                 .home),
-        ("viewfinder",            "viewfinder",                 .scan),
-        ("list.bullet.rectangle", "list.bullet.rectangle.fill", .recipes),
-        ("refrigerator",          "refrigerator",               .bookmarks)
-    ]
-
-    var body: some View {
-        HStack(spacing: 0) {
-            ForEach(items, id: \.tab.rawValue) { item in
-                Button {
-                    selectedTab = item.tab
-                } label: {
-                    VStack(spacing: 4) {
-                        Image(systemName: selectedTab == item.tab ? item.selectedIcon : item.icon)
-                            .font(.system(size: 22, weight: .semibold))
-                            .foregroundStyle(selectedTab == item.tab ? .primary : .secondary)
-                            .scaleEffect(selectedTab == item.tab ? 1.15 : 1.0)
-                            .animation(.spring(response: 0.3, dampingFraction: 0.55), value: selectedTab)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 20)
-                }
-            }
-        }
-        .glassEffect(in: .rect(cornerRadius: 40))
     }
 }
 
