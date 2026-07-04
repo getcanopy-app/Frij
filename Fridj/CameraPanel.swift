@@ -210,9 +210,12 @@ struct CameraPanel: View {
     var body: some View {
         ZStack {
             // Background — starts white (matches the menu row it grew out of),
-            // fades to dark as the camera preview appears.
+            // fades to dark as the camera preview appears. STAYS DARK once a
+            // photo has been captured: otherwise on dismissal, previewVisible
+            // flips false and the background snaps to WHITE for 0.036s, which
+            // is the white flash you see during the fullscreen handoff.
             RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                .fill(previewVisible ? Color.fridjDark : Color.white)
+                .fill((previewVisible || capturedStill != nil) ? Color.fridjDark : Color.white)
 
             // Live preview: permanently mounted so the outer container can
             // treat it as a bound-in layer. blur + opacity + scale are all

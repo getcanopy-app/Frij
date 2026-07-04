@@ -53,11 +53,13 @@ struct ScanFlowCoordinator: View {
     // brief moment so the X tap that closed the panel doesn't ALSO close the
     // menu. Otherwise we lose the Photos row.
     @State private var lastCameraCloseAt: Date? = nil
-    // Growing photo overlay: an Image placed at the panel's exact captured
-    // frame and scaled up in place around its own center.
+    // Growing photo overlay — permanently mounted (empty UIImage placeholder
+    // when idle) so .animation(_:value:) modifiers have a stable view
+    // identity across scale changes.
     @State private var expandingImage: UIImage?
-    @State private var expansionActive: Bool = false
     @State private var expansionStartFrame: CGRect = .zero
+    @State private var overlayScale: CGFloat = 1.0
+    @State private var overlayCornerRadius: CGFloat = 32
     // Handle to the in-flight scan Task so the user can cancel it. Cancelling
     // the Task aborts the URLSession request so the OpenAI API call stops.
     @State private var scanTask: Task<Void, Never>? = nil
@@ -83,9 +85,14 @@ struct ScanFlowCoordinator: View {
 
     var body: some View {
         ZStack {
-            // ── Background ────────────────────────────────────────────
-            // Cream base is always there; the photo crossfades in over it.
             Color.fridjBg.ignoresSafeArea()
+
+            // Opaque dark backing whenever a photo has been captured — this
+            // prevents Color.fridjBg (cream) from leaking through the
+            // semi-transparent layers during the entryView/bgPhoto crossfade.
+            if capturedImage != nil {
+                Color.fridjDark.ignoresSafeArea()
+            }
 
             if showPhotoBackground, let img = capturedImage {
                 Image(uiImage: img)
@@ -96,7 +103,6 @@ struct ScanFlowCoordinator: View {
                     .transition(.opacity)
             }
 
-            // ── Overlay ───────────────────────────────────────────────
             if localStage == .scanning {
                 ScanningView(onCancel: { cancelScan() })
                     .transition(.asymmetric(
@@ -110,67 +116,37 @@ struct ScanFlowCoordinator: View {
                     .transition(.opacity)
             }
 
-            // Camera panel is now EMBEDDED inside morphingScanButton itself
-            // (in entryView). The pill IS the panel — one view, one shape,
-            // grows and shrinks. No separate overlay needed.
-
-            // Growing-photo overlay — the frozen still, scaled up IN PLACE
-            // around its own center. Only .scaleEffect animates; padding is a
-            // static placement that never moves. Animation is kicked off from
-            // .onAppear so the first render is guaranteed to happen at scale
-            // 1.0 BEFORE we flip expansionActive — otherwise SwiftUI batches
-            // the two state changes and skips straight to the final state,
-            // making the zoom look like a snap.
-            if let img = expandingImage {
-                let start = expansionStartFrame
-                let screen = UIScreen.main.bounds
-                let scaleX = 2 * max(start.midX, screen.width  - start.midX) / start.width
-                let scaleY = 2 * max(start.midY, screen.height - start.midY) / start.height
-                let targetScale = max(scaleX, scaleY) * 1.05
-
-                ZStack(alignment: .topLeading) {
-                    Color.clear
-                    Image(uiImage: img)
-                        .resizable()
-                        .scaledToFill()
-                        .frame(width: start.width, height: start.height)
-                        .clipShape(RoundedRectangle(
-                            cornerRadius: expansionActive ? 0 : 32,
-                            style: .continuous
-                        ))
-                        .scaleEffect(
-                            expansionActive ? targetScale : 1.0,
-                            anchor: .center
-                        )
-                        .animation(
-                            .spring(response: 0.75, dampingFraction: 0.82, blendDuration: 0),
-                            value: expansionActive
-                        )
-                        .padding(.leading, start.minX)
-                        .padding(.top, start.minY)
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .ignoresSafeArea()
-                .allowsHitTesting(false)
-                .zIndex(50)
-                .onAppear {
-                    // Give SwiftUI a real breathing frame (~2 frames at 60Hz)
-                    // to commit the initial render at scale 1.0 before we
-                    // flip expansionActive. Without this delay SwiftUI
-                    // coalesces the writes and the scale snaps straight to
-                    // targetScale.
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.033) {
-                        expansionActive = true
-                        withAnimation(.spring(response: 0.75, dampingFraction: 0.82)) {
-                            session.hidesTabBar = true
-                        }
-                    }
-                }
+            // Growing-photo overlay — permanently mounted (empty UIImage
+            // placeholder when idle) so .animation(_:value:) modifiers have
+            // a stable view identity across scale changes. Visibility via
+            // opacity, not conditional insertion.
+            ZStack {
+                let framePresent = expansionStartFrame.width > 0 && expansionStartFrame.height > 0
+                Image(uiImage: expandingImage ?? UIImage())
+                    .resizable()
+                    .scaledToFill()
+                    .frame(
+                        width: framePresent ? expansionStartFrame.width : 1,
+                        height: framePresent ? expansionStartFrame.height : 1
+                    )
+                    .clipShape(RoundedRectangle(
+                        cornerRadius: overlayCornerRadius,
+                        style: .continuous
+                    ))
+                    .scaleEffect(overlayScale, anchor: .center)
+                    .animation(.easeInOut(duration: 1.5), value: overlayScale)
+                    .animation(.easeInOut(duration: 1.5), value: overlayCornerRadius)
+                    .position(
+                        x: framePresent ? expansionStartFrame.midX : 0,
+                        y: framePresent ? expansionStartFrame.midY : 0
+                    )
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .ignoresSafeArea()
+            .allowsHitTesting(false)
+            .opacity(expandingImage != nil ? 1 : 0)
+            .zIndex(50)
         }
-        // Single spring for both the photo and the scanning overlay —
-        // consistent timing so nothing lags behind anything else. Soft
-        // overshoot for the Duolingo bounce as the photo settles into fullscreen.
         .animation(.spring(response: 0.55, dampingFraction: 0.75), value: showPhotoBackground)
         .animation(.spring(response: 0.55, dampingFraction: 0.78), value: localStage)
         .sheet(isPresented: $session.showScanOverview, onDismiss: resetToEntry) {
@@ -360,6 +336,7 @@ struct ScanFlowCoordinator: View {
                 .opacity(showCameraPanel ? 1 : 0)
                 .allowsHitTesting(showCameraPanel)
         }
+
         .background(
             RoundedRectangle(cornerRadius: showCameraPanel ? 32 : FridjRadius.scanButton,
                              style: .continuous)
@@ -596,31 +573,37 @@ struct ScanFlowCoordinator: View {
     }
 
     private func handleCameraCapture(_ img: UIImage) {
-        // Re-entrancy guard — if we're already in the middle of an expansion,
-        // ignore. Prevents state getting stuck when the animation is interrupted
-        // (e.g. a screenshot mid-flight) and the shutter is somehow re-fired.
-        guard expandingImage == nil else { return }
-
         let displayImage = ImagePrep.downscale(img, maxEdge: 1200)
 
         session.showScanFound = false
         session.showScanOverview = false
         pickerItem = nil
 
-        // 1. Reset expansionActive to guarantee a clean scale=1.0 start, then
-        //    snapshot the panel's frame and seed the overlay. The overlay's
-        //    .onAppear will kick off the actual zoom animation once SwiftUI
-        //    has committed a render at the starting scale.
-        expansionActive = false
-        expansionStartFrame = actionButtonFrame
+        // Compute target scale from panel frame
+        let start = actionButtonFrame
+        let screen = UIScreen.main.bounds
+        let sX = 2 * max(start.midX, screen.width  - start.midX) / start.width
+        let sY = 2 * max(start.midY, screen.height - start.midY) / start.height
+        let targetScale = max(sX, sY) * 1.05
+
+        // Seed overlay at scale 1.0
+        overlayScale = 1.0
+        overlayCornerRadius = 32
+        expansionStartFrame = start
         expandingImage = displayImage
 
-        // 2. AFTER the overlay reaches fullscreen: commit to the scanning
-        //    stage. Everything that happens now — panel collapsing, entryView
-        //    disappearing, fullscreen bg photo fading in — is hidden underneath
-        //    the fullscreen overlay. Zero visible flash. Delay = onAppear
-        //    breathing frame (0.033s) + spring settle time (~0.85s).
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.9) {
+        // After 200ms, trigger the scale animation via .animation(_:value:)
+        // modifiers on the Image
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+            overlayScale = targetScale
+            overlayCornerRadius = 0
+            withAnimation(.easeInOut(duration: 1.5)) {
+                session.hidesTabBar = true
+            }
+        }
+
+        // After zoom settles, commit to scanning stage
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.7) {
             capturedImage = displayImage
             showCameraPanel = false
             showActionMenu = false
@@ -629,11 +612,9 @@ struct ScanFlowCoordinator: View {
             withAnimation(.spring(response: 0.5, dampingFraction: 0.82, blendDuration: 0)) {
                 localStage = .scanning
             }
-            // 3. Wait for the fullscreen bg photo to fully fade in behind the
-            //    overlay, THEN remove the overlay. Reset expansionActive FIRST
-            //    so a subsequent capture always starts from scale 1.0.
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
-                expansionActive = false
+                overlayScale = 1.0
+                overlayCornerRadius = 32
                 expandingImage = nil
             }
         }
@@ -643,7 +624,6 @@ struct ScanFlowCoordinator: View {
                 PHAssetChangeRequest.creationRequestForAsset(from: img)
             }
         }
-        // Store the scan task so the Cancel button can abort it.
         scanTask?.cancel()
         scanTask = Task { await runScan(displayImage) }
     }
@@ -658,7 +638,8 @@ struct ScanFlowCoordinator: View {
             capturedImage = nil
             session.hidesTabBar = false
         }
-        expansionActive = false
+        overlayScale = 1.0
+        overlayCornerRadius = 32
         expandingImage = nil
         session.showScanFound = false
         session.scanDetectedItems = []
@@ -670,39 +651,23 @@ struct ScanFlowCoordinator: View {
     private func runScan(_ displayImage: UIImage) async {
         do {
             let items = try await FrijAPI.scan(image: displayImage)
-            // If the user cancelled after the request completed but before
-            // we processed the result, don't apply it.
             if Task.isCancelled { return }
-
-            // Hop explicitly to the main actor. Even though this Task is
-            // inherited from a main-actor caller, the network suspend point
-            // can leave us in an ambient state where a single-transaction
-            // withAnimation doesn't consistently propagate through the
-            // @Observable singleton to ContentView's tab-bar modifiers.
-            // Splitting the writes into distinct main-actor animations makes
-            // each one fire reliably.
             await MainActor.run {
                 let highConfidence = items.filter { $0.confidence == .high }
                 store.mergeScan(highConfidence)
                 session.scanDetectedItems = items
 
-                // 1. Bring the tab bar back FIRST, on its own animation. The
-                //    ContentView reads session.hidesTabBar for offset/opacity
-                //    on the ExpandableTabBar — this write must land before we
-                //    flip showScanFound, or the found panel morphs into a
-                //    tab bar that's still off-screen.
+                // Bring the tab bar back FIRST (its own animation), then
+                // transition to review state.
                 withAnimation(.spring(response: 0.55, dampingFraction: 0.78)) {
                     session.hidesTabBar = false
                 }
-                // 2. Then transition the coordinator to review state — the
-                //    tab bar (now on-screen) expands into the found panel.
                 withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
                     localStage = .entry
                     session.showScanFound = true
                 }
             }
         } catch {
-            // Cancellation: exit quietly, cancelScan() already reset the UI.
             if Task.isCancelled { return }
             if (error as NSError).code == NSURLErrorCancelled { return }
             await MainActor.run {
@@ -726,7 +691,8 @@ struct ScanFlowCoordinator: View {
         capturedImage = nil
         pickerItem = nil
         localStage = .entry
-        expansionActive = false
+        overlayScale = 1.0
+        overlayCornerRadius = 32
         expandingImage = nil
         session.hidesTabBar = false
     }
