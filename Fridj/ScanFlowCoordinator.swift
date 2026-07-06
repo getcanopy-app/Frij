@@ -68,6 +68,9 @@ struct ScanFlowCoordinator: View {
     @Bindable private var session = ScanSession.shared
     @State private var sub = SubscriptionManager.shared
     @State private var usage = UsageStore.shared
+    // Explicit, testable phase machine. Currently shadows the @State flags above
+    // (its methods are called at each transition below); see ScanFlowModel.swift.
+    @State private var flow = ScanFlowModel()
     @State private var cameraController = CameraSessionController()
     @State private var actionButtonFrame: CGRect = .zero
     @State private var cameraRowFrame: CGRect = .zero
@@ -609,6 +612,7 @@ struct ScanFlowCoordinator: View {
             showActionMenu = false
             panelKeepsPreview = false
             cameraController.stop()
+            flow.beginScan()
             withAnimation(.spring(response: 0.5, dampingFraction: 0.82, blendDuration: 0)) {
                 localStage = .scanning
             }
@@ -633,6 +637,7 @@ struct ScanFlowCoordinator: View {
     private func cancelScan() {
         scanTask?.cancel()
         scanTask = nil
+        flow.cancel()
         withAnimation(.easeInOut(duration: 0.3)) {
             localStage = .entry
             capturedImage = nil
@@ -656,6 +661,7 @@ struct ScanFlowCoordinator: View {
                 let highConfidence = items.filter { $0.confidence == .high }
                 store.mergeScan(highConfidence)
                 session.scanDetectedItems = items
+                flow.scanSucceeded(items)
 
                 // Bring the tab bar back FIRST (its own animation), then
                 // transition to review state.
@@ -672,6 +678,7 @@ struct ScanFlowCoordinator: View {
             if (error as NSError).code == NSURLErrorCancelled { return }
             await MainActor.run {
                 scanError = error.localizedDescription
+                flow.scanFailed(error.localizedDescription)
                 withAnimation(.spring(response: 0.55, dampingFraction: 0.78)) {
                     session.hidesTabBar = false
                 }
@@ -691,6 +698,7 @@ struct ScanFlowCoordinator: View {
         capturedImage = nil
         pickerItem = nil
         localStage = .entry
+        flow.reset()
         overlayScale = 1.0
         overlayCornerRadius = 32
         expandingImage = nil
@@ -720,6 +728,7 @@ struct ScanFlowCoordinator: View {
         session.showScanFound = false
         session.showScanOverview = false
 
+        flow.beginScan()
         withAnimation(.spring(response: 0.55, dampingFraction: 0.82)) {
             capturedImage = displayImage
             localStage = .scanning
