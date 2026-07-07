@@ -29,11 +29,17 @@ struct ScanFlowCoordinator: View {
     // Same values + change pattern as the old stored flag, so the
     // .animation(value: localStage) modifier fires identically.
     private var localStage: LocalStage { flow.phase == .scanning ? .scanning : .entry }
+    // True whenever the pill has morphed into a full panel (Camera OR Photos).
+    // The SHARED morph geometry — panel height, corner radius, dark fill, shadow,
+    // clip, row fades — keys off this so both panels grow out of the pill
+    // identically. Only the content overlay differs per panel.
+    private var isMorphedToPanel: Bool { showCameraPanel || showPhotosPanel }
     // capturedImage now lives on `flow` (ScanFlowModel) — see flow.capturedImage.
     @State private var pickerItem: PhotosPickerItem?
     @State private var showActionMenu = false
     @State private var showCameraPanel = false
     @State private var showPhotosPicker = false
+    @State private var showPhotosPanel = false   // custom in-pill photo grid (mirrors showCameraPanel)
     // Separate animatable properties for the panel morph — each gets its own
     // timing curve. Independent = no cross-contamination between fast opacity
     // and slow spring frame animations.
@@ -261,7 +267,7 @@ struct ScanFlowCoordinator: View {
         // items, etc.), that button's action fires and this gesture does NOT.
         // Only fires when the tap lands on non-interactive background.
         .onTapGesture(coordinateSpace: .global) { location in
-            guard showActionMenu, !showCameraPanel, !showPhotosPicker else { return }
+            guard showActionMenu, !showCameraPanel, !showPhotosPanel, !showPhotosPicker else { return }
             // Ignore taps for a moment after the camera panel closes — the tap
             // that dismissed it should NOT also close the menu.
             if let closedAt = lastCameraCloseAt, Date().timeIntervalSince(closedAt) < 0.6 {
@@ -299,24 +305,24 @@ struct ScanFlowCoordinator: View {
                                                            value: geo.frame(in: .global))
                                 }
                             )
-                            .opacity(showCameraPanel ? 0 : 1)
-                            .scaleEffect(showCameraPanel ? 0.95 : 1.0)
+                            .opacity(isMorphedToPanel ? 0 : 1)
+                            .scaleEffect(isMorphedToPanel ? 0.95 : 1.0)
                         // Divider + Photos row are ALWAYS mounted. Their frame
-                        // and opacity are tied to showCameraPanel so they
-                        // interpolate smoothly along the same spring — never
-                        // binary appear/disappear.
+                        // and opacity are tied to the panel morph (isMorphedToPanel)
+                        // so they interpolate smoothly along the same spring —
+                        // never binary appear/disappear.
                         // Concrete collapsed/expanded heights (NOT nil) so the
                         // row interpolates continuously along the close spring.
                         // Animating a frame height to `nil` can't interpolate —
                         // it holds at 0 and snaps open only when the spring ends,
                         // which is what made the Photos row "blink back" on close.
                         Divider().overlay(Color.fridjText.opacity(0.08))
-                            .opacity(showCameraPanel ? 0 : 1)
+                            .opacity(isMorphedToPanel ? 0 : 1)
                         morphRow(icon: "photo.on.rectangle", title: "Photos",
                                  tint: .fridjOrange, foreground: .fridjText,
                                  action: openPhotosFromMenu)
-                            .opacity(showCameraPanel ? 0 : 1)
-                            .scaleEffect(showCameraPanel ? 0.95 : 1.0)
+                            .opacity(isMorphedToPanel ? 0 : 1)
+                            .scaleEffect(isMorphedToPanel ? 0.95 : 1.0)
                             .clipped()
                     }
                     .transition(.opacity)
@@ -337,7 +343,7 @@ struct ScanFlowCoordinator: View {
         // THIS is the morph: same view, same shape identity, changes SIZE.
         // Pill height when menu is open, panel height when expanded, button
         // height otherwise. Corner radius transitions from pill to panel radius.
-        .frame(height: showCameraPanel ? expandedPanelHeight : nil)
+        .frame(height: isMorphedToPanel ? expandedPanelHeight : nil)
         // Camera preview + controls live OVER the pill's own background — so
         // it's literally the SAME shape hosting different content depending on
         // state. When collapsed, the overlay is invisible (opacity 0).
@@ -346,22 +352,29 @@ struct ScanFlowCoordinator: View {
                 .opacity(showCameraPanel ? 1 : 0)
                 .allowsHitTesting(showCameraPanel)
         }
+        // Photos grid — same pill, same shape, different content. Mirrors the
+        // camera overlay exactly; only one of the two is ever visible at a time.
+        .overlay {
+            embeddedPhotosPanel
+                .opacity(showPhotosPanel ? 1 : 0)
+                .allowsHitTesting(showPhotosPanel)
+        }
 
         .background(
-            RoundedRectangle(cornerRadius: showCameraPanel ? 32 : FridjRadius.scanButton,
+            RoundedRectangle(cornerRadius: isMorphedToPanel ? 32 : FridjRadius.scanButton,
                              style: .continuous)
-                .fill(showCameraPanel ? Color.fridjDark : (showActionMenu ? Color.white : Color.fridjOrange))
+                .fill(isMorphedToPanel ? Color.fridjDark : (showActionMenu ? Color.white : Color.fridjOrange))
         )
         .overlay(
-            RoundedRectangle(cornerRadius: showCameraPanel ? 32 : FridjRadius.scanButton,
+            RoundedRectangle(cornerRadius: isMorphedToPanel ? 32 : FridjRadius.scanButton,
                              style: .continuous)
-                .stroke(Color.fridjText.opacity(showActionMenu && !showCameraPanel ? 0.06 : 0),
+                .stroke(Color.fridjText.opacity(showActionMenu && !isMorphedToPanel ? 0.06 : 0),
                         lineWidth: 1)
         )
-        .shadow(color: .black.opacity((showActionMenu || showCameraPanel) ? 0.15 : 0),
-                radius: (showActionMenu || showCameraPanel) ? 22 : 0,
-                y: (showActionMenu || showCameraPanel) ? 10 : 0)
-        .clipShape(RoundedRectangle(cornerRadius: showCameraPanel ? 32 : FridjRadius.scanButton,
+        .shadow(color: .black.opacity((showActionMenu || isMorphedToPanel) ? 0.15 : 0),
+                radius: (showActionMenu || isMorphedToPanel) ? 22 : 0,
+                y: (showActionMenu || isMorphedToPanel) ? 10 : 0)
+        .clipShape(RoundedRectangle(cornerRadius: isMorphedToPanel ? 32 : FridjRadius.scanButton,
                                     style: .continuous))
         .background(
             GeometryReader { geo in
@@ -383,6 +396,33 @@ struct ScanFlowCoordinator: View {
             onDismiss: { closeCameraPanel() },
             onPickLibrary: { openPhotosFromCameraPanel() }
         )
+    }
+
+    // The photos grid, embedded INSIDE the morphing pill's shape — the Photos
+    // parallel to embeddedCameraPanel. Step 1: header + close only, so we can
+    // verify the morph; the scrollable grid content lands in the next step.
+    @ViewBuilder
+    private var embeddedPhotosPanel: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Text("Photos")
+                    .font(FridjFont.size(16, weight: .bold))
+                    .foregroundColor(.white)
+                Spacer()
+                Button { closePhotosPanel() } label: {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 15, weight: .bold))
+                        .foregroundColor(.white.opacity(0.9))
+                        .padding(10)
+                        .background(Color.white.opacity(0.12), in: Circle())
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 18)
+            Spacer(minLength: 0)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     private func morphRow(icon: String, title: String,
@@ -529,12 +569,26 @@ struct ScanFlowCoordinator: View {
     }
 
     private func openPhotosFromMenu() {
-        // Menu stays OPEN — the photo picker just presents on top of it. When
-        // user cancels the picker, they see the menu again (persistent state).
-        // If they pick a photo, the scan flow takes over and the menu naturally
-        // goes away with the rest of the entry view.
+        // The pill IS the panel — mirror openCameraFromMenu exactly, just toggling
+        // showPhotosPanel instead. The SAME unified spring drives the height grow,
+        // corner round, dark fill, and the embedded photos content fading in.
         cameraController.stop()
-        showPhotosPicker = true
+        withAnimation(.spring(response: 0.55, dampingFraction: 0.78, blendDuration: 0)) {
+            showPhotosPanel = true
+            session.hidesTabBar = true
+        }
+    }
+
+    private func closePhotosPanel() {
+        // Reuse the camera panel's tap-lockout so the X tap that closes this panel
+        // doesn't ALSO trip tap-outside-to-close on the menu behind it.
+        lastCameraCloseAt = Date()
+        // Same unified spring in reverse — pill shrinks from panel-size back to its
+        // natural pill dimensions. No camera session to tear down here.
+        withAnimation(.spring(response: 0.55, dampingFraction: 0.78, blendDuration: 0)) {
+            showPhotosPanel = false
+            session.hidesTabBar = false
+        }
     }
 
     // MARK: Camera panel
