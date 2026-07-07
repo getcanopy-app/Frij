@@ -24,7 +24,11 @@ private struct CameraRowFramePreference: PreferenceKey {
 struct ScanFlowCoordinator: View {
     private enum LocalStage { case entry, scanning }
 
-    @State private var localStage: LocalStage = .entry
+    // Derived from the phase machine: .scanning maps through; entry AND reviewing
+    // both map to .entry (reviewing keeps the entry chrome under the found panel).
+    // Same values + change pattern as the old stored flag, so the
+    // .animation(value: localStage) modifier fires identically.
+    private var localStage: LocalStage { flow.phase == .scanning ? .scanning : .entry }
     @State private var capturedImage: UIImage?
     @State private var pickerItem: PhotosPickerItem?
     @State private var showActionMenu = false
@@ -171,10 +175,8 @@ struct ScanFlowCoordinator: View {
         }
         .onChange(of: session.showScanFound) { _, isShowing in
             if !isShowing && !session.showScanOverview {
-                // Fade the photo out smoothly, then clear it after the fade.
-                withAnimation(.easeInOut(duration: 0.35)) {
-                    localStage = .entry
-                }
+                // Photo fades out via the .animation(value: showPhotoBackground)
+                // modifier as isReviewing flips false; clear it after that fade.
                 Task {
                     try? await Task.sleep(nanoseconds: 360_000_000)
                     await MainActor.run {
@@ -611,9 +613,8 @@ struct ScanFlowCoordinator: View {
             showActionMenu = false
             panelKeepsPreview = false
             cameraController.stop()
-            flow.beginScan()
             withAnimation(.spring(response: 0.5, dampingFraction: 0.82, blendDuration: 0)) {
-                localStage = .scanning
+                flow.beginScan()
             }
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
                 overlayScale = 1.0
@@ -636,9 +637,8 @@ struct ScanFlowCoordinator: View {
     private func cancelScan() {
         scanTask?.cancel()
         scanTask = nil
-        flow.cancel()
         withAnimation(.easeInOut(duration: 0.3)) {
-            localStage = .entry
+            flow.cancel()
             capturedImage = nil
             session.hidesTabBar = false
         }
@@ -660,7 +660,6 @@ struct ScanFlowCoordinator: View {
                 let highConfidence = items.filter { $0.confidence == .high }
                 store.mergeScan(highConfidence)
                 session.scanDetectedItems = items
-                flow.scanSucceeded(items)
 
                 // Bring the tab bar back FIRST (its own animation), then
                 // transition to review state.
@@ -668,7 +667,7 @@ struct ScanFlowCoordinator: View {
                     session.hidesTabBar = false
                 }
                 withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
-                    localStage = .entry
+                    flow.scanSucceeded(items)
                     session.showScanFound = true
                 }
             }
@@ -680,8 +679,9 @@ struct ScanFlowCoordinator: View {
                 withAnimation(.spring(response: 0.55, dampingFraction: 0.78)) {
                     session.hidesTabBar = false
                 }
+                // flow.scanFailed above already moved phase → .entry (the
+                // localStage modifier animates that); this block just fades the photo.
                 withAnimation(.easeInOut(duration: 0.35)) {
-                    localStage = .entry
                     capturedImage = nil
                 }
                 session.showScanFound = false
@@ -695,7 +695,6 @@ struct ScanFlowCoordinator: View {
         session.showScanFound = false
         capturedImage = nil
         pickerItem = nil
-        localStage = .entry
         flow.reset()
         overlayScale = 1.0
         overlayCornerRadius = 32
@@ -726,10 +725,9 @@ struct ScanFlowCoordinator: View {
         session.showScanFound = false
         session.showScanOverview = false
 
-        flow.beginScan()
         withAnimation(.spring(response: 0.55, dampingFraction: 0.82)) {
             capturedImage = displayImage
-            localStage = .scanning
+            flow.beginScan()
         }
         pickerItem = nil
 
