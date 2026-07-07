@@ -80,7 +80,11 @@ struct ScanFlowCoordinator: View {
     @Namespace private var cameraNamespace
 
     // Reviewing = found panel up. Photo stays behind it the whole time.
-    private var isReviewing: Bool { session.showScanFound && capturedImage != nil }
+    // Owned by the phase machine now: the only entry is runScan success (which
+    // sets phase = .reviewing alongside session.showScanFound = true). External
+    // dismissal from ExpandableTabBar flips showScanFound, and the onChange below
+    // funnels that into flow.reset() so the phase leaves reviewing in lockstep.
+    private var isReviewing: Bool { flow.phase == .reviewing }
 
     // Show the fridge photo during scanning AND review. Keeping this as one
     // condition (not a stored stage) means the photo never flickers off
@@ -175,8 +179,10 @@ struct ScanFlowCoordinator: View {
         }
         .onChange(of: session.showScanFound) { _, isShowing in
             if !isShowing && !session.showScanOverview {
-                // Photo fades out via the .animation(value: showPhotoBackground)
-                // modifier as isReviewing flips false; clear it after that fade.
+                // Found panel dismissed (often externally, from ExpandableTabBar) —
+                // leave the reviewing phase. The photo then fades out via the
+                // .animation(value: showPhotoBackground) modifier; clear it after.
+                flow.reset()
                 Task {
                     try? await Task.sleep(nanoseconds: 360_000_000)
                     await MainActor.run {
