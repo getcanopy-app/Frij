@@ -453,7 +453,7 @@ struct ScanFlowCoordinator: View {
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: 3),
                       spacing: 6) {
                 ForEach(photosLoader.assets, id: \.localIdentifier) { asset in
-                    PhotoThumbCell(asset: asset, loader: photosLoader, onTap: {})
+                    PhotoThumbCell(asset: asset, loader: photosLoader, onTap: { selectPhoto(asset) })
                 }
             }
             .padding(.horizontal, 16)
@@ -668,6 +668,27 @@ struct ScanFlowCoordinator: View {
         // older photos), then collapse the in-pill panel behind the sheet.
         showPhotosPicker = true
         closePhotosPanel()
+    }
+
+    private func selectPhoto(_ asset: PHAsset) {
+        // Collapse the panel + menu (like the camera path does on capture) but
+        // KEEP the tab bar hidden — handleImage keeps it hidden through the scan,
+        // so the hand-off doesn't flicker. Then feed the SHARED scan spine.
+        withAnimation(.spring(response: 0.55, dampingFraction: 0.78, blendDuration: 0)) {
+            showPhotosPanel = false
+            showActionMenu = false
+        }
+        Task {
+            guard let img = await photosLoader.fullImage(for: asset) else {
+                // Never strand the UI with the tab bar hidden if the load fails.
+                withAnimation(.spring(response: 0.55, dampingFraction: 0.78)) {
+                    session.hidesTabBar = false
+                }
+                flow.lastError = "Couldn't load that photo."
+                return
+            }
+            await handleImage(img)   // capturedImage -> beginScan -> runScan
+        }
     }
 
     // MARK: Camera panel
@@ -933,6 +954,24 @@ final class RecentPhotosLoader {
             imageManager.requestImage(for: asset,
                                       targetSize: targetSize,
                                       contentMode: .aspectFill,
+                                      options: options) { image, _ in
+                continuation.resume(returning: image)
+            }
+        }
+    }
+
+    // Full-size-ish image for the scan path (handleImage re-downscales to a
+    // 1200pt edge). highQualityFormat = a single callback; network access on so
+    // iCloud-only photos still resolve.
+    func fullImage(for asset: PHAsset) async -> UIImage? {
+        let options = PHImageRequestOptions()
+        options.deliveryMode = .highQualityFormat
+        options.resizeMode = .exact
+        options.isNetworkAccessAllowed = true
+        return await withCheckedContinuation { continuation in
+            imageManager.requestImage(for: asset,
+                                      targetSize: CGSize(width: 2048, height: 2048),
+                                      contentMode: .aspectFit,
                                       options: options) { image, _ in
                 continuation.resume(returning: image)
             }
