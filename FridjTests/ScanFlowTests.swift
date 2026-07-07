@@ -110,6 +110,55 @@ struct ScanFlowModelTests {
         #expect(m.detected == [item("tomato")])
         #expect(m.lastError == "some error")
     }
+
+    // MARK: The cancel / late-result race (runScan's Task.isCancelled guard)
+    //
+    // The in-flight scan runs as a Task the coordinator holds in `scanTask`.
+    // cancelScan() runs on the MainActor and does scanTask?.cancel() + flow.cancel().
+    // The ONLY thing that stops a scan which finishes AFTER that cancel from
+    // applying its result is runScan's `if Task.isCancelled { return }` guard,
+    // checked right after `await FrijAPI.scan` and before the result is written
+    // into the model/session. These characterize that seam.
+
+    @Test("A scan that finishes after cancel is dropped by the Task.isCancelled guard")
+    func lateResultAfterCancelIsDropped() async {
+        let m = ScanFlowModel()
+        m.beginScan()                      // scan in flight: .scanning with a capture
+        let found = [item("tomato")]
+
+        // Mirror runScan: the network result is applied inside a Task, gated by
+        // the SAME `if Task.isCancelled { return }` guard the coordinator uses.
+        // On the serial MainActor this body can't start until we await below, so
+        // the cancels are guaranteed to land first — deterministic, no sleep.
+        let scan = Task { @MainActor in
+            if Task.isCancelled { return }     // ← runScan's guard, verbatim
+            m.scanSucceeded(found)             // the late result we must NOT apply
+        }
+        scan.cancel()                      // coordinator: scanTask?.cancel()
+        m.cancel()                         // coordinator: flow.cancel()
+        await scan.value
+
+        // Guard held: the finished-late scan never resurrected the flow.
+        #expect(m.phase == .entry)
+        #expect(m.hasCapture == false)
+        #expect(m.detected.isEmpty)
+    }
+
+    @Test("The model does NOT self-guard a late result — the coordinator's guard is load-bearing")
+    func modelDoesNotSelfGuardLateResult() {
+        let m = ScanFlowModel()
+        m.beginScan()
+        m.cancel()                         // user cancelled
+
+        // If the coordinator's Task.isCancelled guard were ever removed, a late
+        // result would reach the model as a bare scanSucceeded — and the model,
+        // having no memory of the cancel, WOULD go to reviewing. Pinning this
+        // documents WHY the guard must stay: the safety lives in the coordinator,
+        // not the model.
+        m.scanSucceeded([item("tomato")])
+        #expect(m.phase == .reviewing)
+        #expect(m.detected == [item("tomato")])
+    }
 }
 
 // MARK: - PantryStore.mergeScan: merge detected items into the pantry
