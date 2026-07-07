@@ -63,7 +63,6 @@ struct ScanFlowCoordinator: View {
     // Handle to the in-flight scan Task so the user can cancel it. Cancelling
     // the Task aborts the URLSession request so the OpenAI API call stops.
     @State private var scanTask: Task<Void, Never>? = nil
-    @State private var scanError: String?
     @State private var store = PantryStore.shared
     @Bindable private var session = ScanSession.shared
     @State private var sub = SubscriptionManager.shared
@@ -229,7 +228,7 @@ struct ScanFlowCoordinator: View {
                     morphingScanButton
                         .zIndex(showActionMenu ? 10 : 0)
 
-                    if let err = scanError ?? session.cookError {
+                    if let err = flow.lastError ?? session.cookError {
                         Text(err)
                             .font(FridjFont.size(14))
                             .foregroundColor(.fridjCoral)
@@ -485,7 +484,7 @@ struct ScanFlowCoordinator: View {
     // MARK: Action menu
 
     private func openActionMenu() {
-        scanError = nil
+        flow.lastError = nil
         // Pre-warm the capture session the moment the menu opens. By the time
         // the user picks Camera (a few 100ms later at best), the AVCaptureSession
         // is already running and producing frames — the preview shows up
@@ -533,7 +532,7 @@ struct ScanFlowCoordinator: View {
     // MARK: Camera panel
 
     private func openCameraPanel() {
-        scanError = nil
+        flow.lastError = nil
         cameraController.start()
         showCameraPanel = true
         panelKeepsPreview = true
@@ -677,7 +676,6 @@ struct ScanFlowCoordinator: View {
             if Task.isCancelled { return }
             if (error as NSError).code == NSURLErrorCancelled { return }
             await MainActor.run {
-                scanError = error.localizedDescription
                 flow.scanFailed(error.localizedDescription)
                 withAnimation(.spring(response: 0.55, dampingFraction: 0.78)) {
                     session.hidesTabBar = false
@@ -707,10 +705,10 @@ struct ScanFlowCoordinator: View {
 
     private func handlePhoto(_ item: PhotosPickerItem?) async {
         guard let item else { return }
-        scanError = nil
+        flow.lastError = nil
         guard let data = try? await item.loadTransferable(type: Data.self),
               let img = UIImage(data: data) else {
-            scanError = "Couldn't load that photo."
+            flow.lastError = "Couldn't load that photo."
             return
         }
         await handleImage(img)
