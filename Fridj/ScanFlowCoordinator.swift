@@ -663,6 +663,11 @@ struct ScanFlowCoordinator: View {
             let items = try await FrijAPI.scan(image: displayImage)
             if Task.isCancelled { return }
             await MainActor.run {
+                // Re-check on the MainActor: the guard above ran OFF the actor, so
+                // a cancel (cancelScan) can land in the window between it and this
+                // block. Without this, a scan cancelled mid-apply would still
+                // merge + flip to reviewing — resurrecting a cancelled scan.
+                if Task.isCancelled { return }
                 let highConfidence = items.filter { $0.confidence == .high }
                 store.mergeScan(highConfidence)
                 session.scanDetectedItems = items

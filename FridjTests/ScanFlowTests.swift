@@ -15,6 +15,24 @@ import Foundation
 
 // MARK: - ScanFlowModel: the entry → scanning → reviewing state machine
 
+/// A one-shot async gate: `wait()` suspends until `fire()` is called. Lets a test
+/// hand control back and forth deterministically — used here to place a cancel in
+/// the exact window between runScan's outer guard and its in-apply re-check.
+@MainActor
+private final class OneShotGate {
+    private var continuation: CheckedContinuation<Void, Never>?
+    private var fired = false
+    func wait() async {
+        if fired { return }
+        await withCheckedContinuation { continuation = $0 }
+    }
+    func fire() {
+        fired = true
+        continuation?.resume()
+        continuation = nil
+    }
+}
+
 @Suite("ScanFlowModel transitions")
 @MainActor
 struct ScanFlowModelTests {
@@ -158,6 +176,38 @@ struct ScanFlowModelTests {
         m.scanSucceeded([item("tomato")])
         #expect(m.phase == .reviewing)
         #expect(m.detected == [item("tomato")])
+    }
+
+    @Test("Inner re-check: a scan cancelled AFTER the outer guard still drops at apply time")
+    func resultCancelledDuringApplyIsDropped() async {
+        let m = ScanFlowModel()
+        m.beginScan()
+        let found = [item("tomato")]
+
+        // Place the cancel deterministically in the window BETWEEN runScan's outer
+        // `if Task.isCancelled` guard and the re-check at the top of its
+        // MainActor.run apply block — no sleeps, no yield races.
+        let outerPassed = OneShotGate()
+        let proceed = OneShotGate()
+
+        let scan = Task { @MainActor in
+            if Task.isCancelled { return }   // outer guard — sees NOT cancelled
+            outerPassed.fire()               // we're now past it
+            await proceed.wait()             // park in the outer→apply window
+            if Task.isCancelled { return }   // ← Step 3 re-check inside the apply
+            m.scanSucceeded(found)           // must NOT run
+        }
+
+        await outerPassed.wait()   // outer guard has run and passed
+        scan.cancel()              // cancelScan: scanTask?.cancel()
+        m.cancel()                 // cancelScan: flow.cancel() → model back to entry
+        proceed.fire()             // now let the apply step evaluate its re-check
+        await scan.value
+
+        // Re-check caught the late cancel: the result never resurrected the flow.
+        #expect(m.phase == .entry)
+        #expect(m.hasCapture == false)
+        #expect(m.detected.isEmpty)
     }
 }
 
