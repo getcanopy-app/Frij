@@ -80,6 +80,23 @@ struct ScanFlowModelTests {
         #expect(m.lastError == "stale error")
     }
 
+    @Test("cancel mid-scan → entry, captured photo dropped, detected cleared")
+    func cancelMidScanReturnsToEntry() {
+        let m = ScanFlowModel()
+        m.beginScan()                      // in-flight scan: .scanning with a capture
+        #expect(m.phase == .scanning)      // precondition: we are mid-scan
+        #expect(m.hasCapture == true)
+
+        m.cancel()                         // user taps Cancel during "Hold still…"
+
+        #expect(m.phase == .entry)         // returns to entry
+        #expect(m.hasCapture == false)     // captured photo dropped
+        #expect(m.detected.isEmpty)        // detected items cleared
+        // NOTE: restoring the tab bar (session.hidesTabBar = false) is NOT part
+        // of this path — it's a ScanSession flag reset by the View's cancelScan(),
+        // outside ScanFlowModel, so a model unit test can't assert it. See header.
+    }
+
     @Test("reset → entry, capture dropped, but detected AND error survive")
     func resetReturnsToEntry() {
         let m = ScanFlowModel()
