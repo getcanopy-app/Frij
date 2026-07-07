@@ -731,8 +731,12 @@ struct ScanFlowCoordinator: View {
         session.showScanFound = false
         session.showScanOverview = false
 
+        // Hide the tab bar during analysis so the user can't navigate away
+        // mid-scan — matches the camera path (handleCameraCapture). Restore is
+        // shared: runScan (success/error) and cancelScan all set it back to false.
         withAnimation(.spring(response: 0.55, dampingFraction: 0.82)) {
             capturedImage = displayImage
+            session.hidesTabBar = true
             flow.beginScan()
         }
         pickerItem = nil
