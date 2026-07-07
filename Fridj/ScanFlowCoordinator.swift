@@ -40,6 +40,7 @@ struct ScanFlowCoordinator: View {
     @State private var showCameraPanel = false
     @State private var showPhotosPicker = false
     @State private var showPhotosPanel = false   // custom in-pill photo grid (mirrors showCameraPanel)
+    @State private var photosLoader = RecentPhotosLoader()
     // Separate animatable properties for the panel morph — each gets its own
     // timing curve. Independent = no cross-contamination between fast opacity
     // and slow spring frame animations.
@@ -399,16 +400,27 @@ struct ScanFlowCoordinator: View {
     }
 
     // The photos grid, embedded INSIDE the morphing pill's shape — the Photos
-    // parallel to embeddedCameraPanel. Step 1: header + close only, so we can
-    // verify the morph; the scrollable grid content lands in the next step.
+    // parallel to embeddedCameraPanel. A scrollable grid of the user's recent
+    // photos, with a "See all" fallback to the system picker and a graceful
+    // access-denied prompt. Tapping a thumbnail is wired into the scan flow in
+    // the next step.
     @ViewBuilder
     private var embeddedPhotosPanel: some View {
         VStack(spacing: 0) {
-            HStack {
+            HStack(spacing: 14) {
                 Text("Photos")
                     .font(FridjFont.size(16, weight: .bold))
                     .foregroundColor(.white)
                 Spacer()
+                if photosLoader.authorization == .authorized || photosLoader.authorization == .limited {
+                    // Fall back to Apple's full library picker for older photos.
+                    Button { openSystemPickerFromPanel() } label: {
+                        Text("See all")
+                            .font(FridjFont.size(14, weight: .semibold))
+                            .foregroundColor(.white.opacity(0.9))
+                    }
+                    .buttonStyle(.plain)
+                }
                 Button { closePhotosPanel() } label: {
                     Image(systemName: "xmark")
                         .font(.system(size: 15, weight: .bold))
@@ -420,9 +432,61 @@ struct ScanFlowCoordinator: View {
             }
             .padding(.horizontal, 20)
             .padding(.top, 18)
-            Spacer(minLength: 0)
+            .padding(.bottom, 12)
+
+            switch photosLoader.authorization {
+            case .authorized, .limited:
+                photosGrid
+            case .denied, .restricted:
+                photosAccessDenied
+            default:
+                // .notDetermined — the permission request kicked off on open is
+                // still in flight; leave the panel empty until it resolves.
+                Spacer(minLength: 0)
+            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private var photosGrid: some View {
+        ScrollView {
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: 3),
+                      spacing: 6) {
+                ForEach(photosLoader.assets, id: \.localIdentifier) { asset in
+                    PhotoThumbCell(asset: asset, loader: photosLoader, onTap: {})
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.bottom, 24)
+        }
+    }
+
+    private var photosAccessDenied: some View {
+        VStack(spacing: 12) {
+            Spacer()
+            Image(systemName: "lock.fill")
+                .font(.system(size: 28, weight: .bold))
+                .foregroundColor(.white.opacity(0.7))
+            Text("Photo access is off")
+                .font(FridjFont.size(16, weight: .bold))
+                .foregroundColor(.white)
+            Text("Turn on photo access so Frij can pull in a fridge photo from your library.")
+                .font(FridjFont.size(13))
+                .foregroundColor(.white.opacity(0.6))
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 32)
+            Button { openAppSettings() } label: {
+                Text("Open Settings")
+                    .font(FridjFont.size(15, weight: .bold))
+                    .foregroundColor(.fridjDark)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 12)
+                    .background(Color.white, in: Capsule())
+            }
+            .buttonStyle(.plain)
+            Spacer()
+        }
+        .frame(maxWidth: .infinity)
     }
 
     private func morphRow(icon: String, title: String,
@@ -573,6 +637,8 @@ struct ScanFlowCoordinator: View {
         // showPhotosPanel instead. The SAME unified spring drives the height grow,
         // corner round, dark fill, and the embedded photos content fading in.
         cameraController.stop()
+        // Request access (once) + fetch recents as the panel grows in.
+        Task { await photosLoader.loadIfNeeded() }
         withAnimation(.spring(response: 0.55, dampingFraction: 0.78, blendDuration: 0)) {
             showPhotosPanel = true
             session.hidesTabBar = true
@@ -589,6 +655,19 @@ struct ScanFlowCoordinator: View {
             showPhotosPanel = false
             session.hidesTabBar = false
         }
+    }
+
+    private func openAppSettings() {
+        if let url = URL(string: UIApplication.openSettingsURLString) {
+            UIApplication.shared.open(url)
+        }
+    }
+
+    private func openSystemPickerFromPanel() {
+        // "See all" — hand off to Apple's full library picker (the long tail of
+        // older photos), then collapse the in-pill panel behind the sheet.
+        showPhotosPicker = true
+        closePhotosPanel()
     }
 
     // MARK: Camera panel
@@ -808,4 +887,86 @@ struct ScanFlowCoordinator: View {
 
 #Preview {
     ScanFlowCoordinator()
+}
+
+// Loads the user's most-recent photos for the in-pill grid. Owns a
+// PHCachingImageManager and the PHAsset fetch so ALL Photos-framework calls stay
+// out of the View. @MainActor so its @Observable state publishes safely.
+@MainActor
+@Observable
+final class RecentPhotosLoader {
+    private(set) var authorization: PHAuthorizationStatus = PHPhotoLibrary.authorizationStatus(for: .readWrite)
+    private(set) var assets: [PHAsset] = []
+
+    private let imageManager = PHCachingImageManager()
+
+    // Ensure access (requesting once if undetermined), then fetch recents. On
+    // denied/restricted this just publishes the status so the View can prompt.
+    func loadIfNeeded(limit: Int = 60) async {
+        var status = PHPhotoLibrary.authorizationStatus(for: .readWrite)
+        if status == .notDetermined {
+            status = await PHPhotoLibrary.requestAuthorization(for: .readWrite)
+        }
+        authorization = status
+        guard status == .authorized || status == .limited else {
+            assets = []
+            return
+        }
+        let options = PHFetchOptions()
+        options.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: false)]
+        options.predicate = NSPredicate(format: "mediaType == %d", PHAssetMediaType.image.rawValue)
+        options.fetchLimit = limit
+        let result = PHAsset.fetchAssets(with: options)
+        var collected: [PHAsset] = []
+        result.enumerateObjects { asset, _, _ in collected.append(asset) }
+        assets = collected
+    }
+
+    // One-shot thumbnail for a cell. highQualityFormat delivers a SINGLE result
+    // callback, so the continuation is resumed exactly once.
+    func thumbnail(for asset: PHAsset, targetSize: CGSize) async -> UIImage? {
+        let options = PHImageRequestOptions()
+        options.deliveryMode = .highQualityFormat
+        options.resizeMode = .fast
+        options.isNetworkAccessAllowed = true
+        return await withCheckedContinuation { continuation in
+            imageManager.requestImage(for: asset,
+                                      targetSize: targetSize,
+                                      contentMode: .aspectFill,
+                                      options: options) { image, _ in
+                continuation.resume(returning: image)
+            }
+        }
+    }
+}
+
+// One square thumbnail in the grid. Loads its image when it appears; `onTap` is
+// a no-op until selection is wired into the scan flow.
+private struct PhotoThumbCell: View {
+    let asset: PHAsset
+    let loader: RecentPhotosLoader
+    let onTap: () -> Void
+    @State private var image: UIImage?
+
+    var body: some View {
+        Button(action: onTap) {
+            Color.white.opacity(0.06)
+                .overlay {
+                    if let image {
+                        Image(uiImage: image)
+                            .resizable()
+                            .scaledToFill()
+                    }
+                }
+                .aspectRatio(1, contentMode: .fit)
+                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .task(id: asset.localIdentifier) {
+            let px = 120 * UIScreen.main.scale
+            image = await loader.thumbnail(for: asset,
+                                           targetSize: CGSize(width: px, height: px))
+        }
+    }
 }
