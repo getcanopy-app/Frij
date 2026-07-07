@@ -29,7 +29,7 @@ struct ScanFlowCoordinator: View {
     // Same values + change pattern as the old stored flag, so the
     // .animation(value: localStage) modifier fires identically.
     private var localStage: LocalStage { flow.phase == .scanning ? .scanning : .entry }
-    @State private var capturedImage: UIImage?
+    // capturedImage now lives on `flow` (ScanFlowModel) — see flow.capturedImage.
     @State private var pickerItem: PhotosPickerItem?
     @State private var showActionMenu = false
     @State private var showCameraPanel = false
@@ -90,7 +90,7 @@ struct ScanFlowCoordinator: View {
     // condition (not a stored stage) means the photo never flickers off
     // between scan-complete and panel-appear.
     private var showPhotoBackground: Bool {
-        (localStage == .scanning || isReviewing) && capturedImage != nil
+        (localStage == .scanning || isReviewing) && flow.capturedImage != nil
     }
 
     var body: some View {
@@ -100,11 +100,11 @@ struct ScanFlowCoordinator: View {
             // Opaque dark backing whenever a photo has been captured — this
             // prevents Color.fridjBg (cream) from leaking through the
             // semi-transparent layers during the entryView/bgPhoto crossfade.
-            if capturedImage != nil {
+            if flow.capturedImage != nil {
                 Color.fridjDark.ignoresSafeArea()
             }
 
-            if showPhotoBackground, let img = capturedImage {
+            if showPhotoBackground, let img = flow.capturedImage {
                 Image(uiImage: img)
                     .resizable()
                     .scaledToFill()
@@ -191,7 +191,7 @@ struct ScanFlowCoordinator: View {
                         // the found panel was visible would have its photo cleared
                         // after the 360ms window while showScanFound is still false.
                         if !session.showScanFound && localStage != .scanning {
-                            capturedImage = nil
+                            flow.capturedImage = nil
                             pickerItem = nil
                         }
                     }
@@ -614,7 +614,7 @@ struct ScanFlowCoordinator: View {
 
         // After zoom settles, commit to scanning stage
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.7) {
-            capturedImage = displayImage
+            flow.capturedImage = displayImage
             showCameraPanel = false
             showActionMenu = false
             panelKeepsPreview = false
@@ -645,7 +645,7 @@ struct ScanFlowCoordinator: View {
         scanTask = nil
         withAnimation(.easeInOut(duration: 0.3)) {
             flow.cancel()
-            capturedImage = nil
+            flow.capturedImage = nil
             session.hidesTabBar = false
         }
         overlayScale = 1.0
@@ -688,7 +688,7 @@ struct ScanFlowCoordinator: View {
                 // flow.scanFailed above already moved phase → .entry (the
                 // localStage modifier animates that); this block just fades the photo.
                 withAnimation(.easeInOut(duration: 0.35)) {
-                    capturedImage = nil
+                    flow.capturedImage = nil
                 }
                 session.showScanFound = false
             }
@@ -699,7 +699,7 @@ struct ScanFlowCoordinator: View {
 
     private func resetToEntry() {
         session.showScanFound = false
-        capturedImage = nil
+        flow.capturedImage = nil
         pickerItem = nil
         flow.reset()
         overlayScale = 1.0
@@ -735,7 +735,7 @@ struct ScanFlowCoordinator: View {
         // mid-scan — matches the camera path (handleCameraCapture). Restore is
         // shared: runScan (success/error) and cancelScan all set it back to false.
         withAnimation(.spring(response: 0.55, dampingFraction: 0.82)) {
-            capturedImage = displayImage
+            flow.capturedImage = displayImage
             session.hidesTabBar = true
             flow.beginScan()
         }

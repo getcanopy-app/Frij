@@ -1,4 +1,4 @@
-import Foundation
+import UIKit
 
 // Explicit, testable state machine for the scan flow.
 //
@@ -34,9 +34,17 @@ final class ScanFlowModel {
     }
 
     private(set) var phase: Phase = .entry
-    /// Whether a captured photo is currently backing the flow. Mirrors
-    /// `capturedImage != nil` in the View (the UIImage itself stays in the View).
+    /// Whether the phase currently intends to have a captured photo backing the
+    /// flow. Set by the transitions below. This is NOT the same as
+    /// `capturedImage != nil`: it flips false at scan-fail/cancel/reset while
+    /// `capturedImage` lingers a beat longer so the photo can fade out.
     private(set) var hasCapture: Bool = false
+    /// The captured fridge photo backing the flow, or nil. Owned here now (it
+    /// used to be a loose @State on the View). The View still picks the exact
+    /// moment to set/clear it — at scan-fail/cancel/reset the bitmap is cleared a
+    /// beat AFTER `hasCapture` goes false so it can fade out — so this stays a
+    /// settable property (like `lastError`), not folded into the transitions.
+    var capturedImage: UIImage?
     /// Everything the last scan returned (all confidences). Mirrors
     /// `session.scanDetectedItems`. The View still filters to high-confidence
     /// before merging into the pantry — that filtering is not this model's job.
