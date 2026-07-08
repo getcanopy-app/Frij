@@ -34,6 +34,9 @@ struct ScanFlowCoordinator: View {
     // clip, row fades — keys off this so both panels grow out of the pill
     // identically. Only the content overlay differs per panel.
     private var isMorphedToPanel: Bool { showCameraPanel || showPhotosPanel }
+    // The one spring the pill↔panel morph uses — open AND close, camera AND
+    // photos. Tune the panel transition timing here, in one place.
+    private let panelMorphSpring: Animation = .spring(response: 0.55, dampingFraction: 0.78, blendDuration: 0)
     // capturedImage now lives on `flow` (ScanFlowModel) — see flow.capturedImage.
     @State private var pickerItem: PhotosPickerItem?
     @State private var showActionMenu = false
@@ -626,7 +629,7 @@ struct ScanFlowCoordinator: View {
         // the pill's height grows to expandedPanelHeight, the background color
         // transitions, corners round out, embedded camera content fades in.
         // ALL animated via ONE unified spring.
-        withAnimation(.spring(response: 0.55, dampingFraction: 0.78, blendDuration: 0)) {
+        withAnimation(panelMorphSpring) {
             showCameraPanel = true
             session.hidesTabBar = true
         }
@@ -639,7 +642,7 @@ struct ScanFlowCoordinator: View {
         cameraController.stop()
         // Request access (once) + fetch recents as the panel grows in.
         Task { await photosLoader.loadIfNeeded() }
-        withAnimation(.spring(response: 0.55, dampingFraction: 0.78, blendDuration: 0)) {
+        withAnimation(panelMorphSpring) {
             showPhotosPanel = true
             session.hidesTabBar = true
         }
@@ -651,7 +654,7 @@ struct ScanFlowCoordinator: View {
         lastCameraCloseAt = Date()
         // Same unified spring in reverse — pill shrinks from panel-size back to its
         // natural pill dimensions. No camera session to tear down here.
-        withAnimation(.spring(response: 0.55, dampingFraction: 0.78, blendDuration: 0)) {
+        withAnimation(panelMorphSpring) {
             showPhotosPanel = false
             session.hidesTabBar = false
         }
@@ -674,7 +677,7 @@ struct ScanFlowCoordinator: View {
         // Collapse the panel + menu (like the camera path does on capture) but
         // KEEP the tab bar hidden — handleImage keeps it hidden through the scan,
         // so the hand-off doesn't flicker. Then feed the SHARED scan spine.
-        withAnimation(.spring(response: 0.55, dampingFraction: 0.78, blendDuration: 0)) {
+        withAnimation(panelMorphSpring) {
             showPhotosPanel = false
             showActionMenu = false
         }
@@ -708,7 +711,7 @@ struct ScanFlowCoordinator: View {
         lastCameraCloseAt = Date()
         // Same unified spring in reverse — pill shrinks from panel-size back
         // to its natural pill dimensions, content transitions back.
-        withAnimation(.spring(response: 0.55, dampingFraction: 0.78, blendDuration: 0)) {
+        withAnimation(panelMorphSpring) {
             showCameraPanel = false
             session.hidesTabBar = false
         }
@@ -725,7 +728,7 @@ struct ScanFlowCoordinator: View {
     private func openPhotosFromCameraPanel() {
         showPhotosPicker = true
         lastCameraCloseAt = Date()
-        withAnimation(.spring(response: 0.55, dampingFraction: 0.78, blendDuration: 0)) {
+        withAnimation(panelMorphSpring) {
             showCameraPanel = false
             session.hidesTabBar = false
         }
