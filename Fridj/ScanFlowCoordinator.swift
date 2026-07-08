@@ -819,6 +819,9 @@ struct ScanFlowCoordinator: View {
         do {
             let items = try await FrijAPI.scan(image: displayImage)
             if Task.isCancelled { return }
+            #if DEBUG
+            ScanDebug.dumpScan(items)
+            #endif
             await MainActor.run {
                 // Re-check on the MainActor: the guard above ran OFF the actor, so
                 // a cancel (cancelScan) can land in the window between it and this
@@ -826,10 +829,14 @@ struct ScanFlowCoordinator: View {
                 // merge + flip to reviewing — resurrecting a cancelled scan.
                 if Task.isCancelled { return }
                 let highConfidence = items.filter { $0.confidence == .high }
+                // Auto-merge ONLY high-confidence detections. Medium items are
+                // surfaced in the found panel as opt-in suggestions (user taps to
+                // add — see FoundInlinePanel); low-confidence ones are dropped as
+                // too noisy. Diagnosed via ScanDebug: real staples (yogurt,
+                // lettuce, butter) were landing at medium and being silently lost.
                 store.mergeScan(highConfidence)
-                // Show only what we save: the review sheet (fed from
-                // scanDetectedItems) now matches the pantry merge exactly.
-                session.scanDetectedItems = highConfidence
+                let surfaced = items.filter { $0.confidence != .low }
+                session.scanDetectedItems = surfaced
 
                 // Bring the tab bar back FIRST (its own animation), then
                 // transition to review state.
@@ -837,7 +844,7 @@ struct ScanFlowCoordinator: View {
                     session.hidesTabBar = false
                 }
                 withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
-                    flow.scanSucceeded(highConfidence)
+                    flow.scanSucceeded(surfaced)
                     session.showScanFound = true
                 }
             }

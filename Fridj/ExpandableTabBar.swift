@@ -23,6 +23,9 @@ struct ExpandableTabBar: View {
             if isExpanded {
                 FoundInlinePanel(
                     detected: session.scanDetectedItems,
+                    onAdd: { item in
+                        store.mergeScan([item])
+                    },
                     onContinue: {
                         withAnimation(.spring(response: 0.38, dampingFraction: 0.88)) {
                             session.showScanFound = false
@@ -97,12 +100,18 @@ struct ExpandableTabBar: View {
 
 struct FoundInlinePanel: View {
     let detected: [DetectedItem]
+    let onAdd: (DetectedItem) -> Void
     let onContinue: () -> Void
     let onDismiss: () -> Void
 
-    private var addedCount: Int {
-        detected.filter { $0.confidence == .high }.count
-    }
+    // Medium-confidence suggestions the user has tapped to add this session.
+    @State private var accepted: Set<String> = []
+
+    // High-confidence items were auto-merged into the pantry already; medium
+    // ones are opt-in suggestions the user taps to add.
+    private var autoAdded: [DetectedItem] { detected.filter { $0.confidence == .high } }
+    private var suggestions: [DetectedItem] { detected.filter { $0.confidence == .medium } }
+    private var addedCount: Int { autoAdded.count + accepted.count }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -125,13 +134,30 @@ struct FoundInlinePanel: View {
                 }
             }
 
-            // Ingredient list
-            Text(detected.map { "• \($0.item.capitalized)" }.joined(separator: "  "))
-                .font(.system(size: 13, design: .rounded))
-                .foregroundStyle(.white.opacity(0.9))
-                .lineLimit(2)
-                .fixedSize(horizontal: false, vertical: true)
-                .frame(maxWidth: .infinity, alignment: .leading)
+            // Auto-added (high-confidence) list
+            if !autoAdded.isEmpty {
+                Text(autoAdded.map { "• \($0.item.capitalized)" }.joined(separator: "  "))
+                    .font(.system(size: 13, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.9))
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+
+            // Medium-confidence suggestions — tap a chip to add it to the pantry.
+            if !suggestions.isEmpty {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Also spotted — tap to add")
+                        .font(.system(size: 11, weight: .semibold, design: .rounded))
+                        .foregroundStyle(.white.opacity(0.55))
+                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 88), spacing: 8)],
+                              alignment: .leading, spacing: 8) {
+                        ForEach(suggestions) { item in
+                            suggestionChip(item)
+                        }
+                    }
+                }
+            }
 
             // Footer: status + continue button
             HStack(alignment: .center) {
@@ -166,6 +192,31 @@ struct FoundInlinePanel: View {
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    @ViewBuilder
+    private func suggestionChip(_ item: DetectedItem) -> some View {
+        let isAdded = accepted.contains(item.id)
+        Button {
+            guard !isAdded else { return }
+            withAnimation(.easeOut(duration: 0.15)) { _ = accepted.insert(item.id) }
+            onAdd(item)
+        } label: {
+            HStack(spacing: 5) {
+                Image(systemName: isAdded ? "checkmark" : "plus")
+                    .font(.system(size: 10, weight: .bold))
+                Text(item.item.capitalized)
+                    .font(.system(size: 12, weight: .semibold, design: .rounded))
+                    .lineLimit(1)
+            }
+            .foregroundStyle(isAdded ? .white.opacity(0.5) : .white)
+            .padding(.horizontal, 11)
+            .padding(.vertical, 7)
+            .background(isAdded ? Color.white.opacity(0.08) : Color.white.opacity(0.18), in: Capsule())
+            .overlay(Capsule().stroke(Color.white.opacity(isAdded ? 0 : 0.25), lineWidth: 1))
+        }
+        .buttonStyle(.plain)
+        .disabled(isAdded)
     }
 
 }

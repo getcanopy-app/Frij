@@ -20,6 +20,9 @@ enum ImagePrep {
     static func jpegBase64(from image: UIImage, maxEdge: CGFloat = 1024, quality: CGFloat = 0.7) -> String? {
         let resized = downscale(image, maxEdge: maxEdge)
         guard let data = resized.jpegData(compressionQuality: quality) else { return nil }
+        #if DEBUG
+        ScanDebug.dumpUpload(image: resized, jpegBytes: data.count, quality: quality)
+        #endif
         return data.base64EncodedString()
     }
 
