@@ -131,8 +131,13 @@ struct PaywallView: View {
         .onAppear { animateIn() }
         // Retry product loading if the launch-time load failed (e.g. the app
         // opened offline) so the paywall isn't stuck on fallback prices with a
-        // dead purchase button. No-ops if products are already loaded.
-        .task { await sub.loadProducts() }
+        // dead purchase button. No-ops if products are already loaded. Also
+        // re-derive subscription status so out-of-band changes (subscribed via
+        // Settings, refunded, expired) are reflected the moment the paywall opens.
+        .task {
+            await sub.loadProducts()
+            await sub.refreshStatus()
+        }
         // Auto-fade the error toast after 3 seconds. Reset the drag offset
         // whenever a new error appears so a swipe-dismissed toast doesn't
         // reappear off-screen the next time.
