@@ -439,7 +439,13 @@ struct ScanFlowCoordinator: View {
 
             switch photosLoader.authorization {
             case .authorized, .limited:
-                photosGrid
+                // Assets may still be loading on a cold open — show a spinner
+                // rather than the empty (black) grid until the fetch lands.
+                if photosLoader.assets.isEmpty {
+                    photosLoading
+                } else {
+                    photosGrid
+                }
             case .denied, .restricted:
                 photosAccessDenied
             default:
@@ -462,6 +468,16 @@ struct ScanFlowCoordinator: View {
             .padding(.horizontal, 16)
             .padding(.bottom, 24)
         }
+    }
+
+    private var photosLoading: some View {
+        VStack {
+            Spacer()
+            ProgressView()
+                .tint(.white.opacity(0.7))
+            Spacer()
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     private var photosAccessDenied: some View {
@@ -607,6 +623,10 @@ struct ScanFlowCoordinator: View {
         if AVCaptureDevice.authorizationStatus(for: .video) == .authorized {
             cameraController.start()
         }
+        // Pre-fetch recent photos too — only if access is already granted, so
+        // this never triggers a permission prompt. By the time the user taps
+        // Photos the grid is populated, killing the cold-launch black flash.
+        Task { await photosLoader.prewarm() }
         withAnimation(.smooth(duration: 0.35, extraBounce: 0)) {
             showActionMenu = true
         }
@@ -945,6 +965,22 @@ final class RecentPhotosLoader {
             assets = []
             return
         }
+        fetchRecents(limit: limit)
+    }
+
+    // Pre-fetch recents WITHOUT triggering the permission prompt — only when
+    // access is already granted. Called as the action menu opens so the Photos
+    // panel paints instantly instead of flashing an empty (black) grid on the
+    // first open after a cold launch.
+    func prewarm(limit: Int = 60) async {
+        let status = PHPhotoLibrary.authorizationStatus(for: .readWrite)
+        guard status == .authorized || status == .limited else { return }
+        authorization = status
+        guard assets.isEmpty else { return }   // already populated — nothing to warm
+        fetchRecents(limit: limit)
+    }
+
+    private func fetchRecents(limit: Int) {
         let options = PHFetchOptions()
         options.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: false)]
         options.predicate = NSPredicate(format: "mediaType == %d", PHAssetMediaType.image.rawValue)
