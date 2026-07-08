@@ -129,6 +129,10 @@ struct PaywallView: View {
         .presentationDragIndicator(.visible)
         .presentationCornerRadius(32)
         .onAppear { animateIn() }
+        // Retry product loading if the launch-time load failed (e.g. the app
+        // opened offline) so the paywall isn't stuck on fallback prices with a
+        // dead purchase button. No-ops if products are already loaded.
+        .task { await sub.loadProducts() }
         // Auto-fade the error toast after 3 seconds. Reset the drag offset
         // whenever a new error appears so a swipe-dismissed toast doesn't
         // reappear off-screen the next time.
@@ -315,7 +319,14 @@ struct PaywallView: View {
             Button {
                 Task {
                     let id = selectedPlan == .monthly ? SubscriptionManager.monthlyID : SubscriptionManager.annualID
-                    guard let product = sub.products.first(where: { $0.id == id }) else { return }
+                    guard let product = sub.products.first(where: { $0.id == id }) else {
+                        // Products haven't loaded (no network, or IDs not yet live
+                        // in App Store Connect). Surface it and retry the load
+                        // instead of the button silently doing nothing.
+                        sub.purchaseError = "Couldn't load subscription options. Check your connection and try again."
+                        await sub.loadProducts(force: true)
+                        return
+                    }
                     await sub.purchase(product)
                 }
             } label: {

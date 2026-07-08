@@ -30,11 +30,15 @@ final class SubscriptionManager {
 
     // MARK: Products
 
-    func loadProducts() async {
-        guard products.isEmpty else { return }
+    func loadProducts(force: Bool = false) async {
+        guard force || products.isEmpty else { return }
         do {
             let loaded = try await Product.products(for: [Self.monthlyID, Self.annualID])
-            products = loaded.sorted { $0.price < $1.price }
+            // Keep previously-loaded products if a forced refresh returns empty
+            // (transient failure) rather than blanking the paywall.
+            if !loaded.isEmpty {
+                products = loaded.sorted { $0.price < $1.price }
+            }
         } catch {
             // Network unavailable or product IDs not yet configured — degrade gracefully.
         }
