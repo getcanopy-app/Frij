@@ -45,9 +45,10 @@ final class ScanFlowModel {
     /// beat AFTER `hasCapture` goes false so it can fade out — so this stays a
     /// settable property (like `lastError`), not folded into the transitions.
     var capturedImage: UIImage?
-    /// Everything the last scan returned (all confidences). Mirrors
-    /// `session.scanDetectedItems`. The View still filters to high-confidence
-    /// before merging into the pantry — that filtering is not this model's job.
+    /// The scan items surfaced to the user — high-confidence only, so what the
+    /// review sheet shows equals what got merged into the pantry. Mirrors
+    /// `session.scanDetectedItems`. The View filters to high-confidence before
+    /// both merging AND display; that filtering is not this model's job.
     private(set) var detected: [DetectedItem] = []
     /// User-facing scan error, or nil. Mirrors the View's `scanError`.
     var lastError: String?

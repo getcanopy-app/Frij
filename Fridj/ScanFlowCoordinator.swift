@@ -827,7 +827,9 @@ struct ScanFlowCoordinator: View {
                 if Task.isCancelled { return }
                 let highConfidence = items.filter { $0.confidence == .high }
                 store.mergeScan(highConfidence)
-                session.scanDetectedItems = items
+                // Show only what we save: the review sheet (fed from
+                // scanDetectedItems) now matches the pantry merge exactly.
+                session.scanDetectedItems = highConfidence
 
                 // Bring the tab bar back FIRST (its own animation), then
                 // transition to review state.
@@ -835,7 +837,7 @@ struct ScanFlowCoordinator: View {
                     session.hidesTabBar = false
                 }
                 withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
-                    flow.scanSucceeded(items)
+                    flow.scanSucceeded(highConfidence)
                     session.showScanFound = true
                 }
             }
