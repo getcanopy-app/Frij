@@ -103,6 +103,15 @@ struct ProfileView: View {
                                 .padding(.horizontal, 16).padding(.vertical, 12)
                                 .background(.white, in: RoundedRectangle(cornerRadius: FridjRadius.md, style: .continuous))
                         }
+
+                        // Legal
+                        HStack(spacing: 18) {
+                            Link("Terms of Use", destination: FrijLinks.terms)
+                            Link("Privacy Policy", destination: FrijLinks.privacy)
+                            Spacer()
+                        }
+                        .font(FridjFont.size(13, weight: .medium))
+                        .foregroundColor(.fridjText.opacity(0.5))
                     }
                     .padding(FridjSpacing.lg)
                     .padding(.bottom, FridjSpacing.xl)

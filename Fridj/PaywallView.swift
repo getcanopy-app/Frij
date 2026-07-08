@@ -1,11 +1,8 @@
 import SwiftUI
 import StoreKit
 
-// Update these two URLs before App Store submission.
-private enum FrijLinks {
-    static let terms   = URL(string: "https://frij.app/terms")!
-    static let privacy = URL(string: "https://frij.app/privacy")!
-}
+// Legal URLs live in FrijLinks (FrijLinks.swift) — one swap point for both
+// the paywall and Profile.
 
 struct PaywallView: View {
     @State private var sub = SubscriptionManager.shared
