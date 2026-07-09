@@ -6,13 +6,13 @@
 //  (Apple requires functional Terms + Privacy links for auto-renewable
 //  subscriptions) and in Profile.
 //
-//  ⚠️ PLACEHOLDERS — swap both for the real hosted pages before App Store
-//  submission. This is the ONLY place they need to change.
+//  Live pages hosted on Vercel (frij-legal project). If you later point a
+//  custom domain (e.g. frij.app) at that project, update both here.
 //
 
 import Foundation
 
 enum FrijLinks {
-    static let terms   = URL(string: "https://frij.app/terms")!
-    static let privacy = URL(string: "https://frij.app/privacy")!
+    static let terms   = URL(string: "https://frij-legal.vercel.app/terms")!
+    static let privacy = URL(string: "https://frij-legal.vercel.app/privacy")!
 }
