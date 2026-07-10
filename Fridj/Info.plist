@@ -4,6 +4,11 @@
 <dict>
 	<key>CFBundleDisplayName</key>
 	<string>Frij</string>
+	<!-- Frij only uses standard HTTPS/TLS, which is exempt from export
+	     compliance. Declaring this NO auto-answers Apple's encryption
+	     question on every build upload. -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>NSCameraUsageDescription</key>
 	<string>Frij uses your camera to scan your fridge and identify ingredients.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
