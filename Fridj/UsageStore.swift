@@ -12,11 +12,21 @@ final class UsageStore {
     private let key = "frij.usage.v1.generationsUsed"
     private let adminKey = "frij.usage.v1.isAdmin"
     private(set) var generationsUsed: Int
+
+    #if DEBUG
     private(set) var isAdmin: Bool
+    #else
+    // The admin override is a debug-only testing convenience. In release
+    // builds it is hard-compiled to false so the free-tier limit can never
+    // be bypassed in production — a stale UserDefaults flag is ignored too.
+    let isAdmin = false
+    #endif
 
     private init() {
-        generationsUsed = UserDefaults.standard.integer(forKey: "frij.usage.v1.generationsUsed")
-        isAdmin = UserDefaults.standard.bool(forKey: "frij.usage.v1.isAdmin")
+        generationsUsed = UserDefaults.standard.integer(forKey: key)
+        #if DEBUG
+        isAdmin = UserDefaults.standard.bool(forKey: adminKey)
+        #endif
     }
 
     var remaining: Int { isAdmin ? 9999 : max(0, Self.freeLimit - generationsUsed) }
@@ -30,8 +40,12 @@ final class UsageStore {
     }
 
     // Toggled by a hidden 7-tap gesture on the "About you" title in ProfileView.
+    // Debug-only: a no-op in release builds (see isAdmin above), so the hidden
+    // gesture cannot unlock unlimited free generations in the shipped app.
     func toggleAdmin() {
+        #if DEBUG
         isAdmin.toggle()
         UserDefaults.standard.set(isAdmin, forKey: adminKey)
+        #endif
     }
 }
