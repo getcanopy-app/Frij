@@ -31,9 +31,27 @@ struct Profile: Codable, Equatable {
     var household: HouseholdSize?   // optional — empty by default
     var dislikes: String = ""       // e.g. "no cilantro, no mushrooms"
 
+    init(diet: String = "", household: HouseholdSize? = nil, dislikes: String = "") {
+        self.diet = diet
+        self.household = household
+        self.dislikes = dislikes
+    }
+
     var isEmpty: Bool {
         diet.trimmingCharacters(in: .whitespaces).isEmpty &&
         household == nil &&
         dislikes.trimmingCharacters(in: .whitespaces).isEmpty
+    }
+
+    // Migration-safe decoding. Profile is persisted (ProfileStore); a stored
+    // property's default is NOT applied by synthesized Codable when its key is
+    // missing — it throws, which the store turns into a reset to a blank
+    // profile. Decode each field with a fallback so old/partial blobs survive.
+    // Rule: when you add a field, add a `decodeIfPresent(...) ?? default` line.
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        self.diet = try c.decodeIfPresent(String.self, forKey: .diet) ?? ""
+        self.household = try c.decodeIfPresent(HouseholdSize.self, forKey: .household)
+        self.dislikes = try c.decodeIfPresent(String.self, forKey: .dislikes) ?? ""
     }
 }

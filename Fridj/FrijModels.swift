@@ -52,6 +52,28 @@ struct Recipe: Codable, Identifiable, Hashable {
     let uses: [String]
     let needs: [String]
     let steps: [String]
+
+    init(name: String, cookTime: String, uses: [String], needs: [String], steps: [String]) {
+        self.name = name
+        self.cookTime = cookTime
+        self.uses = uses
+        self.needs = needs
+        self.steps = steps
+    }
+
+    // Migration-safe decoding. Recipe is persisted to disk (FavoritesStore) as
+    // the whole struct, so a saved favorite written by an older build must keep
+    // decoding after we add fields. Every field falls back to a default when its
+    // key is absent instead of throwing (which the store turns into a full wipe).
+    // Rule: when you add a field, add a `decodeIfPresent(...) ?? default` line.
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        self.name = try c.decodeIfPresent(String.self, forKey: .name) ?? ""
+        self.cookTime = try c.decodeIfPresent(String.self, forKey: .cookTime) ?? ""
+        self.uses = try c.decodeIfPresent([String].self, forKey: .uses) ?? []
+        self.needs = try c.decodeIfPresent([String].self, forKey: .needs) ?? []
+        self.steps = try c.decodeIfPresent([String].self, forKey: .steps) ?? []
+    }
 }
 
 struct RecipeResponse: Codable {

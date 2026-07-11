@@ -44,3 +44,31 @@ struct PantryItem: Codable, Identifiable, Equatable {
         }
     }
 }
+
+// MARK: - Migration-safe decoding
+//
+// PantryItem is persisted to disk (PantryStore). Synthesized Codable throws
+// `keyNotFound` for ANY missing key, and the store's load path turns a throw
+// into a full wipe ((try? decode) ?? []) — so adding one non-optional field
+// later would silently erase every user's saved pantry.
+//
+// This decoder reads every field with decodeIfPresent + a fallback, so blobs
+// written by an older build (which lack fields added later) still decode.
+// Rule when you add a field: add a matching `decodeIfPresent(...) ?? default`
+// line below. The compiler enforces it — a new stored property left unset here
+// is a build error, never a runtime data-loss surprise.
+extension PantryItem {
+    private enum CodingKeys: String, CodingKey {
+        case id, name, source, firstSeenAt, lastSeenAt
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        let now = Date()
+        self.id = try c.decodeIfPresent(UUID.self, forKey: .id) ?? UUID()
+        self.name = try c.decodeIfPresent(String.self, forKey: .name) ?? ""
+        self.source = try c.decodeIfPresent(Source.self, forKey: .source) ?? .manual
+        self.firstSeenAt = try c.decodeIfPresent(Date.self, forKey: .firstSeenAt) ?? now
+        self.lastSeenAt = try c.decodeIfPresent(Date.self, forKey: .lastSeenAt) ?? now
+    }
+}
