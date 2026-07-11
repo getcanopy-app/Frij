@@ -48,7 +48,7 @@ struct Profile: Codable, Equatable {
     // missing — it throws, which the store turns into a reset to a blank
     // profile. Decode each field with a fallback so old/partial blobs survive.
     // Rule: when you add a field, add a `decodeIfPresent(...) ?? default` line.
-    init(from decoder: Decoder) throws {
+    nonisolated init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         self.diet = try c.decodeIfPresent(String.self, forKey: .diet) ?? ""
         self.household = try c.decodeIfPresent(HouseholdSize.self, forKey: .household)

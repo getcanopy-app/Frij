@@ -66,7 +66,7 @@ struct Recipe: Codable, Identifiable, Hashable {
     // decoding after we add fields. Every field falls back to a default when its
     // key is absent instead of throwing (which the store turns into a full wipe).
     // Rule: when you add a field, add a `decodeIfPresent(...) ?? default` line.
-    init(from decoder: Decoder) throws {
+    nonisolated init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         self.name = try c.decodeIfPresent(String.self, forKey: .name) ?? ""
         self.cookTime = try c.decodeIfPresent(String.self, forKey: .cookTime) ?? ""

@@ -16,7 +16,7 @@ struct GroceryItem: Identifiable, Codable {
     // fields are added (synthesized Codable would throw on the missing key, and
     // load() turns that into an empty list). Rule: when you add a field, add a
     // matching `decodeIfPresent(...) ?? default` line here.
-    init(from decoder: Decoder) throws {
+    nonisolated init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         self.id = try c.decodeIfPresent(UUID.self, forKey: .id) ?? UUID()
         self.name = try c.decodeIfPresent(String.self, forKey: .name) ?? ""

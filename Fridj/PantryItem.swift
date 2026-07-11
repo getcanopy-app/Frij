@@ -62,7 +62,7 @@ extension PantryItem {
         case id, name, source, firstSeenAt, lastSeenAt
     }
 
-    init(from decoder: Decoder) throws {
+    nonisolated init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         let now = Date()
         self.id = try c.decodeIfPresent(UUID.self, forKey: .id) ?? UUID()
