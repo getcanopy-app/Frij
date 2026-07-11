@@ -9,7 +9,7 @@
 import Foundation
 import Observation
 
-@Observable
+@MainActor @Observable
 final class FavoritesStore {
     static let shared = FavoritesStore()
 

@@ -89,6 +89,7 @@ struct MigrationSafetyTests {
     // MARK: End-to-end through the real store load path
 
     @Test("PantryStore loads a legacy blob through its real load path (no wipe)")
+    @MainActor
     func pantryStoreLoadsLegacyBlobEndToEnd() {
         let suite = "test.migration.pantry"
         let defaults = UserDefaults(suiteName: suite)!

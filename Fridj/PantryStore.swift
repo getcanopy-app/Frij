@@ -6,7 +6,7 @@
 import Foundation
 import Observation
 
-@Observable
+@MainActor @Observable
 final class PantryStore {
     static let shared = PantryStore()
 

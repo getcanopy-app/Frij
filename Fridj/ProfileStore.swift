@@ -6,7 +6,7 @@
 import Foundation
 import Observation
 
-@Observable
+@MainActor @Observable
 final class ProfileStore {
     static let shared = ProfileStore()
 
