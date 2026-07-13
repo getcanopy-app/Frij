@@ -6,13 +6,13 @@
 //  (Apple requires functional Terms + Privacy links for auto-renewable
 //  subscriptions) and in Profile.
 //
-//  Live pages hosted on Vercel (frij-legal project). If you later point a
-//  custom domain (e.g. frij.app) at that project, update both here.
+//  Live pages hosted on Vercel (frij-legal project), served via the custom
+//  domain hellofrij.com. frij-legal.vercel.app remains as a fallback alias.
 //
 
 import Foundation
 
 enum FrijLinks {
-    static let terms   = URL(string: "https://frij-legal.vercel.app/terms")!
-    static let privacy = URL(string: "https://frij-legal.vercel.app/privacy")!
+    static let terms   = URL(string: "https://hellofrij.com/terms")!
+    static let privacy = URL(string: "https://hellofrij.com/privacy")!
 }
