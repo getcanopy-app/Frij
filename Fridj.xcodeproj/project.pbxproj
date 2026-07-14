@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		99BF54B030069CB8002834FD /* StoreKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 99BF54AF30069CB8002834FD /* StoreKit.framework */; };
 		99E71FF92FD83C71001D2920 /* CelebrationCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99E71FF82FD83C71001D2920 /* CelebrationCoordinator.swift */; };
 		99E71FFB2FD83C8B001D2920 /* StreakCelebrationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99E71FFA2FD83C8B001D2920 /* StreakCelebrationView.swift */; };
 /* End PBXBuildFile section */
@@ -32,6 +33,7 @@
 		22CAE9FA2FC70BA2005D79CE /* Fridj.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Fridj.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		22CAEA072FC70BA4005D79CE /* FridjTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FridjTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		22CAEA112FC70BA4005D79CE /* FridjUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FridjUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		99BF54AF30069CB8002834FD /* StoreKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = StoreKit.framework; path = System/Library/Frameworks/StoreKit.framework; sourceTree = SDKROOT; };
 		99E71FF82FD83C71001D2920 /* CelebrationCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CelebrationCoordinator.swift; sourceTree = "<group>"; };
 		99E71FFA2FD83C8B001D2920 /* StreakCelebrationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreakCelebrationView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -72,6 +74,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				99BF54B030069CB8002834FD /* StoreKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -101,6 +104,7 @@
 				22CAE9FB2FC70BA2005D79CE /* Products */,
 				99E71FF82FD83C71001D2920 /* CelebrationCoordinator.swift */,
 				99E71FFA2FD83C8B001D2920 /* StreakCelebrationView.swift */,
+				99BF54AE30069CB8002834FD /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -112,6 +116,14 @@
 				22CAEA112FC70BA4005D79CE /* FridjUITests.xctest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		99BF54AE30069CB8002834FD /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				99BF54AF30069CB8002834FD /* StoreKit.framework */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -193,7 +205,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 2650;
-				LastUpgradeCheck = 2650;
+				LastUpgradeCheck = 2660;
 				TargetAttributes = {
 					22CAE9F92FC70BA2005D79CE = {
 						CreatedOnToolsVersion = 26.5;
@@ -352,6 +364,7 @@
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
@@ -409,6 +422,7 @@
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				VALIDATE_PRODUCT = YES;
 			};
@@ -425,6 +439,10 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Fridj/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Frij;
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				INFOPLIST_KEY_NSCameraUsageDescription = "Frij uses your camera to scan your fridge and identify ingredients.";
+				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Frij saves your fridge photos to your camera roll.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Frij scans your fridge photos.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -437,7 +455,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.Fridjapp.Fridj;
+				PRODUCT_BUNDLE_IDENTIFIER = com.hellofrij.frij;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -460,6 +478,10 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Fridj/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Frij;
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				INFOPLIST_KEY_NSCameraUsageDescription = "Frij uses your camera to scan your fridge and identify ingredients.";
+				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Frij saves your fridge photos to your camera roll.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Frij scans your fridge photos.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -472,7 +494,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.Fridjapp.Fridj;
+				PRODUCT_BUNDLE_IDENTIFIER = com.hellofrij.frij;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -494,7 +516,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.5;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.Fridjapp.FridjTests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.hellofrij.frij.tests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -516,7 +538,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.5;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.Fridjapp.FridjTests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.hellofrij.frij.tests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -536,7 +558,7 @@
 				DEVELOPMENT_TEAM = 5SAX25WKUQ;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.Fridjapp.FridjUITests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.hellofrij.frij.uitests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -556,7 +578,7 @@
 				DEVELOPMENT_TEAM = 5SAX25WKUQ;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.Fridjapp.FridjUITests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.hellofrij.frij.uitests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
