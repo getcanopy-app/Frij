@@ -1,0 +1,365 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "· %lld left" : {
+
+    },
+    "%lld" : {
+
+    },
+    "%lld free idea%@ left · $2.99/mo" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld free idea%2$@ left · $2.99/mo"
+          }
+        }
+      }
+    },
+    "%lld free idea%@ remaining" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld free idea%2$@ remaining"
+          }
+        }
+      }
+    },
+    "%lld free recipe idea%@ remaining" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld free recipe idea%2$@ remaining"
+          }
+        }
+      }
+    },
+    "%lld Ingredients" : {
+
+    },
+    "%lld items" : {
+
+    },
+    "%lld left" : {
+
+    },
+    "%lld meals cooked in a row" : {
+
+    },
+    "%lldd" : {
+
+    },
+    "• %@" : {
+
+    },
+    "About you" : {
+
+    },
+    "ACTIVE" : {
+
+    },
+    "Add" : {
+
+    },
+    "Add %@ to list" : {
+
+    },
+    "add an ingredient" : {
+
+    },
+    "add an ingredient..." : {
+
+    },
+    "Add to pantry" : {
+
+    },
+    "Added %lld to pantry" : {
+
+    },
+    "Added to grocery list" : {
+
+    },
+    "ADMIN" : {
+
+    },
+    "Also spotted — tap to add" : {
+
+    },
+    "Cancel" : {
+
+    },
+    "Checking" : {
+
+    },
+    "Choose your plan" : {
+
+    },
+    "Clear checked" : {
+
+    },
+    "Continue with Frij+" : {
+
+    },
+    "Cook smarter every night.\nWaste nothing." : {
+
+    },
+    "Cooking for" : {
+
+    },
+    "Cooking up ideas…" : {
+
+    },
+    "default" : {
+
+    },
+    "Dietary preferences" : {
+
+    },
+    "Done" : {
+
+    },
+    "e.g. high protein, no pork" : {
+
+    },
+    "e.g. no cilantro, no mushrooms" : {
+
+    },
+    "Everything Frij knows you have." : {
+
+    },
+    "F+" : {
+
+    },
+    "First meal — keep it going!" : {
+
+    },
+    "Foods you hate, allergies, picky kid stuff — anything Frij should steer clear of." : {
+
+    },
+    "Free ideas used up · unlock unlimited" : {
+
+    },
+    "Free text. \"High protein, no pork.\" \"Pescatarian.\" Whatever fits." : {
+
+    },
+    "Fridge, pantry, spice rack — snap whatever's got food." : {
+
+    },
+    "Frij" : {
+
+    },
+    "Frij uses this to make recipes that actually fit you." : {
+
+    },
+    "Frij will scale recipe portions to match." : {
+
+    },
+    "Frij+" : {
+
+    },
+    "Generate meal ideas" : {
+
+    },
+    "Get 3 dinners" : {
+
+    },
+    "Get 3 dinners from this" : {
+
+    },
+    "Get dinners" : {
+
+    },
+    "Get personalized recipes" : {
+
+    },
+    "Get tonight's dinner ideas" : {
+
+    },
+    "Grocery list" : {
+
+    },
+    "Hold still.." : {
+
+    },
+    "How to make it" : {
+
+    },
+    "I cooked this" : {
+
+    },
+    "In your pantry" : {
+
+    },
+    "ingredients\ndetected" : {
+
+    },
+    "ingredients detected" : {
+
+    },
+    "Keep it up!" : {
+
+    },
+    "Let's go!" : {
+
+    },
+    "Looking at what's in your kitchen and finding three dinners you can make tonight." : {
+
+    },
+    "more options" : {
+
+    },
+    "needs %lld item%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "needs %1$lld item%2$@"
+          }
+        }
+      }
+    },
+    "Next" : {
+
+    },
+    "No recipes yet" : {
+
+    },
+    "One down, many to go." : {
+
+    },
+    "Open Settings" : {
+
+    },
+    "Overview" : {
+
+    },
+    "Pair it with" : {
+
+    },
+    "Photo access is off" : {
+
+    },
+    "Photos" : {
+
+    },
+    "Privacy Policy" : {
+
+    },
+    "Removed %lld %@ from pantry" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Removed %1$lld %2$@ from pantry"
+          }
+        }
+      }
+    },
+    "Restore Purchases" : {
+
+    },
+    "rotate" : {
+
+    },
+    "Saved" : {
+
+    },
+    "Scan" : {
+
+    },
+    "Scan a photo to update your pantry." : {
+
+    },
+    "Scan with camera" : {
+
+    },
+    "Scan your fridge or add items above." : {
+
+    },
+    "Scan your kitchen" : {
+
+    },
+    "Scan your kitchen to get tonight's dinner ideas.\nYour saved favorites will show up here too." : {
+
+    },
+    "See all" : {
+
+    },
+    "Skip" : {
+
+    },
+    "Snap a photo of your fridge or pantry to get started." : {
+
+    },
+    "Start cooking →" : {
+
+    },
+    "Subscription renews automatically unless cancelled at least 24 hours before the end of the current period. Cancel anytime in your iPhone Settings." : {
+
+    },
+    "Terms of Use" : {
+
+    },
+    "Things to avoid" : {
+
+    },
+    "This week's progress" : {
+
+    },
+    "Tonight's options" : {
+
+    },
+    "Turn on photo access so Frij can pull in a fridge photo from your library." : {
+
+    },
+    "Undo" : {
+
+    },
+    "Unlimited recipes · all features unlocked" : {
+
+    },
+    "Unlock Frij+" : {
+
+    },
+    "Unlock unlimited with Frij+" : {
+
+    },
+    "Upgrade to Frij+" : {
+
+    },
+    "We found" : {
+
+    },
+    "We found %lld items" : {
+
+    },
+    "We're scanning your fridge\nfor fresh ideas" : {
+
+    },
+    "x%lld" : {
+
+    },
+    "You're doing amazing" : {
+
+    },
+    "You're on a roll 🎉" : {
+
+    },
+    "You're on fire today 🔥" : {
+
+    },
+    "Your hearted meals, ready to cook again." : {
+
+    },
+    "Your kitchen" : {
+
+    },
+    "Your pantry is empty" : {
+
+    }
+  },
+  "version" : "1.0"
+}

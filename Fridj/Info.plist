@@ -1,17 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
-<dict>
-	<key>CFBundleDisplayName</key>
-	<string>Frij</string>
-	<!-- Frij only uses standard HTTPS/TLS, which is exempt from export
-	     compliance. Declaring this NO auto-answers Apple's encryption
-	     question on every build upload. -->
-	<key>ITSAppUsesNonExemptEncryption</key>
-	<false/>
-	<key>NSCameraUsageDescription</key>
-	<string>Frij uses your camera to scan your fridge and identify ingredients.</string>
-	<key>NSPhotoLibraryAddUsageDescription</key>
-	<string>Frij saves your fridge photos to your camera roll.</string>
-</dict>
+<dict/>
 </plist>
