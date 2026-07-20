@@ -264,6 +264,7 @@ struct RecipesView: View {
             }
             .background(Color(white: 1),
                         in: RoundedRectangle(cornerRadius: FridjRadius.recipeCard, style: .continuous))
+            .shadow(color: .black.opacity(0.12), radius: 18, x: 0, y: 9)
         }
         .buttonStyle(.plain)
     }

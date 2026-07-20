@@ -8,6 +8,15 @@ struct HomeView: View {
 
     private var recipes: [Recipe] { session.recipes }
 
+    // Example dinners shown before the first scan, so Home previews the
+    // populated layout instead of sitting empty. Rendered with the real
+    // RecipeGlassCard so they show actual food photos; tapping starts a scan.
+    static let teaserRecipes: [Recipe] = [
+        Recipe(name: "Creamy Garlic Pasta", cookTime: "20 min", uses: [], needs: [], steps: []),
+        Recipe(name: "Honey Garlic Chicken", cookTime: "30 min", uses: [], needs: [], steps: []),
+        Recipe(name: "Veggie Stir-Fry", cookTime: "15 min", uses: [], needs: [], steps: [])
+    ]
+
     var body: some View {
         ZStack {
             LiquidCreamBackground()
@@ -15,6 +24,9 @@ struct HomeView: View {
 
             VStack(spacing: 0) {
                 topBar
+
+                greeting
+                    .padding(.top, 18)
 
                 scanBar
                     .padding(.top, 16)
@@ -64,26 +76,57 @@ struct HomeView: View {
         .padding(.top, 16)
     }
 
+    private var timeGreeting: String {
+        switch Calendar.current.component(.hour, from: Date()) {
+        case 5..<12:  return "Good morning"
+        case 12..<17: return "Good afternoon"
+        default:      return "Good evening"
+        }
+    }
+
+    private var greeting: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(timeGreeting)
+                .font(.system(size: 14, weight: .semibold, design: .rounded))
+                .foregroundStyle(Color.fridjOrange)
+            Text("What's in your fridge?")
+                .font(.system(size: 26, weight: .bold, design: .rounded))
+                .foregroundStyle(.black.opacity(0.85))
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
     private var scanBar: some View {
         HStack {
             Text("Scan")
                 .font(.system(size: 22, weight: .bold, design: .rounded))
-                .foregroundStyle(.primary)
+                .foregroundStyle(Color.fridjDark)
 
             Spacer()
 
             Button { onScanTap?() } label: {
                 Image(systemName: "plus")
                     .font(.system(size: 18, weight: .bold))
-                    .foregroundStyle(.primary)
+                    .foregroundStyle(Color.fridjOrange)
                     .frame(width: 52, height: 42)
-                    .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 18))
+                    .background {
+                        RoundedRectangle(cornerRadius: 18, style: .continuous)
+                            .fill(.white.opacity(0.92))
+                    }
             }
         }
         .padding(.leading, 22)
         .padding(.trailing, 10)
         .frame(height: 66)
-        .glassEffect(in: .rect(cornerRadius: 34))
+        .background {
+            RoundedRectangle(cornerRadius: 34, style: .continuous)
+                .fill(LinearGradient(
+                    colors: [Color.fridjPeach, Color.fridjOrange],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                ))
+        }
+        .shadow(color: Color.fridjOrange.opacity(0.35), radius: 18, x: 0, y: 10)
     }
 
     private var recipeCards: some View {
@@ -127,28 +170,38 @@ struct HomeView: View {
     }
 
     private var emptyRecipeCard: some View {
-        Button { onScanTap?() } label: {
-            HStack(spacing: 14) {
-                Image(systemName: "camera.viewfinder")
-                    .font(.system(size: 28, weight: .light))
-                    .foregroundStyle(.black.opacity(0.35))
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Tonight you could make")
+                .font(.system(size: 15, weight: .bold, design: .rounded))
+                .foregroundStyle(.black.opacity(0.5))
+                .padding(.leading, 2)
 
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Scan your kitchen")
-                        .font(.system(size: 16, weight: .bold, design: .rounded))
-                        .foregroundStyle(.black.opacity(0.75))
-                    Text("Get tonight's dinner ideas")
-                        .font(.system(size: 13, weight: .regular, design: .rounded))
-                        .foregroundStyle(.black.opacity(0.4))
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 14) {
+                    ForEach(HomeView.teaserRecipes) { teaser in
+                        Button { onScanTap?() } label: {
+                            RecipeGlassCard(recipe: teaser)
+                                .frame(width: 245)
+                        }
+                        .buttonStyle(.plain)
+                    }
                 }
-                Spacer()
+                .scrollTargetLayout()
             }
-            .padding(.horizontal, 20)
-            .frame(maxWidth: .infinity)
-            .frame(height: 80)
-            .glassEffect(in: .rect(cornerRadius: 26))
+            .scrollTargetBehavior(.viewAligned)
+            .contentMargins(.horizontal, 20, for: .scrollContent)
+            .padding(.horizontal, -20)
+
+            HStack(spacing: 6) {
+                Image(systemName: "sparkles")
+                    .font(.system(size: 12, weight: .semibold))
+                Text("Scan your fridge to make these real")
+                    .font(.system(size: 12, weight: .medium, design: .rounded))
+            }
+            .foregroundStyle(.black.opacity(0.4))
+            .padding(.leading, 2)
+            .padding(.top, 2)
         }
-        .buttonStyle(.plain)
     }
 
     private var progressSection: some View {
@@ -231,16 +284,23 @@ struct RecipeGlassCard: View {
                     .lineSpacing(2)
 
                 HStack {
-                    Text(recipe.cookTime)
-                        .font(.system(size: 12, weight: .medium, design: .rounded))
-                        .foregroundStyle(.black.opacity(0.42))
+                    HStack(spacing: 4) {
+                        Image(systemName: "clock")
+                            .font(.system(size: 11, weight: .semibold))
+                        Text(recipe.cookTime)
+                            .font(.system(size: 12, weight: .medium, design: .rounded))
+                    }
+                    .foregroundStyle(.black.opacity(0.45))
 
                     Spacer()
 
                     if !recipe.needs.isEmpty {
                         Text("needs \(recipe.needs.count) item\(recipe.needs.count == 1 ? "" : "s")")
                             .font(.system(size: 11, weight: .bold, design: .rounded))
-                            .foregroundStyle(.orange.opacity(0.85))
+                            .foregroundStyle(Color.fridjOrange)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(Capsule().fill(Color.fridjOrange.opacity(0.14)))
                     }
                 }
             }
@@ -249,6 +309,7 @@ struct RecipeGlassCard: View {
         }
         .frame(maxWidth: .infinity)
         .glassEffect(.regular, in: .rect(cornerRadius: 26))
+        .shadow(color: .black.opacity(0.09), radius: 13, x: 0, y: 6)
     }
 }
 
