@@ -8,6 +8,9 @@ struct PantryView: View {
     @State private var isValidating = false
     @State private var rejectionText: String?
     @State private var isEditing = false
+    // Empty means "cook with everything" — the original behaviour, so someone
+    // who never discovers tap-to-pick gets exactly what they got before.
+    @State private var selectedIDs: Set<UUID> = []
 
     var body: some View {
         ZStack {
@@ -74,13 +77,25 @@ struct PantryView: View {
         .padding(.top, 60)
     }
 
+    /// Selection wins when there is one; otherwise the whole pantry goes over.
+    private var cookIngredients: [String] {
+        guard !selectedIDs.isEmpty else { return store.allNames }
+        return store.items.filter { selectedIDs.contains($0.id) }.map(\.name)
+    }
+
+    private var cookButtonTitle: String {
+        if session.isCooking { return "Cooking up ideas…" }
+        guard !selectedIDs.isEmpty else { return "Get 3 dinners from this" }
+        return "Cook with these \(selectedIDs.count)"
+    }
+
     private var cookButton: some View {
         Button {
-            session.cook(ingredients: store.allNames)
+            session.cook(ingredients: cookIngredients)
         } label: {
             HStack {
                 if session.isCooking { ProgressView().tint(.white) }
-                Text(session.isCooking ? "Cooking up ideas…" : "Get 3 dinners from this")
+                Text(cookButtonTitle)
                     .font(FridjFont.size(17, weight: .bold))
             }
             .foregroundColor(.white)
@@ -92,6 +107,7 @@ struct PantryView: View {
             )
         }
         .disabled(store.items.isEmpty || session.isCooking)
+        .animation(.easeOut(duration: 0.18), value: selectedIDs.count)
     }
 
     private var addRow: some View {
@@ -139,16 +155,29 @@ struct PantryView: View {
 
     private var itemsList: some View {
         VStack(alignment: .leading, spacing: FridjSpacing.md) {
-            HStack {
-                Text("\(store.items.count) items")
+            HStack(spacing: 12) {
+                Text(countLabel)
                     .font(FridjFont.size(13))
                     .foregroundColor(.fridjText.opacity(0.5))
 
                 Spacer()
 
+                if !selectedIDs.isEmpty {
+                    Button {
+                        withAnimation(.easeOut(duration: 0.18)) { selectedIDs.removeAll() }
+                    } label: {
+                        Text("Clear")
+                            .font(FridjFont.size(13, weight: .bold))
+                            .foregroundColor(.fridjText.opacity(0.45))
+                    }
+                }
+
                 Button {
                     withAnimation(.spring(response: 0.32, dampingFraction: 0.8)) {
                         isEditing.toggle()
+                        // Editing and picking are different intents; don't leave
+                        // a stale selection driving the cook button.
+                        if isEditing { selectedIDs.removeAll() }
                     }
                 } label: {
                     Text(isEditing ? "Done" : "Edit")
@@ -189,21 +218,30 @@ struct PantryView: View {
         let warning = item.freshnessWarning
         let isWarning = warning != .none
         let accent = freshnessColor(warning)
+        let isSelected = selectedIDs.contains(item.id)
 
         return HStack(spacing: 5) {
+            if isSelected {
+                Image(systemName: "checkmark")
+                    .font(.system(size: 9, weight: .bold))
+                    .foregroundColor(.white)
+                    .transition(.scale.combined(with: .opacity))
+            }
+
             Text(item.name)
                 .font(FridjFont.size(13, weight: .semibold))
-                .foregroundColor(.fridjText)
+                .foregroundColor(isSelected ? .white : .fridjText)
 
             if isWarning {
                 Text("\(item.daysSinceLastSeen)d")
                     .font(FridjFont.size(10, weight: .bold))
-                    .foregroundColor(accent)
+                    .foregroundColor(isSelected ? .white.opacity(0.8) : accent)
             }
 
             if isEditing {
                 Button {
                     withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                        selectedIDs.remove(item.id)
                         store.remove(id: item.id)
                     }
                 } label: {
@@ -217,16 +255,41 @@ struct PantryView: View {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
-        .background(isWarning ? accent.opacity(0.10) : Color(white: 1), in: Capsule())
+        .background(chipFill(isSelected: isSelected, isWarning: isWarning, accent: accent), in: Capsule())
         .overlay {
             Capsule()
-                .stroke(isWarning ? accent.opacity(0.45) : Color.fridjText.opacity(0.10),
+                .stroke(chipStroke(isSelected: isSelected, isWarning: isWarning, accent: accent),
                         lineWidth: 1)
+        }
+        .contentShape(Capsule())
+        .onTapGesture {
+            // While editing, the ✕ owns the chip — tapping the body shouldn't
+            // also start building a selection.
+            guard !isEditing else { return }
+            withAnimation(.spring(response: 0.28, dampingFraction: 0.72)) {
+                if isSelected { selectedIDs.remove(item.id) } else { selectedIDs.insert(item.id) }
+            }
         }
         .transition(.asymmetric(
             insertion: .opacity.combined(with: .scale(scale: 0.9)),
             removal: .opacity.combined(with: .scale(scale: 0.9))
         ))
+    }
+
+    private func chipFill(isSelected: Bool, isWarning: Bool, accent: Color) -> Color {
+        if isSelected { return .fridjGreen }
+        return isWarning ? accent.opacity(0.10) : Color(white: 1)
+    }
+
+    private func chipStroke(isSelected: Bool, isWarning: Bool, accent: Color) -> Color {
+        if isSelected { return .fridjGreen }
+        return isWarning ? accent.opacity(0.45) : Color.fridjText.opacity(0.10)
+    }
+
+    private var countLabel: String {
+        if !selectedIDs.isEmpty { return "\(selectedIDs.count) selected" }
+        if isEditing { return "\(store.items.count) items" }
+        return "\(store.items.count) items · tap to pick"
     }
 
     private func urgency(_ warning: PantryItem.FreshnessWarning) -> Int {
