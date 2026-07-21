@@ -7,6 +7,7 @@ struct PantryView: View {
     @State private var newItem: String = ""
     @State private var isValidating = false
     @State private var rejectionText: String?
+    @State private var isEditing = false
 
     var body: some View {
         ZStack {
@@ -117,54 +118,124 @@ struct PantryView: View {
         }
     }
 
-    private var itemsList: some View {
-        VStack(alignment: .leading, spacing: FridjSpacing.sm) {
-            Text("\(store.items.count) items")
-                .font(FridjFont.size(13))
-                .foregroundColor(.fridjText.opacity(0.5))
+    // Items that have gone unseen long enough to be worth cooking first.
+    // Most urgent leads, since that's the whole point of surfacing them.
+    private var useSoonItems: [PantryItem] {
+        store.items
+            .filter { $0.freshnessWarning != .none }
+            .sorted { urgency($0.freshnessWarning) > urgency($1.freshnessWarning) }
+    }
 
-            ForEach(store.items) { item in
-                HStack {
-                    Circle()
-                        .fill(dotColor(for: item.source))
-                        .frame(width: 8, height: 8)
-                    Text(item.name)
-                        .font(FridjFont.size(15, weight: .medium))
-                        .foregroundColor(.fridjText)
-                    if item.source == .default {
-                        Text("default")
-                            .font(FridjFont.size(11, weight: .bold))
-                            .foregroundColor(.fridjText.opacity(0.4))
-                            .padding(.horizontal, 7).padding(.vertical, 2)
-                            .background(Color.fridjText.opacity(0.08), in: Capsule())
+    // Everything else, bucketed into kitchen sections. Empty groups are dropped
+    // so a pantry of four staples doesn't render four empty headers.
+    private var groupedItems: [(category: PantryCategory, items: [PantryItem])] {
+        let rest = store.items.filter { $0.freshnessWarning == .none }
+        let buckets = Dictionary(grouping: rest) { PantryCategory.classify($0.name) }
+        return PantryCategory.allCases.compactMap { category in
+            guard let items = buckets[category], !items.isEmpty else { return nil }
+            return (category, items.sorted { $0.name < $1.name })
+        }
+    }
+
+    private var itemsList: some View {
+        VStack(alignment: .leading, spacing: FridjSpacing.md) {
+            HStack {
+                Text("\(store.items.count) items")
+                    .font(FridjFont.size(13))
+                    .foregroundColor(.fridjText.opacity(0.5))
+
+                Spacer()
+
+                Button {
+                    withAnimation(.spring(response: 0.32, dampingFraction: 0.8)) {
+                        isEditing.toggle()
                     }
-                    if item.freshnessWarning != .none {
-                        Text("\(item.daysSinceLastSeen)d")
-                            .font(FridjFont.size(11, weight: .bold))
-                            .foregroundColor(freshnessColor(item.freshnessWarning))
-                            .padding(.horizontal, 7).padding(.vertical, 2)
-                            .background(freshnessColor(item.freshnessWarning).opacity(0.12), in: Capsule())
-                    }
-                    Spacer()
-                    Button {
-                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                            store.remove(id: item.id)
-                        }
-                    } label: {
-                        Image(systemName: "xmark.circle.fill")
-                            .font(.system(size: 20))
-                            .foregroundColor(.fridjText.opacity(0.25))
-                    }
+                } label: {
+                    Text(isEditing ? "Done" : "Edit")
+                        .font(FridjFont.size(13, weight: .bold))
+                        .foregroundColor(isEditing ? .fridjGreen : .fridjOrange)
                 }
-                .padding(.horizontal, 14).padding(.vertical, 12)
-                .background(Color(white: 1), in: RoundedRectangle(cornerRadius: FridjRadius.md, style: .continuous))
-                .transition(.asymmetric(
-                    insertion: .opacity.combined(with: .move(edge: .trailing)),
-                    removal: .opacity.combined(with: .move(edge: .leading))
-                ))
+            }
+
+            if !useSoonItems.isEmpty {
+                chipSection(title: "Use soon", tint: .fridjCoral, items: useSoonItems)
+            }
+
+            ForEach(groupedItems, id: \.category) { group in
+                chipSection(title: group.category.title,
+                            tint: .fridjText.opacity(0.45),
+                            items: group.items)
             }
         }
         .animation(.spring(response: 0.4, dampingFraction: 0.82), value: store.items.count)
+    }
+
+    private func chipSection(title: String, tint: Color, items: [PantryItem]) -> some View {
+        VStack(alignment: .leading, spacing: FridjSpacing.sm) {
+            Text(title.uppercased())
+                .font(FridjFont.size(10, weight: .bold))
+                .tracking(0.9)
+                .foregroundColor(tint)
+
+            FlowLayout(spacing: 7) {
+                ForEach(items) { item in
+                    chip(for: item)
+                }
+            }
+        }
+    }
+
+    private func chip(for item: PantryItem) -> some View {
+        let warning = item.freshnessWarning
+        let isWarning = warning != .none
+        let accent = freshnessColor(warning)
+
+        return HStack(spacing: 5) {
+            Text(item.name)
+                .font(FridjFont.size(13, weight: .semibold))
+                .foregroundColor(.fridjText)
+
+            if isWarning {
+                Text("\(item.daysSinceLastSeen)d")
+                    .font(FridjFont.size(10, weight: .bold))
+                    .foregroundColor(accent)
+            }
+
+            if isEditing {
+                Button {
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                        store.remove(id: item.id)
+                    }
+                } label: {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 9, weight: .bold))
+                        .foregroundColor(.fridjText.opacity(0.45))
+                }
+                .buttonStyle(.plain)
+                .transition(.scale.combined(with: .opacity))
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background(isWarning ? accent.opacity(0.10) : Color(white: 1), in: Capsule())
+        .overlay {
+            Capsule()
+                .stroke(isWarning ? accent.opacity(0.45) : Color.fridjText.opacity(0.10),
+                        lineWidth: 1)
+        }
+        .transition(.asymmetric(
+            insertion: .opacity.combined(with: .scale(scale: 0.9)),
+            removal: .opacity.combined(with: .scale(scale: 0.9))
+        ))
+    }
+
+    private func urgency(_ warning: PantryItem.FreshnessWarning) -> Int {
+        switch warning {
+        case .none:  return 0
+        case .watch: return 1
+        case .old:   return 2
+        case .stale: return 3
+        }
     }
 
     private var grocerySection: some View {
@@ -267,14 +338,6 @@ struct PantryView: View {
         case .watch: return Color(red: 0.95, green: 0.75, blue: 0.1)
         case .old:   return .fridjOrange
         case .stale: return .fridjCoral
-        }
-    }
-
-    private func dotColor(for source: PantryItem.Source) -> Color {
-        switch source {
-        case .scanned: return .fridjGreen
-        case .manual:  return .fridjOrange
-        case .default: return .fridjText.opacity(0.3)
         }
     }
 
