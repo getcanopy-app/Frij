@@ -252,14 +252,23 @@ struct ScanFlowCoordinator: View {
                             .foregroundColor(.fridjCoral)
                     }
 
-                    if store.items.isEmpty {
-                        Text("Snap a photo of your fridge or pantry to get started.")
-                            .font(FridjFont.size(13))
-                            .foregroundColor(.fridjText.opacity(0.5))
-                    } else {
-                        pantrySection
-                        cookButton
+                    // Everything below the pill gets shoved down ~460pt as the pill
+                    // grows into a panel, which read as the list lurching away and
+                    // then swiping back. Fading it on the same spring means the
+                    // reflow happens behind an already-invisible view. Same
+                    // treatment the Camera/Photos rows above already use.
+                    Group {
+                        if store.items.isEmpty {
+                            Text("Snap a photo of your fridge or pantry to get started.")
+                                .font(FridjFont.size(13))
+                                .foregroundColor(.fridjText.opacity(0.5))
+                        } else {
+                            pantrySection
+                            cookButton
+                        }
                     }
+                    .opacity(isMorphedToPanel ? 0 : 1)
+                    .allowsHitTesting(!isMorphedToPanel)
                 }
                 .padding(FridjSpacing.lg)
                 .padding(.bottom, 120)
@@ -544,7 +553,13 @@ struct ScanFlowCoordinator: View {
                 .font(FridjFont.size(13))
                 .foregroundColor(.fridjText.opacity(0.5))
 
-            LazyVGrid(columns: [GridItem(.adaptive(minimum: 100), spacing: 8)], alignment: .leading, spacing: 8) {
+            // FlowLayout rather than LazyVGrid. The lazy grid destroys rows once
+            // the growing panel pushes them out of its render window and rebuilds
+            // them on the way back, so the bottom row popped in and out instead of
+            // animating with the rows above it. Flow keeps every chip mounted, and
+            // packs variable-width chips better than the adaptive grid's fixed
+            // 100pt columns did.
+            FlowLayout(spacing: 8) {
                 ForEach(store.items) { item in
                     HStack(spacing: 6) {
                         Text(item.name).font(FridjFont.size(14, weight: .medium)).lineLimit(1)
