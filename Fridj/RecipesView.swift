@@ -129,7 +129,25 @@ struct RecipesView: View {
                 Text("Tonight's options")
                     .font(FridjFont.style(.title, weight: .bold))
                     .foregroundColor(.fridjText)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.75)
                 Spacer()
+                Text("\(recipes.count)")
+                    .font(FridjFont.size(14, weight: .bold))
+                    .foregroundColor(.fridjText.opacity(0.4))
+            }
+
+            // Refresh sits with the subtitle rather than the title. Sharing the
+            // title row forced "Tonight's options" to wrap onto two lines and
+            // left the two controls fighting over the same horizontal space.
+            HStack(alignment: .firstTextBaseline) {
+                Text("From what's in your kitchen.")
+                    .font(FridjFont.size(13))
+                    .foregroundColor(.fridjText.opacity(0.5))
+                    .lineLimit(1)
+
+                Spacer(minLength: 12)
+
                 if session.isPremiumGated {
                     Button { sub.showPaywall = true } label: {
                         HStack(spacing: 5) {
@@ -140,6 +158,7 @@ struct RecipesView: View {
                         }
                         .foregroundColor(.fridjOrange)
                     }
+                    .fixedSize()
                 } else {
                     Button {
                         session.cook(ingredients: store.items.map(\.name))
@@ -159,9 +178,9 @@ struct RecipesView: View {
                         .opacity(session.canCook ? 1 : 0.35)
                     }
                     .disabled(!session.canCook)
+                    .fixedSize()
                 }
             }
-            .padding(.top, hasSaved ? FridjSpacing.md : 0)
 
             ForEach(Array(recipes.enumerated()), id: \.element.id) { index, recipe in
                 card(recipe)
@@ -175,6 +194,7 @@ struct RecipesView: View {
                     )
             }
         }
+        .padding(.top, hasSaved ? FridjSpacing.md : 0)
     }
 
     // MARK: Empty
@@ -219,45 +239,80 @@ struct RecipesView: View {
             selectedRecipe = recipe
         } label: {
             VStack(alignment: .leading, spacing: 0) {
+                // Heart and cook time float on the photo instead of sharing the
+                // title row — three elements competing there squeezed longer
+                // recipe names into an awkward wrap.
                 MealImageView(dish: recipe.name, cornerRadius: 0)
                     .frame(maxWidth: .infinity)
-                    .frame(height: 160)
+                    .frame(height: 170)
                     .clipShape(.rect(topLeadingRadius: FridjRadius.recipeCard,
                                     topTrailingRadius: FridjRadius.recipeCard))
-
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack(alignment: .top, spacing: 10) {
-                        Text(recipe.name)
-                            .font(FridjFont.size(18, weight: .bold))
-                            .foregroundColor(.fridjText)
-                            .multilineTextAlignment(.leading)
-                        Spacer()
+                    .overlay(alignment: .topTrailing) {
                         Button {
                             withAnimation(.spring(response: 0.3, dampingFraction: 0.55)) {
                                 _ = favorites.toggle(recipe)
                             }
                         } label: {
                             Image(systemName: isFav ? "heart.fill" : "heart")
-                                .font(.system(size: 18, weight: .semibold))
-                                .foregroundColor(isFav ? .fridjCoral : .fridjText.opacity(0.35))
+                                .font(.system(size: 15, weight: .bold))
+                                .foregroundColor(isFav ? .fridjCoral : .fridjText.opacity(0.6))
+                                .frame(width: 32, height: 32)
+                                .background(.ultraThinMaterial, in: Circle())
                         }
                         .buttonStyle(.plain)
-
-                        Text(recipe.cookTime)
-                            .font(FridjFont.size(12, weight: .bold))
-                            .foregroundColor(.fridjGreen)
-                            .padding(.horizontal, 10).padding(.vertical, 5)
-                            .background(Color.fridjMint.opacity(0.5), in: Capsule())
+                        .padding(10)
+                    }
+                    .overlay(alignment: .bottomLeading) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "clock")
+                                .font(.system(size: 10, weight: .bold))
+                            Text(recipe.cookTime)
+                                .font(FridjFont.size(12, weight: .bold))
+                        }
+                        .foregroundColor(.fridjText)
+                        .padding(.horizontal, 9)
+                        .padding(.vertical, 5)
+                        .background(.ultraThinMaterial, in: Capsule())
+                        .padding(10)
                     }
 
-                    Text("uses " + recipe.uses.joined(separator: ", "))
-                        .font(FridjFont.size(13))
-                        .foregroundColor(.fridjText.opacity(0.5))
+                VStack(alignment: .leading, spacing: 9) {
+                    Text(recipe.name)
+                        .font(FridjFont.size(18, weight: .bold))
+                        .foregroundColor(.fridjText)
+                        .multilineTextAlignment(.leading)
+                        .frame(maxWidth: .infinity, alignment: .leading)
 
+                    if !recipe.uses.isEmpty {
+                        Text("uses " + recipe.uses.joined(separator: ", "))
+                            .font(FridjFont.size(13))
+                            .foregroundColor(.fridjText.opacity(0.5))
+                            .lineLimit(2)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+
+                    // The missing items are the one thing that decides whether
+                    // you can cook this tonight, so they get chips rather than
+                    // being buried in a wrapping sentence.
                     if !recipe.needs.isEmpty {
-                        Text("you'll need: " + recipe.needs.joined(separator: ", "))
-                            .font(FridjFont.size(13, weight: .medium))
-                            .foregroundColor(.fridjOrange)
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("YOU'LL NEED")
+                                .font(FridjFont.size(9, weight: .bold))
+                                .tracking(0.9)
+                                .foregroundColor(.fridjOrange.opacity(0.75))
+
+                            FlowLayout(spacing: 6) {
+                                ForEach(recipe.needs, id: \.self) { need in
+                                    Text(need)
+                                        .font(FridjFont.size(12, weight: .semibold))
+                                        .foregroundColor(.fridjOrange)
+                                        .padding(.horizontal, 9)
+                                        .padding(.vertical, 5)
+                                        .background(Color.fridjOrange.opacity(0.12), in: Capsule())
+                                }
+                            }
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
                     }
                 }
                 .padding(FridjSpacing.md)
