@@ -164,7 +164,7 @@ struct PantryView: View {
                         .foregroundColor(.white)
                 }
                 .padding(.horizontal, 18).padding(.vertical, 12)
-                .background(Color.fridjText, in: RoundedRectangle(cornerRadius: FridjRadius.sm, style: .continuous))
+                .background(accent, in: RoundedRectangle(cornerRadius: FridjRadius.sm, style: .continuous))
             }
             .disabled(isValidating)
         }
