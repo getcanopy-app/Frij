@@ -28,17 +28,20 @@ enum HouseholdSize: Int, Codable, CaseIterable, Identifiable {
 
 struct Profile: Codable, Equatable {
     var diet: String = ""           // e.g. "high protein, no pork"
+    var cuisine: String = ""        // e.g. "Persian, Italian" — a soft lean, not a rule
     var household: HouseholdSize?   // optional — empty by default
     var dislikes: String = ""       // e.g. "no cilantro, no mushrooms"
 
-    init(diet: String = "", household: HouseholdSize? = nil, dislikes: String = "") {
+    init(diet: String = "", cuisine: String = "", household: HouseholdSize? = nil, dislikes: String = "") {
         self.diet = diet
+        self.cuisine = cuisine
         self.household = household
         self.dislikes = dislikes
     }
 
     var isEmpty: Bool {
         diet.trimmingCharacters(in: .whitespaces).isEmpty &&
+        cuisine.trimmingCharacters(in: .whitespaces).isEmpty &&
         household == nil &&
         dislikes.trimmingCharacters(in: .whitespaces).isEmpty
     }
@@ -51,6 +54,7 @@ struct Profile: Codable, Equatable {
     nonisolated init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         self.diet = try c.decodeIfPresent(String.self, forKey: .diet) ?? ""
+        self.cuisine = try c.decodeIfPresent(String.self, forKey: .cuisine) ?? ""
         self.household = try c.decodeIfPresent(HouseholdSize.self, forKey: .household)
         self.dislikes = try c.decodeIfPresent(String.self, forKey: .dislikes) ?? ""
     }

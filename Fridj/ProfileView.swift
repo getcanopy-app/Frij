@@ -54,6 +54,21 @@ struct ProfileView: View {
                                 .background(.white, in: RoundedRectangle(cornerRadius: FridjRadius.md, style: .continuous))
                         }
 
+                        // Cuisine
+                        VStack(alignment: .leading, spacing: FridjSpacing.sm) {
+                            Text("Cuisines you love")
+                                .font(FridjFont.size(15, weight: .bold))
+                                .foregroundColor(.fridjText)
+                            Text("Frij leans this way when your ingredients fit. Skip it and dinners are still great.")
+                                .font(FridjFont.size(13))
+                                .foregroundColor(.fridjText.opacity(0.5))
+                            TextField("e.g. Persian, Italian, Thai", text: $store.profile.cuisine, axis: .vertical)
+                                .lineLimit(2...4)
+                                .font(FridjFont.size(15))
+                                .padding(.horizontal, 16).padding(.vertical, 12)
+                                .background(.white, in: RoundedRectangle(cornerRadius: FridjRadius.md, style: .continuous))
+                        }
+
                         // Household
                         VStack(alignment: .leading, spacing: FridjSpacing.sm) {
                             Text("Cooking for")

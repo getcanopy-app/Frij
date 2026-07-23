@@ -64,6 +64,11 @@ enum FrijAPI {
         if !profile.dislikes.trimmingCharacters(in: .whitespaces).isEmpty {
             body["dislikes"] = profile.dislikes
         }
+        // Cuisine is a soft lean handled server-side; only send it when set.
+        let cuisine = profile.cuisine.trimmingCharacters(in: .whitespaces)
+        if !cuisine.isEmpty {
+            body["cuisine"] = cuisine
+        }
         if let household = profile.household {
             body["household"] = household.rawValue
         }
