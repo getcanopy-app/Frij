@@ -158,13 +158,22 @@ struct PantryView: View {
                 Task { await addItem() }
             } label: {
                 HStack(spacing: 6) {
-                    if isValidating { ProgressView().tint(.white).scaleEffect(0.8) }
+                    if isValidating { ProgressView().tint(accent).scaleEffect(0.8) }
                     Text(isValidating ? "Checking" : "Add")
                         .font(FridjFont.size(15, weight: .bold))
-                        .foregroundColor(.white)
+                        .foregroundColor(accent)
                 }
                 .padding(.horizontal, 18).padding(.vertical, 12)
-                .background(accent, in: RoundedRectangle(cornerRadius: FridjRadius.sm, style: .continuous))
+                // A tint rather than a fill: Add belongs to the mode, but it's a
+                // small utility action and shouldn't compete with the cook button.
+                // The outline carries the definition — a 15% fill of the sage
+                // green all but disappears against the cream background, while
+                // the same 15% of coral reads fine.
+                .background(accent.opacity(0.15), in: RoundedRectangle(cornerRadius: FridjRadius.sm, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: FridjRadius.sm, style: .continuous)
+                        .stroke(accent.opacity(0.35), lineWidth: 1)
+                )
             }
             .disabled(isValidating)
         }
