@@ -50,9 +50,11 @@ enum FrijAPI {
     }
 
     /// Recipes — pulls profile automatically so callers don't have to thread it through.
-    static func recipes(ingredients: [String], extraDiet: String? = nil) async throws -> [Recipe] {
+    static func recipes(ingredients: [String], extraDiet: String? = nil, mode: String = "dinner") async throws -> [Recipe] {
         let profile = ProfileStore.shared.profile
         var body: [String: Any] = ["ingredients": ingredients]
+        // Only sent for desserts; the backend treats anything else as dinner.
+        if mode == "dessert" { body["mode"] = mode }
 
         // Combine profile.diet with the optional per-call diet hint.
         let combinedDiet = [profile.diet, extraDiet]

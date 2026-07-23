@@ -8,6 +8,9 @@ struct PantryView: View {
     @State private var isValidating = false
     @State private var rejectionText: String?
     @State private var isEditing = false
+    // Per-session choice, not a saved preference — you pick it when you're
+    // deciding what to make, so it resets each visit.
+    @State private var isDessert = false
     // Empty means "cook with everything" — the original behaviour, so someone
     // who never discovers tap-to-pick gets exactly what they got before.
     @State private var selectedIDs: Set<UUID> = []
@@ -19,6 +22,7 @@ struct PantryView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: FridjSpacing.lg) {
                     header
+                    modeToggle
                     cookButton
 
                     if let err = session.cookError {
@@ -77,6 +81,34 @@ struct PantryView: View {
         .padding(.top, 60)
     }
 
+    /// Dinner is green, dessert is coral — the screen's whole accent shifts so
+    /// the mode is felt at a glance, not just read.
+    private var accent: Color { isDessert ? .fridjCoral : .fridjGreen }
+
+    private var modeToggle: some View {
+        HStack(spacing: 8) {
+            modeChip("Dinners", active: !isDessert) { isDessert = false }
+            modeChip("Desserts", active: isDessert) { isDessert = true }
+        }
+    }
+
+    private func modeChip(_ title: String, active: Bool, action: @escaping () -> Void) -> some View {
+        Button {
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) { action() }
+        } label: {
+            Text(title)
+                .font(FridjFont.size(14, weight: .bold))
+                .foregroundColor(active ? .white : .fridjText.opacity(0.5))
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 11)
+                .background(active ? accent : Color(white: 1), in: Capsule())
+                .overlay(
+                    Capsule().stroke(Color.fridjText.opacity(active ? 0 : 0.12), lineWidth: 1)
+                )
+        }
+        .buttonStyle(.plain)
+    }
+
     /// Selection wins when there is one; otherwise the whole pantry goes over.
     private var cookIngredients: [String] {
         guard !selectedIDs.isEmpty else { return store.allNames }
@@ -85,13 +117,17 @@ struct PantryView: View {
 
     private var cookButtonTitle: String {
         if session.isCooking { return "Cooking up ideas…" }
-        guard !selectedIDs.isEmpty else { return "Get 3 dinners from this" }
-        return "Cook with these \(selectedIDs.count)"
+        guard !selectedIDs.isEmpty else {
+            return isDessert ? "Get 3 desserts from this" : "Get 3 dinners from this"
+        }
+        return isDessert
+            ? "Dessert from these \(selectedIDs.count)"
+            : "Cook with these \(selectedIDs.count)"
     }
 
     private var cookButton: some View {
         Button {
-            session.cook(ingredients: cookIngredients)
+            session.cook(ingredients: cookIngredients, mode: isDessert ? "dessert" : "dinner")
         } label: {
             HStack {
                 if session.isCooking { ProgressView().tint(.white) }
@@ -102,7 +138,7 @@ struct PantryView: View {
             .frame(maxWidth: .infinity)
             .padding(.vertical, 17)
             .background(
-                store.items.isEmpty ? Color.fridjText.opacity(0.3) : Color.fridjGreen,
+                store.items.isEmpty ? Color.fridjText.opacity(0.3) : accent,
                 in: RoundedRectangle(cornerRadius: FridjRadius.scanButton, style: .continuous)
             )
         }

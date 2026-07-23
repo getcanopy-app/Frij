@@ -38,7 +38,9 @@ final class ScanSession {
         !SubscriptionManager.shared.isSubscribed && UsageStore.shared.hasReachedLimit
     }
 
-    func cook(ingredients: [String]) {
+    /// `mode` is "dinner" (default) or "dessert" — the backend swaps its whole
+    /// brief on it. Defaulted so existing callers keep asking for dinners.
+    func cook(ingredients: [String], mode: String = "dinner") {
         guard canCook else { return }
 
         let subMgr = SubscriptionManager.shared
@@ -60,7 +62,7 @@ final class ScanSession {
         cookError = nil
         Task {
             do {
-                let result = try await FrijAPI.recipes(ingredients: ingredients)
+                let result = try await FrijAPI.recipes(ingredients: ingredients, mode: mode)
                 recipes = result
                 showRecipes = true
             } catch {
