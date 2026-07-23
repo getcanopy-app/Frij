@@ -34,16 +34,35 @@ enum PantryCategory: String, CaseIterable, Hashable {
     static func classify(_ rawName: String) -> PantryCategory {
         let name = rawName.lowercased().trimmingCharacters(in: .whitespaces)
         guard !name.isEmpty else { return .other }
+        let forms = singularForms(of: name)
 
         var best: (category: PantryCategory, length: Int)?
         for category in PantryCategory.allCases where category != .other {
-            for keyword in category.keywords where name.contains(keyword) {
+            for keyword in category.keywords
+            where forms.contains(where: { $0.contains(keyword) }) {
                 if best == nil || keyword.count > best!.length {
                     best = (category, keyword.count)
                 }
             }
         }
         return best?.category ?? .other
+    }
+
+    /// A plain `contains` match misses plurals: "strawberries" does not contain
+    /// "strawberry", so berries and tomatoes fell through to `.other`. Matching
+    /// against de-pluralized forms too lets the keyword lists stay singular.
+    private static func singularForms(of name: String) -> [String] {
+        var forms = [name]
+        if name.hasSuffix("ies") {
+            forms.append(String(name.dropLast(3)) + "y")   // berries -> berry
+        }
+        if name.hasSuffix("es") {
+            forms.append(String(name.dropLast(2)))          // tomatoes -> tomato
+        }
+        if name.hasSuffix("s") {
+            forms.append(String(name.dropLast()))           // grapes -> grape
+        }
+        return forms
     }
 
     private var keywords: [String] {
@@ -85,7 +104,8 @@ enum PantryCategory: String, CaseIterable, Hashable {
                     "balsamic", "barley", "basmati", "black pepper", "bread",
                     "breadcrumbs", "broth", "brown sugar", "cashew", "cereal", "chia",
                     "chili flakes", "cinnamon", "cocoa", "coconut milk", "coffee",
-                    "cornstarch", "couscous", "cumin", "curry powder", "flour", "honey",
+                    "chocolate", "cornstarch", "couscous", "cumin", "curry powder",
+                    "flour", "honey", "jam", "marshmallow", "nutella",
                     "hot sauce", "ketchup", "maple syrup", "mayo", "mayonnaise",
                     "mustard", "noodle", "nutmeg", "oat", "oil", "olive oil", "oregano",
                     "panko", "paprika", "pasta", "peanut butter", "pecan", "penne",
