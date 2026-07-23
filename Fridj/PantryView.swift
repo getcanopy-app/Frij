@@ -85,28 +85,35 @@ struct PantryView: View {
     /// the mode is felt at a glance, not just read.
     private var accent: Color { isDessert ? .fridjCoral : .fridjGreen }
 
+    /// One chip rather than a two-up switch. Dinner is the everyday case, so it
+    /// is the unmarked default and gets no control at all; dessert is the
+    /// occasional detour you opt into. A 50/50 segmented control claimed the two
+    /// were equally likely, which they aren't, and it crowded the cook button.
+    ///
+    /// A single chip is unambiguous here because the cook button underneath
+    /// always states the current mode in words.
+    ///
+    /// Always coral, never `accent`: the chip advertises desserts, so in dinner
+    /// mode it reads as coral-on-cream against a green screen — which is what
+    /// makes it legible as "somewhere else you can go".
     private var modeToggle: some View {
-        HStack(spacing: 8) {
-            modeChip("Dinners", active: !isDessert) { isDessert = false }
-            modeChip("Desserts", active: isDessert) { isDessert = true }
-        }
-    }
-
-    private func modeChip(_ title: String, active: Bool, action: @escaping () -> Void) -> some View {
         Button {
-            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) { action() }
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) { isDessert.toggle() }
         } label: {
-            Text(title)
-                .font(FridjFont.size(14, weight: .bold))
-                .foregroundColor(active ? .white : .fridjText.opacity(0.5))
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 11)
-                .background(active ? accent : Color(white: 1), in: Capsule())
-                .overlay(
-                    Capsule().stroke(Color.fridjText.opacity(active ? 0 : 0.12), lineWidth: 1)
-                )
+            HStack(spacing: 5) {
+                Text("🍰").font(.system(size: 12))
+                Text("Desserts").font(FridjFont.size(13, weight: .bold))
+            }
+            .foregroundColor(isDessert ? .white : .fridjCoral)
+            .padding(.horizontal, 13)
+            .padding(.vertical, 7)
+            .background(isDessert ? Color.fridjCoral : Color(white: 1), in: Capsule())
+            .overlay(
+                Capsule().stroke(Color.fridjCoral.opacity(isDessert ? 0 : 0.55), lineWidth: 1)
+            )
         }
         .buttonStyle(.plain)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     /// Selection wins when there is one; otherwise the whole pantry goes over.
