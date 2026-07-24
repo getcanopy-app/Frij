@@ -447,8 +447,10 @@
 				INFOPLIST_KEY_CFBundleDisplayName = Frij;
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_NSCameraUsageDescription = "Frij uses your camera to scan your fridge and identify ingredients.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Frij listens so you can say your ingredients out loud instead of typing them.";
 				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Frij saves your fridge photos to your camera roll.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Frij scans your fridge photos.";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "Frij turns what you say into your ingredient list.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -495,8 +497,10 @@
 				INFOPLIST_KEY_CFBundleDisplayName = Frij;
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_NSCameraUsageDescription = "Frij uses your camera to scan your fridge and identify ingredients.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Frij listens so you can say your ingredients out loud instead of typing them.";
 				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Frij saves your fridge photos to your camera roll.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Frij scans your fridge photos.";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "Frij turns what you say into your ingredient list.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;

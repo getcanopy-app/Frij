@@ -11,6 +11,7 @@ struct PantryView: View {
     // in the pantry. Empty the rest of the time.
     @State private var pendingItems: [String] = []
     @FocusState private var addFocused: Bool
+    @State private var speech = SpeechCapture()
     @State private var isEditing = false
     // Per-session choice, not a saved preference — you pick it when you're
     // deciding what to make, so it resets each visit.
@@ -235,37 +236,121 @@ struct PantryView: View {
     }
 
     private var addRow: some View {
-        HStack {
-            TextField("add ingredients — type or speak", text: $newItem)
-                .font(FridjFont.size(15))
-                .focused($addFocused)
-                .padding(.horizontal, 16).padding(.vertical, 12)
-                .background(Color(white: 1), in: RoundedRectangle(cornerRadius: FridjRadius.sm, style: .continuous))
-                .onSubmit { Task { await addItem() } }
-                .disabled(isValidating)
-            Button {
-                Task { await addItem() }
-            } label: {
-                HStack(spacing: 6) {
-                    if isValidating { ProgressView().tint(accent).scaleEffect(0.8) }
-                    Text(isValidating ? "Checking" : "Add")
-                        .font(FridjFont.size(15, weight: .bold))
-                        .foregroundColor(accent)
+        Group {
+            if speech.isListening {
+                listeningPanel.transition(.opacity)
+            } else {
+                HStack {
+                    TextField("add ingredients — type or speak", text: $newItem)
+                        .font(FridjFont.size(15))
+                        .focused($addFocused)
+                        .padding(.horizontal, 16).padding(.vertical, 12)
+                        .background(Color(white: 1), in: RoundedRectangle(cornerRadius: FridjRadius.sm, style: .continuous))
+                        .onSubmit { Task { await addItem() } }
+                        .disabled(isValidating)
+
+                    trailingControl
                 }
+            }
+        }
+        .animation(.spring(response: 0.32, dampingFraction: 0.82), value: speech.isListening)
+    }
+
+    // Empty field → mic (say a list); typed text → Add; mid-parse → spinner.
+    @ViewBuilder
+    private var trailingControl: some View {
+        if isValidating {
+            ProgressView().tint(accent).frame(width: 52, height: 46)
+        } else if newItem.trimmingCharacters(in: .whitespaces).isEmpty {
+            micButton
+        } else {
+            addButton
+        }
+    }
+
+    private var micButton: some View {
+        Button { Task { await startListening() } } label: {
+            Image(systemName: "mic.fill")
+                .font(.system(size: 17, weight: .semibold))
+                .foregroundColor(.white)
+                .frame(width: 46, height: 46)
+                .background(accent, in: RoundedRectangle(cornerRadius: FridjRadius.sm, style: .continuous))
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var addButton: some View {
+        Button { Task { await addItem() } } label: {
+            Text("Add")
+                .font(FridjFont.size(15, weight: .bold))
+                .foregroundColor(accent)
                 .padding(.horizontal, 18).padding(.vertical, 12)
-                // A tint rather than a fill: Add belongs to the mode, but it's a
-                // small utility action and shouldn't compete with the cook button.
-                // The outline carries the definition — a 15% fill of the sage
-                // green all but disappears against the cream background, while
-                // the same 15% of coral reads fine.
+                // A tint rather than a fill: Add is a small utility action and
+                // shouldn't compete with the cook button. The outline carries the
+                // definition — a 15% fill of the sage green all but disappears
+                // against cream, while the same 15% of coral reads fine.
                 .background(accent.opacity(0.15), in: RoundedRectangle(cornerRadius: FridjRadius.sm, style: .continuous))
                 .overlay(
                     RoundedRectangle(cornerRadius: FridjRadius.sm, style: .continuous)
                         .stroke(accent.opacity(0.35), lineWidth: 1)
                 )
-            }
-            .disabled(isValidating)
         }
+        .buttonStyle(.plain)
+    }
+
+    // The "listening" state, modelled on the reference: live transcript above a
+    // dark pill with an animated waveform and a stop button. Replaces the add
+    // row while recording, so it never covers the screen like a keyboard.
+    private var listeningPanel: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(speech.transcript.isEmpty ? "Listening…" : speech.transcript)
+                .font(FridjFont.size(15, weight: .semibold))
+                .foregroundColor(speech.transcript.isEmpty ? .fridjText.opacity(0.35) : .fridjText)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .animation(.easeOut(duration: 0.12), value: speech.transcript)
+
+            HStack(spacing: 12) {
+                WaveformView()
+                Spacer()
+                Button { stopListening() } label: {
+                    RoundedRectangle(cornerRadius: 3, style: .continuous)
+                        .fill(.white)
+                        .frame(width: 12, height: 12)
+                        .frame(width: 34, height: 34)
+                        .background(Circle().fill(.white.opacity(0.18)))
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(.leading, 16).padding(.trailing, 9).padding(.vertical, 9)
+            .background(Color.fridjDark, in: Capsule())
+        }
+        .padding(FridjSpacing.md)
+        .background(Color(white: 1), in: RoundedRectangle(cornerRadius: FridjRadius.md, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: FridjRadius.md, style: .continuous)
+                .stroke(Color.fridjText.opacity(0.08), lineWidth: 1)
+        )
+    }
+
+    private func startListening() async {
+        rejectionText = nil
+        addFocused = false
+        await speech.start()
+        switch speech.status {
+        case .denied:
+            rejectionText = "Frij needs microphone and speech access to listen — turn them on in Settings."
+        case .unavailable:
+            rejectionText = "Voice input isn't available right now — try typing instead."
+        default:
+            break
+        }
+    }
+
+    private func stopListening() {
+        speech.stop()
+        let text = speech.transcript
+        guard !text.trimmingCharacters(in: .whitespaces).isEmpty else { return }
+        Task { await ingest(text) }
     }
 
     // Items that have gone unseen long enough to be worth cooking first.
@@ -538,8 +623,12 @@ struct PantryView: View {
         }
     }
 
-    private func addItem() async {
-        let text = newItem.trimmingCharacters(in: .whitespaces)
+    private func addItem() async { await ingest(newItem) }
+
+    // Shared by the typed field and voice: one phrase in, parsed and either
+    // added (single) or handed to the confirm card (multiple).
+    private func ingest(_ raw: String) async {
+        let text = raw.trimmingCharacters(in: .whitespaces)
         guard !text.isEmpty else { return }
         rejectionText = nil
         isValidating = true
@@ -571,6 +660,27 @@ struct PantryView: View {
                 newItem = ""
             }
         }
+    }
+}
+
+/// Decorative "listening" bars. Not tied to real amplitude — that would mean
+/// hopping the audio thread to the main actor for every buffer — just a steady
+/// animation while the recognizer runs.
+private struct WaveformView: View {
+    @State private var animating = false
+    var body: some View {
+        HStack(spacing: 3) {
+            ForEach(0..<12, id: \.self) { i in
+                Capsule()
+                    .fill(.white)
+                    .frame(width: 3, height: animating ? 20 : 6)
+                    .animation(
+                        .easeInOut(duration: 0.5).repeatForever().delay(Double(i % 6) * 0.1),
+                        value: animating)
+            }
+        }
+        .frame(height: 22)
+        .onAppear { animating = true }
     }
 }
 
