@@ -12,6 +12,8 @@ struct PantryView: View {
     @State private var pendingItems: [String] = []
     @FocusState private var addFocused: Bool
     @State private var speech = SpeechCapture()
+    // Shared geometry so the mic button morphs into the listening pill.
+    @Namespace private var voiceNS
     @State private var isEditing = false
     // Per-session choice, not a saved preference — you pick it when you're
     // deciding what to make, so it resets each visit.
@@ -238,11 +240,9 @@ struct PantryView: View {
     private var addRow: some View {
         ZStack {
             if speech.isListening {
-                listeningPanel
-                    // Springs up from where the field was, with a little overshoot.
-                    .transition(.scale(scale: 0.9, anchor: .bottom)
-                        .combined(with: .opacity)
-                        .combined(with: .offset(y: 8)))
+                // The pill's geometry comes from the shared matchedGeometryEffect
+                // (it grows out of the mic); the content just crossfades over it.
+                listeningPanel.transition(.opacity)
             } else {
                 HStack {
                     TextField("add ingredients — type or speak", text: $newItem)
@@ -255,11 +255,11 @@ struct PantryView: View {
 
                     trailingControl
                 }
-                .transition(.scale(scale: 0.94).combined(with: .opacity))
+                .transition(.opacity)
             }
         }
-        // Low damping = the gentle Duolingo bounce as the pill settles.
-        .animation(.spring(response: 0.42, dampingFraction: 0.68), value: speech.isListening)
+        // Low damping = the gentle Duolingo bounce as the mic expands and settles.
+        .animation(.spring(response: 0.44, dampingFraction: 0.72), value: speech.isListening)
         // A light tap of haptic on both start and stop — the Duolingo touch.
         .sensoryFeedback(.impact(weight: .light), trigger: speech.isListening)
     }
@@ -282,7 +282,12 @@ struct PantryView: View {
                 .font(.system(size: 17, weight: .semibold))
                 .foregroundColor(.white)
                 .frame(width: 46, height: 46)
-                .background(accent, in: RoundedRectangle(cornerRadius: FridjRadius.sm, style: .continuous))
+                // Capsule (a circle at this size) so it morphs cleanly into the
+                // pill's capsule. Shared id = the mic expands into the pill.
+                .background(
+                    Capsule().fill(accent)
+                        .matchedGeometryEffect(id: "voicePill", in: voiceNS)
+                )
         }
         .buttonStyle(.plain)
     }
@@ -310,12 +315,15 @@ struct PantryView: View {
     // dark pill with an animated waveform and a stop button. Replaces the add
     // row while recording, so it never covers the screen like a keyboard.
     private var listeningPanel: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 10) {
             Text(speech.transcript.isEmpty ? "Listening…" : speech.transcript)
                 .font(FridjFont.size(15, weight: .semibold))
                 .foregroundColor(speech.transcript.isEmpty ? .fridjText.opacity(0.35) : .fridjText)
                 .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 4)
                 .animation(.easeOut(duration: 0.12), value: speech.transcript)
+                // Fades in above the morphing pill rather than being part of it.
+                .transition(.opacity)
 
             HStack(spacing: 12) {
                 WaveformView()
@@ -330,14 +338,13 @@ struct PantryView: View {
                 .buttonStyle(.plain)
             }
             .padding(.leading, 16).padding(.trailing, 9).padding(.vertical, 9)
-            .background(Color.fridjDark, in: Capsule())
+            .frame(maxWidth: .infinity)
+            // The pill that the mic morphs into — same shared id.
+            .background(
+                Capsule().fill(Color.fridjDark)
+                    .matchedGeometryEffect(id: "voicePill", in: voiceNS)
+            )
         }
-        .padding(FridjSpacing.md)
-        .background(Color(white: 1), in: RoundedRectangle(cornerRadius: FridjRadius.md, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: FridjRadius.md, style: .continuous)
-                .stroke(Color.fridjText.opacity(0.08), lineWidth: 1)
-        )
     }
 
     private func startListening() async {
