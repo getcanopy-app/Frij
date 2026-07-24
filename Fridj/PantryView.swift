@@ -86,6 +86,15 @@ struct PantryView: View {
         .sheet(isPresented: $session.showRecipes) {
             RecipesView()
         }
+        #if DEBUG
+        .onAppear {  // TEMP-ANIM
+            guard CommandLine.arguments.contains("-shotAnim") else { return }
+            Task { @MainActor in
+                try? await Task.sleep(nanoseconds: 2_000_000_000)
+                speech.debugFakeListen()
+            }
+        }
+        #endif
     }
 
     private var header: some View {
@@ -241,8 +250,10 @@ struct PantryView: View {
         ZStack {
             if speech.isListening {
                 // The pill's geometry comes from the shared matchedGeometryEffect
-                // (it grows out of the mic); the content just crossfades over it.
-                listeningPanel.transition(.opacity)
+                // (it grows out of the mic). The content fades on its OWN fast
+                // curve, decoupled from the spring, so the shape glides while the
+                // contents snap in crisply instead of smearing at 50% opacity.
+                listeningPanel.transition(.opacity.animation(.easeOut(duration: 0.18)))
             } else {
                 HStack {
                     TextField("add ingredients — type or speak", text: $newItem)
@@ -255,11 +266,12 @@ struct PantryView: View {
 
                     trailingControl
                 }
-                .transition(.opacity)
+                .transition(.opacity.animation(.easeOut(duration: 0.15)))
             }
         }
-        // Low damping = the gentle Duolingo bounce as the mic expands and settles.
-        .animation(.spring(response: 0.44, dampingFraction: 0.72), value: speech.isListening)
+        // Drives the matched-geometry morph. Higher damping settles the expand
+        // without the wobble that read as lag — still quick, just clean.
+        .animation(.spring(response: 0.4, dampingFraction: 0.86), value: speech.isListening)
         // A light tap of haptic on both start and stop — the Duolingo touch.
         .sensoryFeedback(.impact(weight: .light), trigger: speech.isListening)
     }
