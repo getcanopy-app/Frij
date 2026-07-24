@@ -36,6 +36,10 @@ final class SpeechCapture {
     private(set) var status: Status = .idle
     /// Everything heard so far this session (committed segments + the live one).
     private(set) var transcript = ""
+    /// Live mic loudness, 0...1, smoothed. Drives the waveform so the bars react
+    /// to the actual voice instead of just bouncing on a timer. Metered off the
+    /// same audio buffers the recognizer consumes — no extra tap.
+    private(set) var level: CGFloat = 0
 
     var isListening: Bool { status == .listening }
 
@@ -58,7 +62,7 @@ final class SpeechCapture {
 
     func start() async {
         guard status != .listening else { return }
-        committed = ""; partial = ""; transcript = ""; segmentCount = 0
+        committed = ""; partial = ""; transcript = ""; segmentCount = 0; level = 0
 
         guard await authorizeSpeech(), await authorizeMic() else {
             status = .denied
@@ -85,6 +89,7 @@ final class SpeechCapture {
         commitPartial()
         teardown()
         status = .idle
+        level = 0
     }
 
     // MARK: Engine (runs for the whole session)
@@ -98,8 +103,12 @@ final class SpeechCapture {
         let format = input.outputFormat(forBus: 0)
         // Runs on the audio thread. Appends to whichever request is current, so
         // it keeps feeding across segment restarts without being reinstalled.
+        // Also meters loudness here (cheap RMS over the buffer) and hands it to
+        // the main actor for the waveform.
         input.installTap(onBus: 0, bufferSize: 1024, format: format) { [weak self] buffer, _ in
             self?.request?.append(buffer)
+            let rms = SpeechCapture.rms(of: buffer)
+            Task { @MainActor [weak self] in self?.pushLevel(rms) }
         }
         engine.prepare()
         try engine.start()
@@ -151,6 +160,32 @@ final class SpeechCapture {
                   let recognizer = self.recognizer, recognizer.isAvailable else { return }
             self.startSegment(with: recognizer)
         }
+    }
+
+    // MARK: Metering
+
+    /// Root-mean-square of the buffer's first channel. Runs on the audio thread,
+    /// so it stays a tight loop — no allocations, no main-actor hops.
+    private static func rms(of buffer: AVAudioPCMBuffer) -> Float {
+        guard let data = buffer.floatChannelData?[0] else { return 0 }
+        let n = Int(buffer.frameLength)
+        guard n > 0 else { return 0 }
+        var sum: Float = 0
+        for i in 0..<n {
+            let s = data[i]
+            sum += s * s
+        }
+        return (sum / Float(n)).squareRoot()
+    }
+
+    /// Map RMS → dB → 0...1 over a -50 dB floor, then smooth. Attack fast so the
+    /// bars pop the instant you speak; release slower so they don't flicker.
+    private func pushLevel(_ rms: Float) {
+        guard status == .listening else { level = 0; return }
+        let db = 20 * log10(max(rms, 1e-7))
+        let norm = CGFloat(max(0, min(1, (db + 50) / 50)))
+        level = norm > level ? level * 0.4 + norm * 0.6
+                             : level * 0.82 + norm * 0.18
     }
 
     private func commitPartial() {

@@ -1,4 +1,5 @@
 import SwiftUI
+import Combine
 
 struct PantryView: View {
     @State private var store = PantryStore.shared
@@ -311,7 +312,7 @@ struct PantryView: View {
         return ZStack {
             if listening {
                 HStack(spacing: 12) {
-                    WaveformView()
+                    WaveformView(level: speech.level)
                     Spacer(minLength: 0)
                     Button { stopListening() } label: {
                         RoundedRectangle(cornerRadius: 3, style: .continuous)
@@ -733,28 +734,39 @@ struct PantryView: View {
     }
 }
 
-/// Decorative "listening" bars. Not tied to real amplitude — that would mean
-/// hopping the audio thread to the main actor for every buffer — just a steady
-/// animation while the recognizer runs.
+/// Live "listening" bars that react to the mic. Each tick pushes the current
+/// loudness (`level`, metered in SpeechCapture) onto the right and scrolls the
+/// history left, so speaking sends a wave travelling across the bars and silence
+/// flattens them — a real voice meter, not a canned bounce.
 private struct WaveformView: View {
-    @State private var animating = false
+    var level: CGFloat   // 0...1, smoothed loudness from the recognizer's audio
+
+    private let barCount = 14
+    @State private var bars: [CGFloat]
+    // ~16 Hz: fast enough to feel live, slow enough to read as a moving wave.
+    private let tick = Timer.publish(every: 0.06, on: .main, in: .common).autoconnect()
+
+    init(level: CGFloat) {
+        self.level = level
+        _bars = State(initialValue: Array(repeating: 0, count: 14))
+    }
+
     var body: some View {
         HStack(spacing: 3) {
-            ForEach(0..<12, id: \.self) { i in
+            ForEach(bars.indices, id: \.self) { i in
                 Capsule()
                     .fill(.white)
-                    .frame(width: 3, height: animating ? 20 : 6)
-                    .animation(
-                        .easeInOut(duration: 0.5).repeatForever().delay(Double(i % 6) * 0.1),
-                        value: animating)
+                    .frame(width: 3, height: 5 + bars[i] * 21)
             }
         }
-        .frame(height: 22)
-        // Wait for the pill's morph to finish before the bars start bouncing —
-        // kicking off 12 repeating animations mid-morph is what made it hitch.
-        .task {
-            try? await Task.sleep(nanoseconds: 400_000_000)
-            animating = true
+        .frame(height: 26)
+        .animation(.easeOut(duration: 0.09), value: bars)
+        .onReceive(tick) { _ in
+            var next = bars
+            next.removeFirst()
+            // A touch of jitter so even a steady tone still dances a little.
+            next.append(min(1, level * CGFloat.random(in: 0.85...1.15)))
+            bars = next
         }
     }
 }
