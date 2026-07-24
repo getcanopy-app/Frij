@@ -406,7 +406,7 @@ struct PantryView: View {
             }
 
             if !useSoonItems.isEmpty {
-                chipSection(title: "Use soon", tint: .fridjCoral, items: useSoonItems)
+                useSoonSection
             }
 
             ForEach(groupedItems, id: \.category) { group in
@@ -427,6 +427,41 @@ struct PantryView: View {
 
             FlowLayout(spacing: 7) {
                 ForEach(items) { item in
+                    chip(for: item)
+                }
+            }
+        }
+    }
+
+    // Same as a chip section, but its header carries a "Cook these" shortcut —
+    // Frij's whole reason for being, cooking from what's about to spoil. It
+    // sends the full pantry with the expiring items flagged so the dishes get
+    // built around them without going thin.
+    private var useSoonSection: some View {
+        VStack(alignment: .leading, spacing: FridjSpacing.sm) {
+            HStack {
+                Text("USE SOON")
+                    .font(FridjFont.size(10, weight: .bold))
+                    .tracking(0.9)
+                    .foregroundColor(.fridjCoral)
+                Spacer()
+                Button {
+                    session.cook(ingredients: store.allNames,
+                                 mode: isDessert ? "dessert" : "dinner",
+                                 prioritize: useSoonItems.map(\.name))
+                } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: "sparkles").font(.system(size: 10, weight: .bold))
+                        Text("Cook these").font(FridjFont.size(12, weight: .bold))
+                    }
+                    .foregroundColor(.fridjCoral)
+                    .opacity(session.canCook ? 1 : 0.4)
+                }
+                .disabled(!session.canCook)
+            }
+
+            FlowLayout(spacing: 7) {
+                ForEach(useSoonItems) { item in
                     chip(for: item)
                 }
             }

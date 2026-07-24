@@ -39,8 +39,9 @@ final class ScanSession {
     }
 
     /// `mode` is "dinner" (default) or "dessert" — the backend swaps its whole
-    /// brief on it. Defaulted so existing callers keep asking for dinners.
-    func cook(ingredients: [String], mode: String = "dinner") {
+    /// brief on it. `prioritize` names items about to spoil for "use it up".
+    /// Both defaulted so existing callers keep asking for dinners from all of it.
+    func cook(ingredients: [String], mode: String = "dinner", prioritize: [String] = []) {
         guard canCook else { return }
 
         let subMgr = SubscriptionManager.shared
@@ -62,7 +63,7 @@ final class ScanSession {
         cookError = nil
         Task {
             do {
-                let result = try await FrijAPI.recipes(ingredients: ingredients, mode: mode)
+                let result = try await FrijAPI.recipes(ingredients: ingredients, mode: mode, prioritize: prioritize)
                 recipes = result
                 showRecipes = true
             } catch {
