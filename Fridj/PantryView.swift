@@ -86,15 +86,6 @@ struct PantryView: View {
         .sheet(isPresented: $session.showRecipes) {
             RecipesView()
         }
-        #if DEBUG
-        .onAppear {  // TEMP-ANIM
-            guard CommandLine.arguments.contains("-shotAnim") else { return }
-            Task { @MainActor in
-                try? await Task.sleep(nanoseconds: 2_000_000_000)
-                speech.debugFakeListen()
-            }
-        }
-        #endif
     }
 
     private var header: some View {
