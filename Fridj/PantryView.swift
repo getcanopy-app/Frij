@@ -236,9 +236,13 @@ struct PantryView: View {
     }
 
     private var addRow: some View {
-        Group {
+        ZStack {
             if speech.isListening {
-                listeningPanel.transition(.opacity)
+                listeningPanel
+                    // Springs up from where the field was, with a little overshoot.
+                    .transition(.scale(scale: 0.9, anchor: .bottom)
+                        .combined(with: .opacity)
+                        .combined(with: .offset(y: 8)))
             } else {
                 HStack {
                     TextField("add ingredients — type or speak", text: $newItem)
@@ -251,9 +255,13 @@ struct PantryView: View {
 
                     trailingControl
                 }
+                .transition(.scale(scale: 0.94).combined(with: .opacity))
             }
         }
-        .animation(.spring(response: 0.32, dampingFraction: 0.82), value: speech.isListening)
+        // Low damping = the gentle Duolingo bounce as the pill settles.
+        .animation(.spring(response: 0.42, dampingFraction: 0.68), value: speech.isListening)
+        // A light tap of haptic on both start and stop — the Duolingo touch.
+        .sensoryFeedback(.impact(weight: .light), trigger: speech.isListening)
     }
 
     // Empty field → mic (say a list); typed text → Add; mid-parse → spinner.
