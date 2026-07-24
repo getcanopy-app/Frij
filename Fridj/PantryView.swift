@@ -7,6 +7,9 @@ struct PantryView: View {
     @State private var newItem: String = ""
     @State private var isValidating = false
     @State private var rejectionText: String?
+    // A parsed multi-item list awaiting the user's confirmation before it lands
+    // in the pantry. Empty the rest of the time.
+    @State private var pendingItems: [String] = []
     @State private var isEditing = false
     // Per-session choice, not a saved preference — you pick it when you're
     // deciding what to make, so it resets each visit.
@@ -37,6 +40,14 @@ struct PantryView: View {
                         Text(rejectionText)
                             .font(FridjFont.size(13))
                             .foregroundColor(.fridjCoral)
+                    }
+
+                    if !pendingItems.isEmpty {
+                        pendingConfirm
+                            .transition(.asymmetric(
+                                insertion: .opacity.combined(with: .offset(y: -6)),
+                                removal: .opacity
+                            ))
                     }
 
                     if store.items.isEmpty {
@@ -153,9 +164,74 @@ struct PantryView: View {
         .animation(.easeOut(duration: 0.18), value: selectedIDs.count)
     }
 
+    // Shown after a typed or dictated phrase parses into multiple items: the
+    // "here's what I heard, tap to remove anything wrong" checkpoint. Uses the
+    // screen's accent so it sits with whatever mode is active.
+    private var pendingConfirm: some View {
+        VStack(alignment: .leading, spacing: FridjSpacing.sm) {
+            Text("Add these? Tap any to remove.")
+                .font(FridjFont.size(13, weight: .medium))
+                .foregroundColor(.fridjText.opacity(0.6))
+
+            FlowLayout(spacing: 7) {
+                ForEach(pendingItems, id: \.self) { item in
+                    Button {
+                        withAnimation(.spring(response: 0.28, dampingFraction: 0.75)) {
+                            pendingItems.removeAll { $0 == item }
+                        }
+                    } label: {
+                        HStack(spacing: 5) {
+                            Text(item).font(FridjFont.size(13, weight: .semibold))
+                            Image(systemName: "xmark").font(.system(size: 9, weight: .bold))
+                        }
+                        .foregroundColor(accent)
+                        .padding(.horizontal, 11).padding(.vertical, 7)
+                        .background(accent.opacity(0.12), in: Capsule())
+                        .overlay(Capsule().stroke(accent.opacity(0.35), lineWidth: 1))
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+
+            HStack(spacing: 10) {
+                Button {
+                    let toAdd = pendingItems
+                    withAnimation(.spring(response: 0.35, dampingFraction: 0.82)) {
+                        for name in toAdd { store.addLocal(name: name, source: .manual) }
+                        pendingItems = []
+                    }
+                } label: {
+                    Text("Add \(pendingItems.count)")
+                        .font(FridjFont.size(15, weight: .bold))
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                        .background(accent, in: RoundedRectangle(cornerRadius: FridjRadius.sm, style: .continuous))
+                }
+                .buttonStyle(.plain)
+
+                Button {
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) { pendingItems = [] }
+                } label: {
+                    Text("Cancel")
+                        .font(FridjFont.size(15, weight: .bold))
+                        .foregroundColor(.fridjText.opacity(0.5))
+                        .padding(.horizontal, 18).padding(.vertical, 12)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(FridjSpacing.md)
+        .background(Color(white: 1), in: RoundedRectangle(cornerRadius: FridjRadius.md, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: FridjRadius.md, style: .continuous)
+                .stroke(Color.fridjText.opacity(0.08), lineWidth: 1)
+        )
+    }
+
     private var addRow: some View {
         HStack {
-            TextField("add an ingredient", text: $newItem)
+            TextField("add ingredients — type or speak", text: $newItem)
                 .font(FridjFont.size(15))
                 .padding(.horizontal, 16).padding(.vertical, 12)
                 .background(Color(white: 1), in: RoundedRectangle(cornerRadius: FridjRadius.sm, style: .continuous))
@@ -457,16 +533,37 @@ struct PantryView: View {
     }
 
     private func addItem() async {
-        let v = newItem.trimmingCharacters(in: .whitespaces)
-        guard !v.isEmpty else { return }
+        let text = newItem.trimmingCharacters(in: .whitespaces)
+        guard !text.isEmpty else { return }
         rejectionText = nil
         isValidating = true
-        let result = await store.addValidated(name: v)
-        isValidating = false
-        if result.valid {
+        defer { isValidating = false }
+
+        let items: [String]
+        do {
+            items = try await FrijAPI.parseIngredients(text: text)
+        } catch {
+            // Network hiccup: don't strand the user — add the raw text as one
+            // item and let validation happen next time.
+            store.addLocal(name: text, source: .manual)
             newItem = ""
-        } else {
-            rejectionText = "Hmm, \"\(v)\" doesn't look like a food item. (\(result.reason ?? "not recognized"))"
+            return
+        }
+
+        switch items.count {
+        case 0:
+            rejectionText = "Didn't catch any food in that — try again."
+        case 1:
+            // A single clean item needs no confirmation — same feel as before.
+            store.addLocal(name: items[0], source: .manual)
+            newItem = ""
+        default:
+            // A spoken or typed list: show it back for a quick check before
+            // committing, per "here's what I heard, tap to remove anything wrong".
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.82)) {
+                pendingItems = items
+                newItem = ""
+            }
         }
     }
 }

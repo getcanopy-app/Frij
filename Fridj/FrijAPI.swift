@@ -100,6 +100,13 @@ enum FrijAPI {
         return try JSONDecoder().decode(ValidationResult.self, from: data)
     }
 
+    /// One messy phrase — typed or dictated — into a clean, normalized list.
+    static func parseIngredients(text: String) async throws -> [String] {
+        struct Resp: Decodable { let items: [String] }
+        let data = try await post("/api/parse-ingredients", body: ["text": text])
+        return (try? JSONDecoder().decode(Resp.self, from: data))?.items ?? []
+    }
+
     private static func post(_ path: String, body: [String: Any]) async throws -> Data {
         guard let url = URL(string: baseURL + path) else {
             throw FrijAPIError.badResponse("Bad URL")
