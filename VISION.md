@@ -1,7 +1,10 @@
-# Frij — V3 Vision Doc (v6)
+# Frij — V3 Vision Doc (v7)
 
 Running file of bigger ideas. Updated as we go.
 
+> **v7 additions:** More modes (occasions vs modifiers), and Use It Up — both
+> at the bottom.
+>
 > **v6 addition:** Meals ↔ Desserts mode switch (bottom).
 >
 > **v5 additions:** Calorie Tracking & Scanning, Ingredient Sourcing / Store
@@ -267,7 +270,15 @@ Every idea here is real. None get built before:
 - ☐ URL paste / recipe link import (stepping stone for TikTok import)
 
 **Modes:** *(new in v6)*
-- ☐ **Meals ↔ Desserts switch** (one toggle, doubles what Frij can make)
+- ☑ **Meals ↔ Desserts switch** (shipped — single Desserts chip on the pantry)
+- ☐ **Snack** and **Breakfast** occasions *(v7)*
+- ☐ Drinks / smoothies occasion *(v7)*
+- ☐ Hosting / appetizers occasion *(v7)*
+- ☐ Modifiers — quick, batch-cook, no-cook *(v7, a separate control)*
+- ☐ Move the mode picker into the cook button once there are 3+ *(v7)*
+
+**Anti-waste:** *(new in v7)*
+- ☐ **Use It Up** ⭐ (one tap, cooks from what's about to spoil)
 
 **Health & logistics:** *(new in v5)*
 - ☐ **Calorie tracking & scanning** (opt-in health mode)
@@ -453,6 +464,92 @@ The current scattered-dot version (no real positions) could ship as-is — it
 already looks intentional even without accurate placement. Or hide the dots
 entirely and keep just the clean "We found" panel (which is already good),
 then bring dots back once the positioning is solid.
+
+---
+
+## V3 — Use It Up *(new in v7)* ⭐
+
+> One tap that cooks from the food about to go bad. Not a new mode, not a new
+> screen — a small "Cook these" action sitting next to the USE SOON band.
+
+### Why this is the strongest small idea in the doc
+
+- It **is the mission.** No food goes to waste is the reason Frij exists, and
+  nothing else in the app acts on it directly.
+- **The data already exists** — `freshnessWarning` and the USE SOON band ship
+  today.
+- **The machinery already exists** — multi-select plus "Cook with these N" is
+  built, so this is one tap that selects the USE SOON chips and fires it.
+- **No competitor can copy it.** Other recipe apps don't know what's dying in
+  *your* fridge. Neither does ChatGPT. This is only possible because Frij holds
+  the persistent state of your kitchen — the thesis at the top of this doc,
+  cashed in.
+
+### What it would look like
+
+A quiet "Cook these" next to the USE SOON header. Tap it and the band's chips
+are selected and the cook button fires with just those. Roughly an hour of work
+given what's already in place.
+
+### Watch
+
+Cooking *only* from near-spoiled items can produce a thin recipe (three sad
+vegetables). It should probably select the USE SOON items **plus** whatever
+staples make them into a real dish, rather than passing the expiring items
+alone.
+
+---
+
+## V3 — More Modes: occasions vs modifiers *(new in v7)*
+
+> Dinner and dessert shouldn't be the only two things Frij can make. But the
+> additions split into two kinds that must not share one control.
+
+### The distinction that matters
+
+- **Occasions** — dinner, breakfast, snack, dessert, drinks, hosting. Mutually
+  exclusive. "Which meal is this?"
+- **Modifiers** — quick, batch-cook, no-cook, use-it-up. These *qualify* an
+  occasion rather than replacing it.
+
+A menu reading *Dinners / Snacks / Quick / Use it up* is incoherent: "quick"
+isn't an alternative to dinner, it's an adjective on it. Occasions belong in
+one picker; modifiers need their own control (or none — they can be phrased
+into the existing prompt).
+
+### Occasions worth adding
+
+- **Snack** ⭐ — the strongest addition. A real, distinct ask ("something small,
+  no cooking") with output nothing like dinner.
+- **Breakfast** ⭐ — genuinely different food, genuinely different occasion.
+- **Drinks / smoothies** — cheap, and it finally uses the fruit, yogurt and milk
+  that no savoury recipe touches.
+- **Hosting / appetizers** — occasional but high-intent.
+- **Lunch — skip it.** It overlaps dinner almost entirely; the model would
+  return the same dishes under a different label.
+
+### Modifiers worth adding (later, separate control)
+
+- **Quick / 15-minute** — probably the most universally wanted item in this
+  whole document. Everyone is tired on a weeknight.
+- **Batch / meal prep** — "cook once, eat four times." Pairs with the calorie
+  tracking idea.
+- **No-cook** — hot day, no stove, can't be bothered.
+
+### The UI consequence (important)
+
+The single Desserts chip that shipped works *only* because the choice is
+binary: dinner is home, dessert is the one detour. Add snack and breakfast and
+that pattern collapses into a row of competing chips — the exact crowding the
+chip was introduced to fix.
+
+At three or more modes, move the picker **into the cook button**: "Get 3
+**dinners ▾** from this", where the mode word opens a small menu. The button
+already states the mode, so this adds no new UI at all and scales to any number
+of occasions. The chip disappears.
+
+Backend-side each new occasion is nearly free — `mode` already exists, so it's
+one more prompt variant per occasion.
 
 ---
 
