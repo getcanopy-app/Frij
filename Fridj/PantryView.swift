@@ -238,26 +238,36 @@ struct PantryView: View {
     }
 
     private var addRow: some View {
-        ZStack {
+        VStack(alignment: .leading, spacing: 10) {
+            // Transcript floats above the pill while listening.
             if speech.isListening {
-                // The pill's geometry comes from the shared matchedGeometryEffect
-                // (it grows out of the mic). The content fades on its OWN fast
-                // curve, decoupled from the spring, so the shape glides while the
-                // contents snap in crisply instead of smearing at 50% opacity.
-                listeningPanel.transition(.opacity.animation(.easeOut(duration: 0.18)))
-            } else {
-                HStack {
+                Text(speech.transcript.isEmpty ? "Listening…" : speech.transcript)
+                    .font(FridjFont.size(15, weight: .semibold))
+                    .foregroundColor(speech.transcript.isEmpty ? .fridjText.opacity(0.35) : .fridjText)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 4)
+                    .animation(.easeOut(duration: 0.12), value: speech.transcript)
+                    .transition(.opacity.animation(.easeOut(duration: 0.2)))
+            }
+
+            // The field and the trailing control (mic ↔ pill) are SIBLINGS, so
+            // the field gets its own exit: it retracts toward the mic as the mic
+            // expands left into the pill over the same space.
+            ZStack(alignment: .trailing) {
+                if !speech.isListening {
                     TextField("add ingredients — type or speak", text: $newItem)
                         .font(FridjFont.size(15))
                         .focused($addFocused)
                         .padding(.horizontal, 16).padding(.vertical, 12)
                         .background(Color(white: 1), in: RoundedRectangle(cornerRadius: FridjRadius.sm, style: .continuous))
+                        .frame(maxWidth: .infinity)
+                        .padding(.trailing, 54)   // clear space for the trailing control
                         .onSubmit { Task { await addItem() } }
                         .disabled(isValidating)
-
-                    trailingControl
+                        .transition(.scale(scale: 0.9, anchor: .trailing).combined(with: .opacity))
                 }
-                .transition(.opacity.animation(.easeOut(duration: 0.15)))
+
+                trailingOrPill
             }
         }
         // Drives the matched-geometry morph. Higher damping settles the expand
@@ -267,13 +277,15 @@ struct PantryView: View {
         .sensoryFeedback(.impact(weight: .light), trigger: speech.isListening)
     }
 
-    // Empty field → mic (say a list); typed text → Add; mid-parse → spinner.
+    // Listening → the pill; otherwise the mic (empty), Add (typed) or a spinner.
     @ViewBuilder
-    private var trailingControl: some View {
-        if isValidating {
-            ProgressView().tint(accent).frame(width: 52, height: 46)
+    private var trailingOrPill: some View {
+        if speech.isListening {
+            listeningPill.transition(.opacity.animation(.easeOut(duration: 0.18)))
+        } else if isValidating {
+            ProgressView().tint(accent).frame(width: 46, height: 46)
         } else if newItem.trimmingCharacters(in: .whitespaces).isEmpty {
-            micButton
+            micButton.transition(.opacity.animation(.easeOut(duration: 0.18)))
         } else {
             addButton
         }
@@ -314,40 +326,30 @@ struct PantryView: View {
         .buttonStyle(.plain)
     }
 
-    // The "listening" state, modelled on the reference: live transcript above a
-    // dark pill with an animated waveform and a stop button. Replaces the add
-    // row while recording, so it never covers the screen like a keyboard.
-    private var listeningPanel: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text(speech.transcript.isEmpty ? "Listening…" : speech.transcript)
-                .font(FridjFont.size(15, weight: .semibold))
-                .foregroundColor(speech.transcript.isEmpty ? .fridjText.opacity(0.35) : .fridjText)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 4)
-                .animation(.easeOut(duration: 0.12), value: speech.transcript)
-                // Fades in above the morphing pill rather than being part of it.
-                .transition(.opacity)
-
-            HStack(spacing: 12) {
-                WaveformView()
-                Spacer()
-                Button { stopListening() } label: {
-                    RoundedRectangle(cornerRadius: 3, style: .continuous)
-                        .fill(.white)
-                        .frame(width: 12, height: 12)
-                        .frame(width: 34, height: 34)
-                        .background(Circle().fill(.white.opacity(0.18)))
-                }
-                .buttonStyle(.plain)
+    // The full-width dark pill the mic morphs into: animated waveform + stop.
+    // The live transcript lives above it in addRow, not here.
+    private var listeningPill: some View {
+        HStack(spacing: 12) {
+            WaveformView()
+            Spacer()
+            Button { stopListening() } label: {
+                RoundedRectangle(cornerRadius: 3, style: .continuous)
+                    .fill(.white)
+                    .frame(width: 12, height: 12)
+                    .frame(width: 34, height: 34)
+                    .background(Circle().fill(.white.opacity(0.18)))
             }
-            .padding(.leading, 16).padding(.trailing, 9).padding(.vertical, 9)
-            .frame(maxWidth: .infinity)
-            // The pill that the mic morphs into — same shared id.
-            .background(
-                Capsule().fill(Color.fridjDark)
-                    .matchedGeometryEffect(id: "voicePill", in: voiceNS)
-            )
+            .buttonStyle(.plain)
         }
+        .padding(.leading, 16).padding(.trailing, 9).padding(.vertical, 9)
+        .frame(maxWidth: .infinity)
+        // Flatten to one layer so the crossfade composites once, not per subview.
+        .compositingGroup()
+        // The pill that the mic morphs into — same shared id.
+        .background(
+            Capsule().fill(Color.fridjDark)
+                .matchedGeometryEffect(id: "voicePill", in: voiceNS)
+        )
     }
 
     private func startListening() async {
