@@ -54,14 +54,20 @@ final class SpeechCapture {
     private var partial = ""
     private var segmentCount = 0
     private var safetyTimer: Task<Void, Never>?
+    // Words to bias recognition toward this session (pantry + food vocabulary),
+    // re-applied to every segment's request so the bias survives restarts.
+    private var contextualStrings: [String] = []
 
     private let maxSeconds: UInt64 = 180   // hard stop so a session can't run forever
     private let maxSegments = 90           // ~ maxSeconds / a short segment
 
     // MARK: Control
 
-    func start() async {
+    /// `contextualStrings` biases recognition toward likely words — pass the
+    /// user's pantry plus a food vocabulary so ingredient names land right.
+    func start(contextualStrings: [String] = []) async {
         guard status != .listening else { return }
+        self.contextualStrings = contextualStrings
         committed = ""; partial = ""; transcript = ""; segmentCount = 0; level = 0
 
         guard await authorizeSpeech(), await authorizeMic() else {
@@ -122,6 +128,12 @@ final class SpeechCapture {
 
         let request = SFSpeechAudioBufferRecognitionRequest()
         request.shouldReportPartialResults = true
+        // Optimize for free-form dictation (someone reading a list), and bias
+        // toward pantry + food words so ingredients aren't heard as prose.
+        request.taskHint = .dictation
+        if !contextualStrings.isEmpty {
+            request.contextualStrings = contextualStrings
+        }
         if recognizer.supportsOnDeviceRecognition {
             request.requiresOnDeviceRecognition = true
         }

@@ -371,7 +371,9 @@ struct PantryView: View {
     private func startListening() async {
         rejectionText = nil
         addFocused = false
-        await speech.start()
+        // Bias the recognizer toward this user's pantry plus common ingredients,
+        // so spoken food names land right instead of as generic prose.
+        await speech.start(contextualStrings: FoodVocabulary.recognitionSeed(pantry: store.allNames))
         switch speech.status {
         case .denied:
             rejectionText = "Frij needs microphone and speech access to listen — turn them on in Settings."
