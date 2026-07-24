@@ -12,8 +12,6 @@ struct PantryView: View {
     @State private var pendingItems: [String] = []
     @FocusState private var addFocused: Bool
     @State private var speech = SpeechCapture()
-    // Shared geometry so the mic button morphs into the listening pill.
-    @Namespace private var voiceNS
     // Held false until the mic→pill shape has finished morphing, so the pill's
     // contents (waveform + stop) fade in after the shape lands rather than
     // riding along with it and looking cramped mid-morph.
@@ -288,34 +286,66 @@ struct PantryView: View {
         .sensoryFeedback(.impact(weight: .light), trigger: speech.isListening)
     }
 
-    // Listening → the pill; otherwise the mic (empty), Add (typed) or a spinner.
+    // Listening → the pill; otherwise the mic, Add (typed) or a spinner. The mic
+    // and the pill are the SAME view (voiceControl) so it morphs; Add and the
+    // spinner only ever show when we're not listening.
     @ViewBuilder
     private var trailingOrPill: some View {
-        if speech.isListening {
-            listeningPill.transition(.opacity.animation(.easeOut(duration: 0.18)))
-        } else if isValidating {
+        if isValidating {
             ProgressView().tint(accent).frame(width: 46, height: 46)
-        } else if newItem.trimmingCharacters(in: .whitespaces).isEmpty {
-            micButton.transition(.opacity.animation(.easeOut(duration: 0.18)))
+        } else if !speech.isListening && !newItem.trimmingCharacters(in: .whitespaces).isEmpty {
+            addButton.transition(.opacity.animation(.easeOut(duration: 0.15)))
         } else {
-            addButton
+            voiceControl
         }
     }
 
-    private var micButton: some View {
-        Button { Task { await startListening() } } label: {
-            Image(systemName: "mic.fill")
-                .font(.system(size: 17, weight: .semibold))
-                .foregroundColor(.white)
-                .frame(width: 46, height: 46)
-                // Capsule (a circle at this size) so it morphs cleanly into the
-                // pill's capsule. Shared id = the mic expands into the pill.
-                .background(
-                    Capsule().fill(accent)
-                        .matchedGeometryEffect(id: "voicePill", in: voiceNS)
-                )
+    // ONE capsule that morphs between the idle mic and the listening pill:
+    // width goes 46 → full, colour goes sage → charcoal, and the contents (mic
+    // icon vs waveform + stop) crossfade on top. Height is pinned at 46 for
+    // both, so the morph is a clean width slide with no height hop. This is a
+    // single moving shape rather than two matched-geometry views dissolving
+    // through each other — which is what used to drop frames mid-expand.
+    private var voiceControl: some View {
+        let listening = speech.isListening
+        return ZStack {
+            if listening {
+                HStack(spacing: 12) {
+                    WaveformView()
+                    Spacer(minLength: 0)
+                    Button { stopListening() } label: {
+                        RoundedRectangle(cornerRadius: 3, style: .continuous)
+                            .fill(.white)
+                            .frame(width: 12, height: 12)
+                            .frame(width: 34, height: 34)
+                            .background(Circle().fill(.white.opacity(0.18)))
+                    }
+                    .buttonStyle(.plain)
+                }
+                .padding(.leading, 16).padding(.trailing, 6)
+                // Contents wait for the shape to land, then fade in on their own.
+                .opacity(pillReady ? 1 : 0)
+                .transition(.opacity.animation(.easeOut(duration: 0.15)))
+            } else {
+                Button { Task { await startListening() } } label: {
+                    Image(systemName: "mic.fill")
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundColor(.white)
+                        .frame(width: 46, height: 46)
+                }
+                .buttonStyle(.plain)
+                .transition(.opacity.animation(.easeOut(duration: 0.15)))
+            }
         }
-        .buttonStyle(.plain)
+        .frame(maxWidth: listening ? .infinity : 46, minHeight: 46)
+        .background(Capsule().fill(listening ? Color.fridjDark : accent))
+        .compositingGroup()
+        .onChange(of: listening) { _, now in
+            pillReady = false
+            if now {
+                withAnimation(.easeOut(duration: 0.22).delay(0.26)) { pillReady = true }
+            }
+        }
     }
 
     private var addButton: some View {
@@ -335,39 +365,6 @@ struct PantryView: View {
                 )
         }
         .buttonStyle(.plain)
-    }
-
-    // The full-width dark pill the mic morphs into: animated waveform + stop.
-    // The live transcript lives above it in addRow, not here.
-    private var listeningPill: some View {
-        HStack(spacing: 12) {
-            WaveformView()
-            Spacer()
-            Button { stopListening() } label: {
-                RoundedRectangle(cornerRadius: 3, style: .continuous)
-                    .fill(.white)
-                    .frame(width: 12, height: 12)
-                    .frame(width: 34, height: 34)
-                    .background(Circle().fill(.white.opacity(0.18)))
-            }
-            .buttonStyle(.plain)
-        }
-        // Contents wait for the shape to arrive, then fade in on their own.
-        .opacity(pillReady ? 1 : 0)
-        .padding(.leading, 16).padding(.trailing, 9).padding(.vertical, 9)
-        .frame(maxWidth: .infinity)
-        // Flatten to one layer so the crossfade composites once, not per subview.
-        .compositingGroup()
-        // The pill that the mic morphs into — same shared id.
-        .background(
-            Capsule().fill(Color.fridjDark)
-                .matchedGeometryEffect(id: "voicePill", in: voiceNS)
-        )
-        .onAppear {
-            pillReady = false
-            withAnimation(.easeOut(duration: 0.22).delay(0.26)) { pillReady = true }
-        }
-        .onDisappear { pillReady = false }
     }
 
     private func startListening() async {
