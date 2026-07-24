@@ -86,6 +86,11 @@ struct RecipesView: View {
                 .foregroundColor(.fridjText.opacity(0.55))
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 32)
+
+            Button("Cancel") { session.cancelCook() }
+                .font(FridjFont.size(15, weight: .bold))
+                .foregroundColor(.fridjText.opacity(0.5))
+                .padding(.top, FridjSpacing.sm)
         }
         .padding(.horizontal, FridjSpacing.lg)
     }

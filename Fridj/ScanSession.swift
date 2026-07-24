@@ -25,6 +25,7 @@ final class ScanSession {
 
     private var lastCookTime: Date?
     private let cookCooldown: TimeInterval = 30
+    private var cookTask: Task<Void, Never>?
 
     // True when the cooldown hasn't expired yet (separate from subscription gate).
     var canCook: Bool {
@@ -53,23 +54,35 @@ final class ScanSession {
             return
         }
 
-        // Record usage before the API call so a crash mid-request still counts.
-        if !subMgr.isSubscribed {
-            usage.recordGeneration()
-        }
-
         lastCookTime = Date()
         isCooking = true
         cookError = nil
-        Task {
+        cookTask = Task {
             do {
                 let result = try await FrijAPI.recipes(ingredients: ingredients, mode: mode, prioritize: prioritize)
+                try Task.checkCancellation()
+                // Spend the credit only once real recipes are in hand, so a
+                // cancel or a failed request never costs a free idea.
+                if !subMgr.isSubscribed { usage.recordGeneration() }
                 recipes = result
                 showRecipes = true
             } catch {
-                cookError = error.localizedDescription
+                // Cancelling throws too (URLError.cancelled / CancellationError);
+                // don't surface that as an error — and no credit was spent.
+                if !Task.isCancelled { cookError = error.localizedDescription }
             }
             isCooking = false
+            cookTask = nil
         }
+    }
+
+    /// Cancel an in-flight generation. Because the credit is only spent on a
+    /// real result, cancelling costs nothing — and it clears the cooldown so an
+    /// accidental tap isn't also punished with a 30s wait.
+    func cancelCook() {
+        cookTask?.cancel()
+        cookTask = nil
+        isCooking = false
+        lastCookTime = nil
     }
 }

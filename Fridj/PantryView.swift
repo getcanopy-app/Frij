@@ -14,6 +14,10 @@ struct PantryView: View {
     @State private var speech = SpeechCapture()
     // Shared geometry so the mic button morphs into the listening pill.
     @Namespace private var voiceNS
+    // Held false until the mic→pill shape has finished morphing, so the pill's
+    // contents (waveform + stop) fade in after the shape lands rather than
+    // riding along with it and looking cramped mid-morph.
+    @State private var pillReady = false
     @State private var isEditing = false
     // Per-session choice, not a saved preference — you pick it when you're
     // deciding what to make, so it resets each visit.
@@ -142,7 +146,7 @@ struct PantryView: View {
     }
 
     private var cookButtonTitle: String {
-        if session.isCooking { return "Cooking up ideas…" }
+        if session.isCooking { return "Cooking up ideas…  tap to cancel" }
         guard !selectedIDs.isEmpty else {
             return isDessert ? "Get 3 desserts from this" : "Get 3 dinners from this"
         }
@@ -153,7 +157,13 @@ struct PantryView: View {
 
     private var cookButton: some View {
         Button {
-            session.cook(ingredients: cookIngredients, mode: isDessert ? "dessert" : "dinner")
+            // Tapping while it's running cancels — no credit spent, per the
+            // credit-on-success change.
+            if session.isCooking {
+                session.cancelCook()
+            } else {
+                session.cook(ingredients: cookIngredients, mode: isDessert ? "dessert" : "dinner")
+            }
         } label: {
             HStack {
                 if session.isCooking { ProgressView().tint(.white) }
@@ -168,7 +178,8 @@ struct PantryView: View {
                 in: RoundedRectangle(cornerRadius: FridjRadius.scanButton, style: .continuous)
             )
         }
-        .disabled(store.items.isEmpty || session.isCooking)
+        // Stays tappable while cooking so it can cancel; only disabled when empty.
+        .disabled(store.items.isEmpty)
         .animation(.easeOut(duration: 0.18), value: selectedIDs.count)
     }
 
@@ -341,6 +352,8 @@ struct PantryView: View {
             }
             .buttonStyle(.plain)
         }
+        // Contents wait for the shape to arrive, then fade in on their own.
+        .opacity(pillReady ? 1 : 0)
         .padding(.leading, 16).padding(.trailing, 9).padding(.vertical, 9)
         .frame(maxWidth: .infinity)
         // Flatten to one layer so the crossfade composites once, not per subview.
@@ -350,6 +363,11 @@ struct PantryView: View {
             Capsule().fill(Color.fridjDark)
                 .matchedGeometryEffect(id: "voicePill", in: voiceNS)
         )
+        .onAppear {
+            pillReady = false
+            withAnimation(.easeOut(duration: 0.22).delay(0.26)) { pillReady = true }
+        }
+        .onDisappear { pillReady = false }
     }
 
     private func startListening() async {
