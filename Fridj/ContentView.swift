@@ -102,6 +102,12 @@ struct ContentView: View {
                 Task { await SubscriptionManager.shared.refreshStatus() }
             }
         }
+        // Lower the keyboard smoothly when switching tabs, rather than letting it
+        // get cut off as the page swaps out.
+        .onChange(of: selectedTab) { _, _ in
+            UIApplication.shared.sendAction(
+                #selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+        }
     }
 }
 

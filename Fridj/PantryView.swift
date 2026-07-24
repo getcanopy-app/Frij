@@ -10,6 +10,7 @@ struct PantryView: View {
     // A parsed multi-item list awaiting the user's confirmation before it lands
     // in the pantry. Empty the rest of the time.
     @State private var pendingItems: [String] = []
+    @FocusState private var addFocused: Bool
     @State private var isEditing = false
     // Per-session choice, not a saved preference — you pick it when you're
     // deciding what to make, so it resets each visit.
@@ -74,6 +75,10 @@ struct PantryView: View {
                 .animation(.spring(response: 0.45, dampingFraction: 0.82), value: store.items.isEmpty)
                 .animation(.spring(response: 0.45, dampingFraction: 0.82), value: grocery.hasItems)
             }
+            // Native keyboard dismissal: drag the list down to lower it (like
+            // iMessage), or tap anywhere off the field.
+            .scrollDismissesKeyboard(.interactively)
+            .onTapGesture { addFocused = false }
         }
         .sheet(isPresented: $session.showRecipes) {
             RecipesView()
@@ -233,6 +238,7 @@ struct PantryView: View {
         HStack {
             TextField("add ingredients — type or speak", text: $newItem)
                 .font(FridjFont.size(15))
+                .focused($addFocused)
                 .padding(.horizontal, 16).padding(.vertical, 12)
                 .background(Color(white: 1), in: RoundedRectangle(cornerRadius: FridjRadius.sm, style: .continuous))
                 .onSubmit { Task { await addItem() } }
