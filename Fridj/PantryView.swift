@@ -730,7 +730,12 @@ private struct WaveformView: View {
             }
         }
         .frame(height: 22)
-        .onAppear { animating = true }
+        // Wait for the pill's morph to finish before the bars start bouncing —
+        // kicking off 12 repeating animations mid-morph is what made it hitch.
+        .task {
+            try? await Task.sleep(nanoseconds: 400_000_000)
+            animating = true
+        }
     }
 }
 
