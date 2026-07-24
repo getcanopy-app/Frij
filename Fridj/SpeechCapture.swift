@@ -53,10 +53,24 @@ final class SpeechCapture {
     private var committed = ""
     private var partial = ""
     private var segmentCount = 0
+    // Bumped every time a segment starts OR rolls, so a late callback from an
+    // already-rolled task is dropped the instant the roll begins — not 120ms
+    // later when the next segment happens to start.
+    private var segmentGen = 0
     private var safetyTimer: Task<Void, Never>?
     // Words to bias recognition toward this session (pantry + food vocabulary),
     // re-applied to every segment's request so the bias survives restarts.
     private var contextualStrings: [String] = []
+
+    // Guards against two roll triggers (the recognizer's isFinal and our own
+    // silence-flush) firing at once and starting overlapping segments.
+    private var isRolling = false
+    // When the mic first went quiet with text still uncommitted. Once quiet
+    // lasts `silenceToCommit`, we bank the phrase ourselves rather than trust
+    // the recognizer to finalize — it often just resets and drops earlier text.
+    private var quietSince: Date?
+    private let silenceToCommit: TimeInterval = 1.0
+    private let silenceLevel: CGFloat = 0.1   // below this (raw) counts as a pause
 
     private let maxSeconds: UInt64 = 180   // hard stop so a session can't run forever
     private let maxSegments = 90           // ~ maxSeconds / a short segment
@@ -69,6 +83,7 @@ final class SpeechCapture {
         guard status != .listening else { return }
         self.contextualStrings = contextualStrings
         committed = ""; partial = ""; transcript = ""; segmentCount = 0; level = 0
+        isRolling = false; quietSince = nil
 
         guard await authorizeSpeech(), await authorizeMic() else {
             status = .denied
@@ -96,6 +111,8 @@ final class SpeechCapture {
         teardown()
         status = .idle
         level = 0
+        quietSince = nil
+        isRolling = false
     }
 
     // MARK: Engine (runs for the whole session)
@@ -139,13 +156,25 @@ final class SpeechCapture {
         }
         self.request = request
 
+        isRolling = false
+        quietSince = nil
+
+        // Tag this segment so a late callback from an already-rolled task can't
+        // touch the current one.
+        segmentGen += 1
+        let gen = segmentGen
         task = recognizer.recognitionTask(with: request) { [weak self] result, error in
             // Callback arrives off the main actor — hop back before touching state.
             Task { @MainActor [weak self] in
-                guard let self else { return }
+                guard let self, self.segmentGen == gen else { return }
                 if let result {
-                    self.partial = result.bestTranscription.formattedString
-                    self.refresh()
+                    let text = result.bestTranscription.formattedString
+                    // Never let a reset/empty hypothesis wipe what we've heard —
+                    // that's how earlier words got lost across a pause.
+                    if !text.isEmpty {
+                        self.partial = text
+                        self.refresh()
+                    }
                 }
                 if error != nil || (result?.isFinal ?? false) {
                     self.rollSegment(recognizer)
@@ -154,9 +183,17 @@ final class SpeechCapture {
         }
     }
 
-    /// A segment ended (1-min cutoff, a pause finalizing, or an error). Bank its
-    /// text and, if the mic is still held, start another so dictation continues.
+    /// A segment ended — the 1-min cutoff, an error, the recognizer finalizing,
+    /// or our own silence-flush. Bank its text and, if the mic is still held,
+    /// start another so dictation continues seamlessly.
     private func rollSegment(_ recognizer: SFSpeechRecognizer) {
+        // Only one roll at a time: isFinal and the silence-flush can both land.
+        guard !isRolling else { return }
+        isRolling = true
+        // Invalidate the outgoing task's callbacks right now, so its trailing
+        // partials can't re-append text we're about to commit.
+        segmentGen += 1
+
         commitPartial()
         task = nil
         request?.endAudio()
@@ -198,6 +235,24 @@ final class SpeechCapture {
         let norm = CGFloat(max(0, min(1, (db + 50) / 50)))
         level = norm > level ? level * 0.4 + norm * 0.6
                              : level * 0.82 + norm * 0.18
+        detectSilence(norm)
+    }
+
+    /// Bank the current phrase once the mic has been quiet long enough. This is
+    /// what makes pauses safe: we commit what we've heard proactively, before
+    /// the recognizer has a chance to reset and drop it. A real pause is ~1s of
+    /// near-silence; inter-word gaps are far shorter, so this won't split words.
+    private func detectSilence(_ norm: CGFloat) {
+        guard norm < silenceLevel else { quietSince = nil; return }
+        guard !partial.isEmpty else { quietSince = nil; return }  // nothing to bank yet
+        if let since = quietSince {
+            if Date().timeIntervalSince(since) >= silenceToCommit, let recognizer {
+                quietSince = nil
+                rollSegment(recognizer)   // commit + fresh segment; listening continues
+            }
+        } else {
+            quietSince = Date()
+        }
     }
 
     private func commitPartial() {
