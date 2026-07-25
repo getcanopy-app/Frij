@@ -43,7 +43,11 @@ final class SpeechCapture {
 
     var isListening: Bool { status == .listening }
 
-    private let recognizer = SFSpeechRecognizer(locale: Locale(identifier: "en-US"))
+    // Follows the user's phone language so someone reading their pantry in
+    // Portuguese, Spanish, Farsi, etc. is understood in that language — not
+    // force-transcribed as English. Falls back to English when their language
+    // isn't supported for speech.
+    private let recognizer = SpeechCapture.preferredRecognizer()
     private let engine = AVAudioEngine()
     private var request: SFSpeechAudioBufferRecognitionRequest?
     private var task: SFSpeechRecognitionTask?
@@ -74,6 +78,38 @@ final class SpeechCapture {
 
     private let maxSeconds: UInt64 = 180   // hard stop so a session can't run forever
     private let maxSegments = 90           // ~ maxSeconds / a short segment
+
+    // MARK: Language
+
+    /// The best speech recognizer for the user's preferred languages, in order,
+    /// matching first on the exact locale ("pt-BR") and then on the bare language
+    /// ("pt" → any supported Portuguese). Falls back to US English, then the
+    /// system default. Chosen once per session; a language change is picked up on
+    /// the next launch.
+    private static func preferredRecognizer() -> SFSpeechRecognizer? {
+        func norm(_ s: String) -> String {
+            s.replacingOccurrences(of: "_", with: "-").lowercased()
+        }
+        let supported = SFSpeechRecognizer.supportedLocales()
+
+        var byID: [String: Locale] = [:]
+        var byLang: [String: Locale] = [:]   // first supported locale per language
+        for loc in supported {
+            let id = norm(loc.identifier)
+            byID[id] = loc
+            let lang = String(id.split(separator: "-").first ?? Substring(id))
+            if byLang[lang] == nil { byLang[lang] = loc }
+        }
+
+        for pref in Locale.preferredLanguages {
+            let p = norm(pref)
+            if let exact = byID[p], let r = SFSpeechRecognizer(locale: exact) { return r }
+            let lang = String(p.split(separator: "-").first ?? Substring(p))
+            if let byLangMatch = byLang[lang], let r = SFSpeechRecognizer(locale: byLangMatch) { return r }
+        }
+
+        return SFSpeechRecognizer(locale: Locale(identifier: "en-US")) ?? SFSpeechRecognizer()
+    }
 
     // MARK: Control
 

@@ -271,7 +271,9 @@ struct PantryView: View {
                         .padding(.horizontal, 16).padding(.vertical, 12)
                         .background(Color(white: 1), in: RoundedRectangle(cornerRadius: FridjRadius.sm, style: .continuous))
                         .frame(maxWidth: .infinity)
-                        .padding(.trailing, 54)   // clear space for the trailing control
+                        // Reserve exactly the trailing control's width (+gap) so
+                        // the field ends before it instead of running underneath.
+                        .padding(.trailing, fieldTrailingReserve)
                         .onSubmit { Task { await addItem() } }
                         .disabled(isValidating)
                         .transition(.scale(scale: 0.9, anchor: .trailing).combined(with: .opacity))
@@ -283,8 +285,17 @@ struct PantryView: View {
         // Drives the matched-geometry morph. Higher damping settles the expand
         // without the wobble that read as lag — still quick, just clean.
         .animation(.spring(response: 0.4, dampingFraction: 0.86), value: speech.isListening)
+        .animation(.easeOut(duration: 0.2), value: fieldTrailingReserve)
         // A light tap of haptic on both start and stop — the Duolingo touch.
         .sensoryFeedback(.impact(weight: .light), trigger: speech.isListening)
+    }
+
+    // Width the field holds clear on the right for whatever control is showing,
+    // so the two never overlap. Matches each control's footprint (+~12pt gap).
+    private var fieldTrailingReserve: CGFloat {
+        if isValidating { return 58 }                                        // spinner (46)
+        if !newItem.trimmingCharacters(in: .whitespaces).isEmpty { return 78 } // Add (64)
+        return 58                                                            // mic (46)
     }
 
     // Listening → the pill; otherwise the mic, Add (typed) or a spinner. The mic
@@ -354,7 +365,9 @@ struct PantryView: View {
             Text("Add")
                 .font(FridjFont.size(15, weight: .bold))
                 .foregroundColor(accent)
-                .padding(.horizontal, 18).padding(.vertical, 12)
+                // Fixed footprint so the field can reserve exactly its width and
+                // the two sit side by side with a clean gap, never overlapping.
+                .frame(width: 64, height: 46)
                 // A tint rather than a fill: Add is a small utility action and
                 // shouldn't compete with the cook button. The outline carries the
                 // definition — a 15% fill of the sage green all but disappears
