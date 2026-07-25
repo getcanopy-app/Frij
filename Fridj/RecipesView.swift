@@ -263,7 +263,9 @@ struct RecipesView: View {
             }
 
             ForEach(Array(recipes.enumerated()), id: \.element.id) { index, recipe in
-                card(recipe)
+                // First card is the taste-ranked best fit — badge it only when
+                // personalization was in play (a reason came back).
+                card(recipe, topPick: index == 0 && recipe.reason != nil)
                     .transition(.asymmetric(
                         insertion: .opacity.combined(with: .offset(y: 24)),
                         removal: .opacity
@@ -382,7 +384,7 @@ struct RecipesView: View {
 
     // MARK: Card
 
-    private func card(_ recipe: Recipe) -> some View {
+    private func card(_ recipe: Recipe, topPick: Bool = false) -> some View {
         let isFav = favorites.isFavorite(recipe)
         return Button {
             selectedRecipe = recipe
@@ -441,6 +443,16 @@ struct RecipesView: View {
                     }
 
                 VStack(alignment: .leading, spacing: 9) {
+                    // Backend ranks by taste fit (best first); this makes the
+                    // ranking legible. Only shown when personalization actually
+                    // drove the order — never as empty decoration.
+                    if topPick {
+                        Text("TOP PICK FOR YOU")
+                            .font(FridjFont.size(9, weight: .bold))
+                            .tracking(0.9)
+                            .foregroundColor(.fridjOrange)
+                    }
+
                     Text(recipe.name)
                         .font(FridjFont.size(18, weight: .bold))
                         .foregroundColor(.fridjText)
