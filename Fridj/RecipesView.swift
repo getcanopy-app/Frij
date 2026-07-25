@@ -16,6 +16,8 @@ struct RecipesView: View {
     @State private var lastCooked: Recipe?
     // Rendered Fridge Roast card awaiting the share sheet.
     @State private var roastImage: UIImage?
+    // Paste-a-link recipe import (TikTok/IG/YouTube).
+    @State private var showImport = false
 
     var onJumpToScan: (() -> Void)? = nil
 
@@ -104,6 +106,15 @@ struct RecipesView: View {
                     .presentationDetents([.medium, .large])
             }
         }
+        .sheet(isPresented: $showImport) {
+            ImportLinkSheet { recipe in
+                // Imported recipes land in Saved (that's the "all in one
+                // place" promise), then open for a look.
+                if !favorites.isFavorite(recipe) { _ = favorites.toggle(recipe) }
+                showImport = false
+                selectedRecipe = recipe
+            }
+        }
     }
 
     // MARK: Cooking state
@@ -139,6 +150,13 @@ struct RecipesView: View {
                     .font(FridjFont.style(.title, weight: .bold))
                     .foregroundColor(.fridjText)
                 Spacer()
+                // Import a recipe from a TikTok/IG/YouTube link into Saved.
+                Button { showImport = true } label: {
+                    Image(systemName: "link.badge.plus")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundColor(.fridjText.opacity(0.45))
+                }
+                .buttonStyle(.plain)
                 Text("\(favorites.recipes.count)")
                     .font(FridjFont.size(14, weight: .bold))
                     .foregroundColor(.fridjText.opacity(0.4))
@@ -401,6 +419,17 @@ struct RecipesView: View {
                 }
                 .padding(.top, FridjSpacing.sm)
             }
+
+            Button { showImport = true } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "link")
+                        .font(.system(size: 13, weight: .semibold))
+                    Text("Import from TikTok or Instagram")
+                        .font(FridjFont.size(14, weight: .semibold))
+                }
+                .foregroundColor(.fridjText.opacity(0.55))
+            }
+            .padding(.top, 2)
         }
         .padding(.horizontal, FridjSpacing.lg)
     }
@@ -603,6 +632,97 @@ struct RecipesView: View {
                     lastRemoved = []
                 }
             }
+        }
+    }
+}
+
+// MARK: - Import from a link
+
+// Paste a TikTok / Instagram / YouTube link, get it back as a saved recipe.
+// Kept deliberately tiny: one field, one button, honest errors.
+private struct ImportLinkSheet: View {
+    var onImported: (Recipe) -> Void
+
+    @State private var url = ""
+    @State private var isImporting = false
+    @State private var errorText: String?
+    @FocusState private var focused: Bool
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: FridjSpacing.md) {
+            Text("Import a recipe")
+                .font(FridjFont.style(.title, weight: .bold))
+                .foregroundColor(.fridjText)
+            Text("Paste a link from TikTok, Instagram, YouTube or Pinterest — Frij turns the post into a cookable recipe.")
+                .font(FridjFont.size(14))
+                .foregroundColor(.fridjText.opacity(0.55))
+
+            HStack(spacing: 8) {
+                TextField("https://…", text: $url)
+                    .font(FridjFont.size(15))
+                    .keyboardType(.URL)
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+                    .focused($focused)
+                    .padding(.horizontal, 14).padding(.vertical, 12)
+                    .background(Color(white: 1), in: RoundedRectangle(cornerRadius: FridjRadius.sm, style: .continuous))
+
+                Button {
+                    if let s = UIPasteboard.general.string { url = s }
+                } label: {
+                    Image(systemName: "doc.on.clipboard")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundColor(.fridjOrange)
+                        .frame(width: 44, height: 44)
+                        .background(Color.fridjOrange.opacity(0.12),
+                                    in: RoundedRectangle(cornerRadius: FridjRadius.sm, style: .continuous))
+                }
+                .buttonStyle(.plain)
+            }
+
+            if let errorText {
+                Text(errorText)
+                    .font(FridjFont.size(13, weight: .medium))
+                    .foregroundColor(.fridjCoral)
+            }
+
+            Button {
+                Task { await runImport() }
+            } label: {
+                HStack(spacing: 8) {
+                    if isImporting { ProgressView().tint(.white) }
+                    Text(isImporting ? "Importing…" : "Import")
+                        .font(FridjFont.size(16, weight: .bold))
+                }
+                .foregroundColor(.white)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 15)
+                .background(
+                    url.trimmingCharacters(in: .whitespaces).isEmpty
+                        ? Color.fridjText.opacity(0.3) : Color.fridjOrange,
+                    in: RoundedRectangle(cornerRadius: FridjRadius.scanButton, style: .continuous)
+                )
+            }
+            .disabled(url.trimmingCharacters(in: .whitespaces).isEmpty || isImporting)
+
+            Spacer(minLength: 0)
+        }
+        .padding(FridjSpacing.lg)
+        .background(Color.fridjBg)
+        .presentationDetents([.height(320)])
+        .presentationCornerRadius(28)
+        .onAppear { focused = true }
+    }
+
+    private func runImport() async {
+        errorText = nil
+        isImporting = true
+        defer { isImporting = false }
+        do {
+            let recipe = try await FrijAPI.importRecipe(url: url.trimmingCharacters(in: .whitespaces))
+            onImported(recipe)
+        } catch {
+            errorText = error.localizedDescription
         }
     }
 }

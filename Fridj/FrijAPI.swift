@@ -129,6 +129,17 @@ enum FrijAPI {
         return try JSONDecoder().decode(ValidationResult.self, from: data)
     }
 
+    /// A shared TikTok/Instagram/YouTube link into a structured recipe.
+    /// Backend reads the post's PUBLIC caption/metadata (no account linking —
+    /// platforms expose no saved-posts API to anyone) and either extracts the
+    /// recipe or reconstructs the named dish. Throws with a friendly message
+    /// for private posts, login walls, and non-food links.
+    static func importRecipe(url: String) async throws -> Recipe {
+        struct Resp: Decodable { let recipe: Recipe }
+        let data = try await post("/api/import-recipe", body: ["url": url])
+        return try JSONDecoder().decode(Resp.self, from: data).recipe
+    }
+
     /// One messy phrase — typed or dictated — into a clean, normalized list.
     static func parseIngredients(text: String) async throws -> [String] {
         struct Resp: Decodable { let items: [String] }
