@@ -526,41 +526,19 @@ struct RecipesView: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                     }
 
-                    // LIVE have/need against the current pantry — the stored
-                    // split goes stale the moment groceries land, and the card
-                    // must agree with the sheet behind it.
-                    let split = PantryMatch.partition(recipe.uses + recipe.needs)
-
-                    if !split.have.isEmpty {
-                        Text("uses " + split.have.joined(separator: ", "))
-                            .font(FridjFont.size(13))
-                            .foregroundColor(.fridjText.opacity(0.5))
-                            .lineLimit(2)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                    }
-
-                    // The missing items are the one thing that decides whether
-                    // you can cook this tonight, so they get chips rather than
-                    // being buried in a wrapping sentence.
-                    if !split.need.isEmpty {
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text("YOU'LL NEED")
-                                .font(FridjFont.size(9, weight: .bold))
-                                .tracking(0.9)
-                                .foregroundColor(.fridjOrange.opacity(0.75))
-
-                            FlowLayout(spacing: 6) {
-                                ForEach(split.need, id: \.self) { need in
-                                    Text(need)
-                                        .font(FridjFont.size(12, weight: .semibold))
-                                        .foregroundColor(.fridjOrange)
-                                        .padding(.horizontal, 9)
-                                        .padding(.vertical, 5)
-                                        .background(Color.fridjOrange.opacity(0.12), in: Capsule())
-                                }
-                            }
-                        }
-                        .frame(maxWidth: .infinity, alignment: .leading)
+                    // Progressive disclosure: the card carries only the one
+                    // glanceable decision — do I need to shop? — as the same
+                    // compact badge the Home cards use (live via PantryMatch).
+                    // Silence means cookable now; the full grouped ingredient
+                    // breakdown lives one tap deeper in the detail sheet.
+                    let missing = PantryMatch.partition(recipe.uses + recipe.needs).need.count
+                    if missing > 0 {
+                        Text("needs \(missing) item\(missing == 1 ? "" : "s")")
+                            .font(FridjFont.size(11, weight: .bold))
+                            .foregroundColor(.fridjOrange)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(Color.fridjOrange.opacity(0.14), in: Capsule())
                     }
                 }
                 .padding(FridjSpacing.md)
