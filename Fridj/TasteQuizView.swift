@@ -6,16 +6,20 @@ import SwiftUI
 // the hint just sharpens it. Together the 8 span the axes that matter: quick vs
 // project, meat vs plant, comfort vs fresh, familiar vs adventurous.
 enum TasteQuiz {
-    static let items: [(name: String, hint: String)] = [
-        ("Spaghetti Carbonara", "comfort pasta"),
-        ("Chicken Stir Fry",    "quick and savory"),
-        ("Shakshuka",           "eggs, a bit adventurous"),
-        ("Beef Tacos",          "bold, handheld"),
-        ("Pan-Seared Salmon",   "light and fresh"),
-        ("Veggie Stir Fry",     "plant-forward"),
-        ("Ramen",               "cozy noodles"),
-        ("Beef Stew",           "slow, hearty cooking"),
+    static let items: [(name: String, hint: String, time: String)] = [
+        ("Spaghetti Carbonara", "comfort pasta",           "25 min"),
+        ("Chicken Stir Fry",    "quick and savory",        "20 min"),
+        ("Shakshuka",           "eggs, a bit adventurous", "25 min"),
+        ("Beef Tacos",          "bold, handheld",          "20 min"),
+        ("Pan-Seared Salmon",   "light and fresh",         "20 min"),
+        ("Veggie Stir Fry",     "plant-forward",           "15 min"),
+        ("Ramen",               "cozy noodles",            "30 min"),
+        ("Beef Stew",           "slow, hearty cooking",    "1 hr 30 min"),
     ]
+
+    static func cookTime(for name: String) -> String {
+        items.first { $0.name.caseInsensitiveCompare(name) == .orderedSame }?.time ?? ""
+    }
 
     static func hint(for name: String) -> String? {
         items.first { $0.name.caseInsensitiveCompare(name) == .orderedSame }?.hint

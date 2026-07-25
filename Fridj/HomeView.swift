@@ -169,21 +169,59 @@ struct HomeView: View {
         .animation(.spring(response: 0.5, dampingFraction: 0.82), value: recipes.isEmpty)
     }
 
+    // Personalized for $0 (no API call, no latency): recent generated dishes
+    // when they exist — real recipes, taste-ranked, from the user's own pantry
+    // — then day-one quiz picks (photos already cached from onboarding), and
+    // the stock teasers only when we know nothing at all. Framing stays honest
+    // per tier: past ideas are revisitable; aspirational ones say "scan to
+    // make these real" so a preview never promises a dinner the fridge can't
+    // back.
+    private var recentIdeas: [Recipe] {
+        Array(RecipeHistoryStore.shared.recipes.prefix(4))
+    }
+
+    private var quizTeasers: [Recipe] {
+        TasteSignalsStore.shared.quizPicks.prefix(3).map {
+            Recipe(name: $0, cookTime: TasteQuiz.cookTime(for: $0), uses: [], needs: [], steps: [])
+        }
+    }
+
     private var emptyRecipeCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Tonight you could make")
+        let recent = recentIdeas
+        let quiz = quizTeasers
+        let title = !recent.isEmpty ? "From your recent ideas"
+                  : !quiz.isEmpty ? "Tuned to your taste"
+                  : "Tonight you could make"
+        let caption = !recent.isEmpty ? "Tap to revisit — or scan for a fresh three."
+                    : "Scan your fridge to make these real"
+
+        return VStack(alignment: .leading, spacing: 12) {
+            Text(title)
                 .font(.system(size: 15, weight: .bold, design: .rounded))
                 .foregroundStyle(.black.opacity(0.5))
                 .padding(.leading, 2)
 
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 14) {
-                    ForEach(HomeView.teaserRecipes) { teaser in
-                        Button { onScanTap?() } label: {
-                            RecipeGlassCard(recipe: teaser)
-                                .frame(width: 245)
+                    if !recent.isEmpty {
+                        // Real recipes — tap opens the full detail sheet.
+                        ForEach(recent) { recipe in
+                            Button { selectedRecipe = recipe } label: {
+                                RecipeGlassCard(recipe: recipe)
+                                    .frame(width: 245)
+                            }
+                            .buttonStyle(.plain)
                         }
-                        .buttonStyle(.plain)
+                    } else {
+                        // Aspirational teasers (quiz picks or stock) — tap
+                        // starts a scan, same as always.
+                        ForEach(quiz.isEmpty ? HomeView.teaserRecipes : quiz) { teaser in
+                            Button { onScanTap?() } label: {
+                                RecipeGlassCard(recipe: teaser)
+                                    .frame(width: 245)
+                            }
+                            .buttonStyle(.plain)
+                        }
                     }
                 }
                 .scrollTargetLayout()
@@ -195,7 +233,7 @@ struct HomeView: View {
             HStack(spacing: 6) {
                 Image(systemName: "sparkles")
                     .font(.system(size: 12, weight: .semibold))
-                Text("Scan your fridge to make these real")
+                Text(caption)
                     .font(.system(size: 12, weight: .medium, design: .rounded))
             }
             .foregroundStyle(.black.opacity(0.4))
