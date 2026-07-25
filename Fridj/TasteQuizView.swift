@@ -20,6 +20,30 @@ enum TasteQuiz {
     static func hint(for name: String) -> String? {
         items.first { $0.name.caseInsensitiveCompare(name) == .orderedSame }?.hint
     }
+
+    /// Warm all 8 tile photos — resolve each URL into MealImageCache and pull
+    /// the bytes into URLCache — so the grid renders instantly when the user
+    /// reaches it. Called when onboarding STARTS: the ~10s spent reading the
+    /// intro pages hides the whole load.
+    static func prefetchImages() async {
+        await withTaskGroup(of: Void.self) { group in
+            for item in items {
+                group.addTask { @MainActor in
+                    let url: URL?
+                    if let cached = MealImageCache.shared.url(for: item.name) {
+                        url = cached
+                    } else if let resolved = try? await FrijAPI.mealImage(dish: item.name) {
+                        MealImageCache.shared.set(resolved, for: item.name)
+                        url = resolved
+                    } else {
+                        url = nil
+                    }
+                    // Pull bytes so AsyncImage serves from URLCache, not the network.
+                    if let url { _ = try? await URLSession.shared.data(from: url) }
+                }
+            }
+        }
+    }
 }
 
 // One-screen taste quiz shown at the end of onboarding: tap what looks good,

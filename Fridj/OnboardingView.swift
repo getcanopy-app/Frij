@@ -59,6 +59,9 @@ struct OnboardingView: View {
             }
         }
         .animation(.spring(response: 0.45, dampingFraction: 0.85), value: showQuiz)
+        // Warm the quiz photos while the user reads the intro pages, so the
+        // "What looks good?" grid appears already loaded.
+        .task { await TasteQuiz.prefetchImages() }
     }
 
     private func pageView(_ p: OnboardingPage) -> some View {
