@@ -84,7 +84,8 @@ enum FrijAPI {
            let taste = TasteProfile.brief(
                favorites: FavoritesStore.shared.recipes,
                cooked: TasteSignalsStore.shared.cooked,
-               disliked: TasteSignalsStore.shared.disliked) {
+               disliked: TasteSignalsStore.shared.disliked,
+               quizPicks: TasteSignalsStore.shared.quizPicks) {
             body["tasteProfile"] = taste
         }
 

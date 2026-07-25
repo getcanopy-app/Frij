@@ -4,6 +4,9 @@ struct OnboardingView: View {
     var onFinish: () -> Void
 
     @State private var page = 0
+    // Final step after the intro pages: the 5-second taste quiz that seeds
+    // day-one personalization. Skippable in one tap.
+    @State private var showQuiz = false
 
     private let pages: [OnboardingPage] = [
         OnboardingPage(
@@ -31,21 +34,31 @@ struct OnboardingView: View {
             LiquidCreamBackground()
                 .ignoresSafeArea()
 
-            VStack(spacing: 0) {
-                TabView(selection: $page) {
-                    ForEach(Array(pages.enumerated()), id: \.offset) { idx, p in
-                        pageView(p)
-                            .tag(idx)
+            if showQuiz {
+                TasteQuizView(onDone: onFinish)
+                    .transition(.asymmetric(
+                        insertion: .move(edge: .trailing).combined(with: .opacity),
+                        removal: .opacity
+                    ))
+            } else {
+                VStack(spacing: 0) {
+                    TabView(selection: $page) {
+                        ForEach(Array(pages.enumerated()), id: \.offset) { idx, p in
+                            pageView(p)
+                                .tag(idx)
+                        }
                     }
-                }
-                .tabViewStyle(.page(indexDisplayMode: .never))
-                .animation(.easeInOut(duration: 0.35), value: page)
+                    .tabViewStyle(.page(indexDisplayMode: .never))
+                    .animation(.easeInOut(duration: 0.35), value: page)
 
-                bottomBar
-                    .padding(.horizontal, 28)
-                    .padding(.bottom, 52)
+                    bottomBar
+                        .padding(.horizontal, 28)
+                        .padding(.bottom, 52)
+                }
+                .transition(.opacity)
             }
         }
+        .animation(.spring(response: 0.45, dampingFraction: 0.85), value: showQuiz)
     }
 
     private func pageView(_ p: OnboardingPage) -> some View {
@@ -101,7 +114,7 @@ struct OnboardingView: View {
                 if page < pages.count - 1 {
                     withAnimation { page += 1 }
                 } else {
-                    onFinish()
+                    showQuiz = true
                 }
             } label: {
                 Text(page < pages.count - 1 ? "Next" : "Start cooking →")

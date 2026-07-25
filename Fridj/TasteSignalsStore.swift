@@ -15,9 +15,13 @@ final class TasteSignalsStore {
 
     private(set) var cooked: [Recipe] = []
     private(set) var disliked: [String] = []
+    // Onboarding taste-quiz picks — the day-one seed. Fades out of the brief
+    // once real saves/cooks accumulate (TasteProfile handles the fade).
+    private(set) var quizPicks: [String] = []
 
     private let cookedKey = "frij.taste.cooked.v1"
     private let dislikedKey = "frij.taste.disliked.v1"
+    private let quizKey = "frij.taste.quiz.v1"
     private let defaults: UserDefaults
 
     // Recent history is what matters; old signals get dropped so taste can drift.
@@ -28,6 +32,12 @@ final class TasteSignalsStore {
         self.defaults = defaults
         self.cooked = Self.loadRecipes(from: defaults, key: cookedKey)
         self.disliked = defaults.stringArray(forKey: dislikedKey) ?? []
+        self.quizPicks = defaults.stringArray(forKey: quizKey) ?? []
+    }
+
+    func setQuizPicks(_ names: [String]) {
+        quizPicks = names.map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
+        defaults.set(quizPicks, forKey: quizKey)
     }
 
     func logCooked(_ recipe: Recipe) {

@@ -18,15 +18,31 @@ enum TasteProfile {
     /// Sent to the backend like `cuisine` — a soft lean, never a hard rule.
     ///
     /// `cooked` is the strongest positive signal (you cook what you want),
-    /// `favorites` a lighter one (saved on a whim), `disliked` a soft avoid.
-    static func brief(favorites: [Recipe], cooked: [Recipe] = [], disliked: [String] = []) -> String? {
+    /// `favorites` a lighter one (saved on a whim), `disliked` a soft avoid,
+    /// `quizPicks` the onboarding seed — weakest of all, and it retires once
+    /// real behavior has taken over.
+    static func brief(favorites: [Recipe], cooked: [Recipe] = [], disliked: [String] = [],
+                      quizPicks: [String] = []) -> String? {
         // Positives, cooked first so it wins ties, deduped by name across both.
         var seen = Set<String>()
         let cookedNames = uniqueNames(cooked, into: &seen)
         let savedNames = uniqueNames(favorites, into: &seen)
+        let positives = cookedNames.count + savedNames.count
 
-        // Need at least a little positive history before we personalize at all.
-        guard cookedNames.count + savedNames.count >= minSaved else { return nil }
+        // The quiz seed only speaks while real history is thin — scaffolding
+        // for day one, not a box the user is stuck in forever.
+        let quizLine: String? = {
+            guard positives < 5, !quizPicks.isEmpty else { return nil }
+            let described = quizPicks.prefix(6).map { name -> String in
+                if let hint = TasteQuiz.hint(for: name) { return "\(name) (\(hint))" }
+                return name
+            }
+            return "From a quick taste quiz, dishes that caught their eye: \(described.joined(separator: ", "))."
+        }()
+
+        // Personalize once there's a little real history — or, on day one,
+        // from the quiz seed alone.
+        guard positives >= minSaved || quizLine != nil else { return nil }
 
         var lines: [String] = []
 
@@ -38,6 +54,8 @@ enum TasteProfile {
         if !savedNames.isEmpty {
             lines.append("Dishes they've saved: \(savedNames.prefix(10).joined(separator: ", ")).")
         }
+        // 1c) The day-one quiz seed, weakest of the positives.
+        if let quizLine { lines.append(quizLine) }
 
         // 2) Ingredients they reach for — frequent across cooked + saved "uses".
         let topIngredients = frequentIngredients(in: cooked + favorites, top: 8)
