@@ -842,14 +842,22 @@ struct RecipeDetailSheet: View {
 
     // A chip isn't dead UI: tap adds the side to the grocery list and the chip
     // settles into a checked mint state (persisted — it reads from the list).
+    // Tapping again takes it back off — a toggle, not a one-way door.
     private func sideChip(_ side: SideDish) -> some View {
         let onList = grocery.items.contains {
             $0.name.caseInsensitiveCompare(side.name) == .orderedSame
         }
         return Button {
-            guard !onList else { return }
             withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                grocery.add([side.name])
+                if onList {
+                    if let item = grocery.items.first(where: {
+                        $0.name.caseInsensitiveCompare(side.name) == .orderedSame
+                    }) {
+                        grocery.remove(item)
+                    }
+                } else {
+                    grocery.add([side.name])
+                }
             }
         } label: {
             HStack(spacing: 7) {
