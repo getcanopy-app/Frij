@@ -21,6 +21,78 @@ enum TasteQuiz {
         items.first { $0.name.caseInsensitiveCompare(name) == .orderedSame }?.time ?? ""
     }
 
+    /// Full recipes for the quiz dishes, so a teaser card on Home opens the
+    /// same detail sheet as any other meal instead of dead-ending into a scan.
+    /// `uses` stays empty (nothing here is from the user's pantry — that's the
+    /// point); the ingredients live in `needs` as the shopping list.
+    static func recipe(for name: String) -> Recipe {
+        let steps = recipeContent[name.lowercased()]
+        return Recipe(name: name,
+                      cookTime: cookTime(for: name),
+                      uses: [],
+                      needs: steps?.needs ?? [],
+                      steps: steps?.steps ?? [])
+    }
+
+    private static let recipeContent: [String: (needs: [String], steps: [String])] = [
+        "spaghetti carbonara": (
+            ["spaghetti", "eggs", "parmesan", "bacon or pancetta"],
+            ["Boil the spaghetti in well-salted water until al dente.",
+             "Crisp chopped bacon in a pan; keep the fat.",
+             "Whisk eggs with grated parmesan and lots of black pepper.",
+             "Off the heat, toss hot pasta with the bacon, then the egg mix, loosening with pasta water until silky.",
+             "Serve immediately with more parmesan and pepper."]),
+        "chicken stir fry": (
+            ["chicken breast", "soy sauce", "garlic", "mixed vegetables", "rice"],
+            ["Cook rice and slice chicken into thin strips.",
+             "Sear the chicken hard in a hot pan with oil; set aside.",
+             "Stir-fry the vegetables with garlic until crisp-tender.",
+             "Return the chicken, splash in soy sauce, toss for a minute.",
+             "Serve over the rice."]),
+        "shakshuka": (
+            ["eggs", "crushed tomatoes", "onion", "bell pepper", "cumin", "paprika"],
+            ["Soften diced onion and bell pepper in olive oil.",
+             "Add cumin and paprika, then the crushed tomatoes; simmer 10 minutes.",
+             "Make wells in the sauce and crack in the eggs.",
+             "Cover and cook until the whites set but yolks stay soft.",
+             "Serve straight from the pan with bread."]),
+        "beef tacos": (
+            ["ground beef", "tortillas", "taco seasoning", "onion", "cheese"],
+            ["Brown the beef with diced onion, draining excess fat.",
+             "Stir in taco seasoning with a splash of water; simmer 5 minutes.",
+             "Warm the tortillas in a dry pan.",
+             "Fill with beef, cheese, and whatever toppings you like.",
+             "Serve with lime if you have it."]),
+        "pan-seared salmon": (
+            ["salmon fillets", "butter", "lemon", "garlic"],
+            ["Pat the salmon dry and season with salt and pepper.",
+             "Sear skin-side down in a hot pan until the skin crisps, ~4 minutes.",
+             "Flip, add butter and garlic, and baste for 2 more minutes.",
+             "Finish with a squeeze of lemon.",
+             "Rest a minute and serve with any side you like."]),
+        "veggie stir fry": (
+            ["mixed vegetables", "soy sauce", "ginger", "garlic", "rice"],
+            ["Cook the rice first.",
+             "Get a pan screaming hot with a little oil.",
+             "Stir-fry the hardest vegetables first, softest last, with garlic and ginger.",
+             "Splash in soy sauce and toss until glossy.",
+             "Serve over rice."]),
+        "ramen": (
+            ["ramen noodles", "chicken broth", "soy sauce", "eggs", "scallions"],
+            ["Simmer the broth with soy sauce and a little garlic.",
+             "Soft-boil the eggs (6½ minutes), then peel and halve.",
+             "Cook the noodles separately and drain.",
+             "Assemble: noodles, hot broth, eggs, sliced scallions.",
+             "Add chili oil or butter if you're feeling it."]),
+        "beef stew": (
+            ["beef chuck", "potatoes", "carrots", "onion", "beef broth", "tomato paste"],
+            ["Brown the beef in batches in a heavy pot; set aside.",
+             "Soften onion, then stir in tomato paste.",
+             "Return the beef with broth; simmer covered for 1 hour.",
+             "Add chunked potatoes and carrots; simmer 30 more minutes until tender.",
+             "Season, rest 10 minutes, serve."]),
+    ]
+
     static func hint(for name: String) -> String? {
         items.first { $0.name.caseInsensitiveCompare(name) == .orderedSame }?.hint
     }

@@ -104,6 +104,15 @@ final class MealImageCache {
         } else {
             map = [:]
         }
+        // One-time purge: these dishes were regenerated server-side (bad rolls
+        // now at -v2 paths), but devices had the OLD urls cached here and would
+        // never re-ask. Flag-guarded so the fresh URLs aren't re-purged.
+        let purgeFlag = "frij.imageCache.purge.v2"
+        if !UserDefaults.standard.bool(forKey: purgeFlag) {
+            for dish in ["ramen", "shakshuka"] { map.removeValue(forKey: dish) }
+            UserDefaults.standard.set(true, forKey: purgeFlag)
+            persist()
+        }
     }
 
     func url(for dish: String) -> URL? { map[dish.lowercased()] }
@@ -115,6 +124,10 @@ final class MealImageCache {
             let overflow = map.count - 150
             map.keys.prefix(overflow).forEach { map.removeValue(forKey: $0) }
         }
+        persist()
+    }
+
+    private func persist() {
         let strings = map.mapValues { $0.absoluteString }
         if let data = try? JSONEncoder().encode(strings) {
             UserDefaults.standard.set(data, forKey: defaultsKey)

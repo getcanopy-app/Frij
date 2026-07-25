@@ -738,9 +738,13 @@ struct RecipeDetailSheet: View {
                         }
 
                         VStack(alignment: .leading, spacing: 10) {
-                            Text("uses " + recipe.uses.joined(separator: ", "))
-                                .font(FridjFont.size(14))
-                                .foregroundColor(.fridjText.opacity(0.5))
+                            // Teasers have no pantry-backed "uses" — hide the
+                            // line rather than render a dangling "uses ".
+                            if !recipe.uses.isEmpty {
+                                Text("uses " + recipe.uses.joined(separator: ", "))
+                                    .font(FridjFont.size(14))
+                                    .foregroundColor(.fridjText.opacity(0.5))
+                            }
                             if !recipe.needs.isEmpty {
                                 Button {
                                     grocery.add(recipe.needs)

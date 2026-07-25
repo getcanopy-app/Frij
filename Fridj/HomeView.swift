@@ -9,12 +9,31 @@ struct HomeView: View {
     private var recipes: [Recipe] { session.recipes }
 
     // Example dinners shown before the first scan, so Home previews the
-    // populated layout instead of sitting empty. Rendered with the real
-    // RecipeGlassCard so they show actual food photos; tapping starts a scan.
+    // populated layout instead of sitting empty. Full recipes (steps + a
+    // shopping list in `needs`) so tapping opens the same detail sheet as any
+    // other meal — a card that looks like a recipe must act like one.
     static let teaserRecipes: [Recipe] = [
-        Recipe(name: "Creamy Garlic Pasta", cookTime: "20 min", uses: [], needs: [], steps: []),
-        Recipe(name: "Honey Garlic Chicken", cookTime: "30 min", uses: [], needs: [], steps: []),
-        Recipe(name: "Veggie Stir-Fry", cookTime: "15 min", uses: [], needs: [], steps: [])
+        Recipe(name: "Creamy Garlic Pasta", cookTime: "20 min", uses: [],
+               needs: ["pasta", "garlic", "heavy cream", "parmesan"],
+               steps: ["Boil the pasta in salted water until al dente.",
+                       "Gently soften lots of sliced garlic in butter — don't brown it.",
+                       "Pour in the cream and simmer 3–4 minutes until it coats a spoon.",
+                       "Toss the pasta in with parmesan, loosening with pasta water.",
+                       "Season and finish with parsley or pepper."]),
+        Recipe(name: "Honey Garlic Chicken", cookTime: "30 min", uses: [],
+               needs: ["chicken thighs", "honey", "soy sauce", "garlic", "rice"],
+               steps: ["Sear seasoned chicken thighs until golden on both sides.",
+                       "Stir together honey, soy sauce, and minced garlic.",
+                       "Pour the sauce over the chicken; simmer until sticky and cooked through.",
+                       "Spoon the glaze over the top.",
+                       "Serve over rice."]),
+        Recipe(name: "Veggie Stir-Fry", cookTime: "15 min", uses: [],
+               needs: ["mixed vegetables", "soy sauce", "garlic", "ginger", "rice"],
+               steps: ["Cook the rice first.",
+                       "Get a pan screaming hot with a little oil.",
+                       "Stir-fry the hardest vegetables first, softest last, with garlic and ginger.",
+                       "Splash in soy sauce and toss until glossy.",
+                       "Serve over rice."])
     ]
 
     var body: some View {
@@ -181,9 +200,7 @@ struct HomeView: View {
     }
 
     private var quizTeasers: [Recipe] {
-        TasteSignalsStore.shared.quizPicks.prefix(3).map {
-            Recipe(name: $0, cookTime: TasteQuiz.cookTime(for: $0), uses: [], needs: [], steps: [])
-        }
+        TasteSignalsStore.shared.quizPicks.prefix(3).map { TasteQuiz.recipe(for: $0) }
     }
 
     private var emptyRecipeCard: some View {
@@ -213,10 +230,12 @@ struct HomeView: View {
                             .buttonStyle(.plain)
                         }
                     } else {
-                        // Aspirational teasers (quiz picks or stock) — tap
-                        // starts a scan, same as always.
+                        // Aspirational teasers (quiz picks or stock) — real
+                        // recipes now, so tapping opens the detail sheet like
+                        // every other meal card in the app. The caption below
+                        // still points at scanning to make them real.
                         ForEach(quiz.isEmpty ? HomeView.teaserRecipes : quiz) { teaser in
-                            Button { onScanTap?() } label: {
+                            Button { selectedRecipe = teaser } label: {
                                 RecipeGlassCard(recipe: teaser)
                                     .frame(width: 245)
                             }
