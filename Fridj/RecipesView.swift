@@ -46,15 +46,17 @@ struct RecipesView: View {
             } else {
                 ScrollView {
                     VStack(alignment: .leading, spacing: FridjSpacing.lg) {
-                        if hasSaved {
-                            savedSection
+                        // Freshest first: tonight's new ideas lead, the archive
+                        // of already-secured saves sits below in compact rows.
+                        if hasFresh {
+                            tonightSection
                                 .transition(.asymmetric(
                                     insertion: .opacity.combined(with: .offset(y: 16)),
                                     removal: .opacity
                                 ))
                         }
-                        if hasFresh {
-                            tonightSection
+                        if hasSaved {
+                            savedSection
                                 .transition(.asymmetric(
                                     insertion: .opacity.combined(with: .offset(y: 16)),
                                     removal: .opacity
@@ -134,17 +136,18 @@ struct RecipesView: View {
                 .font(FridjFont.size(13))
                 .foregroundColor(.fridjText.opacity(0.5))
 
-            ForEach(Array(favorites.recipes.enumerated()), id: \.element.id) { index, recipe in
-                card(recipe)
-                    .transition(.asymmetric(
-                        insertion: .opacity.combined(with: .offset(y: 20)),
-                        removal: .opacity.combined(with: .offset(y: -10))
-                    ))
-                    .animation(
-                        .spring(response: 0.48, dampingFraction: 0.78).delay(Double(index) * 0.07),
-                        value: favorites.recipes.count
-                    )
+            // Compact rows, not hero cards: these are already secured, so they
+            // shouldn't push tonight's fresh ideas below the fold.
+            VStack(spacing: FridjSpacing.sm) {
+                ForEach(favorites.recipes) { recipe in
+                    historyRow(recipe)
+                        .transition(.asymmetric(
+                            insertion: .opacity.combined(with: .offset(y: 12)),
+                            removal: .opacity.combined(with: .offset(y: -8))
+                        ))
+                }
             }
+            .animation(.spring(response: 0.45, dampingFraction: 0.82), value: favorites.recipes.count)
         }
     }
 
@@ -221,7 +224,6 @@ struct RecipesView: View {
                     )
             }
         }
-        .padding(.top, hasSaved ? FridjSpacing.md : 0)
     }
 
     // MARK: Recently generated (the "don't lose it" archive)

@@ -89,9 +89,18 @@ enum FrijAPI {
         }
 
         // Don't re-serve dishes the user just saw — this is what makes "more
-        // options" actually give new ideas. Read before the call; the new batch
-        // is recorded by ScanSession afterward.
-        let exclude = RecipeHistoryStore.shared.recentNames(limit: 12)
+        // options" actually give new ideas. Saved dishes are excluded too:
+        // they're already secured in Saved, so re-suggesting one is worthless
+        // (and the taste lean would otherwise pull the model back toward it).
+        var excludeSeen = Set<String>()
+        var exclude: [String] = []
+        for name in RecipeHistoryStore.shared.recentNames(limit: 12) + FavoritesStore.shared.recipes.map(\.name) {
+            let key = name.lowercased()
+            guard !key.isEmpty, !excludeSeen.contains(key) else { continue }
+            excludeSeen.insert(key)
+            exclude.append(name)
+            if exclude.count >= 20 { break }
+        }
         if !exclude.isEmpty { body["exclude"] = exclude }
 
         let data = try await post("/api/recipes", body: body)

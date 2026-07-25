@@ -23,15 +23,27 @@ final class ScanSession {
     // (in ContentView) can swipe out of view.
     var hidesTabBar = false
 
-    private var lastCookTime: Date?
-    private let cookCooldown: TimeInterval = 30
+    // Just enough to stop accidental double-tap spam. Overlap is already blocked
+    // by isCooking and the backend rate-limits per device, so anything longer
+    // (this used to be 30s) reads as a broken button, not protection.
+    private let cookCooldown: TimeInterval = 5
     private var cookTask: Task<Void, Never>?
+    // Observable (unlike a Date comparison) so buttons dim during the cooldown
+    // and — crucially — un-dim the moment it ends.
+    private(set) var isCoolingDown = false
+    private var cooldownTask: Task<Void, Never>?
 
-    // True when the cooldown hasn't expired yet (separate from subscription gate).
-    var canCook: Bool {
-        guard !isCooking else { return false }
-        guard let last = lastCookTime else { return true }
-        return Date().timeIntervalSince(last) >= cookCooldown
+    // True when neither a generation nor the brief cooldown is in flight.
+    var canCook: Bool { !isCooking && !isCoolingDown }
+
+    private func startCooldown() {
+        isCoolingDown = true
+        cooldownTask?.cancel()
+        cooldownTask = Task { [cookCooldown] in
+            try? await Task.sleep(nanoseconds: UInt64(cookCooldown * 1_000_000_000))
+            guard !Task.isCancelled else { return }
+            isCoolingDown = false
+        }
     }
 
     // True when the user is blocked specifically by the free-tier limit.
@@ -54,7 +66,6 @@ final class ScanSession {
             return
         }
 
-        lastCookTime = Date()
         isCooking = true
         cookError = nil
         cookTask = Task {
@@ -76,16 +87,20 @@ final class ScanSession {
             }
             isCooking = false
             cookTask = nil
+            // Cooldown starts when the generation ENDS, so a slow request
+            // doesn't eat into it.
+            startCooldown()
         }
     }
 
     /// Cancel an in-flight generation. Because the credit is only spent on a
-    /// real result, cancelling costs nothing — and it clears the cooldown so an
-    /// accidental tap isn't also punished with a 30s wait.
+    /// real result, cancelling costs nothing — and it skips the cooldown so an
+    /// accidental tap isn't also punished with a wait.
     func cancelCook() {
         cookTask?.cancel()
         cookTask = nil
         isCooking = false
-        lastCookTime = nil
+        cooldownTask?.cancel()
+        isCoolingDown = false
     }
 }

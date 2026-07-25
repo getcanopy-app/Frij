@@ -176,9 +176,13 @@ struct PantryView: View {
                 store.items.isEmpty ? Color.fridjText.opacity(0.3) : accent,
                 in: RoundedRectangle(cornerRadius: FridjRadius.scanButton, style: .continuous)
             )
+            // Dim during the brief post-generation cooldown so a tap that would
+            // be ignored LOOKS ignored — a silently-eaten tap reads as a bug.
+            .opacity(!session.isCooking && !session.canCook ? 0.5 : 1)
         }
-        // Stays tappable while cooking so it can cancel; only disabled when empty.
-        .disabled(store.items.isEmpty)
+        // Stays tappable while cooking so it can cancel; disabled when empty or
+        // in the few-second cooldown right after a generation.
+        .disabled(store.items.isEmpty || (!session.isCooking && !session.canCook))
         .animation(.easeOut(duration: 0.18), value: selectedIDs.count)
     }
 
