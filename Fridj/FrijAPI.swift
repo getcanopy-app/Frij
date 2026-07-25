@@ -154,28 +154,17 @@ enum FrijAPI {
     }
 
     /// The Frij twist on import — the part a recipe binder can't do. Partition
-    /// the imported ingredient list against the live pantry into the app's
-    /// existing semantics: `uses` = already in your fridge, `needs` = shopping
-    /// list. The detail sheet then reads "uses garlic, pasta / YOU'LL NEED
-    /// heavy cream" with zero new UI.
+    /// the imported ingredient list against the live pantry (PantryMatch) into
+    /// the app's existing semantics: `uses` = already in your fridge, `needs` =
+    /// shopping list. The detail sheet re-derives this live on every render;
+    /// the stored split is just a sensible starting point.
     @MainActor
     private static func crossCheckPantry(_ recipe: Recipe) -> Recipe {
-        let pantry = PantryStore.shared.items.map(\.name)   // stored lowercased
-        func inPantry(_ need: String) -> Bool {
-            // Needs often carry quantities ("1 cup heavy cream"), so match the
-            // pantry name as a whole-word phrase inside the need, tolerating a
-            // trailing plural s/es on the pantry side.
-            let hay = " " + need.lowercased()
-                .replacingOccurrences(of: ",", with: " ") + " "
-            return pantry.contains { item in
-                hay.contains(" \(item) ") || hay.contains(" \(item)s ") || hay.contains(" \(item)es ")
-            }
-        }
-        let have = recipe.needs.filter(inPantry)
-        guard !have.isEmpty else { return recipe }
+        let split = PantryMatch.partition(recipe.needs)
+        guard !split.have.isEmpty else { return recipe }
         return Recipe(name: recipe.name, cookTime: recipe.cookTime,
-                      uses: have,
-                      needs: recipe.needs.filter { !inPantry($0) },
+                      uses: split.have,
+                      needs: split.need,
                       steps: recipe.steps, reason: recipe.reason)
     }
 

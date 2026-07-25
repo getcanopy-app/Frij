@@ -767,6 +767,53 @@ struct SideDish: Identifiable {
 }
 
 enum SidesSuggester {
+    /// Quick how-to for each side, shown inside "How to make it" when the side
+    /// is selected. Two-three loose steps — sides are simple by definition.
+    static func steps(for name: String) -> [String] {
+        sideSteps[name.lowercased()] ?? []
+    }
+
+    private static let sideSteps: [String: [String]] = [
+        "antipasto": ["Arrange olives, cured meats, cheese and marinated veg on a plate.", "Drizzle with olive oil and crack some pepper over."],
+        "applesauce": ["Peel and chunk apples; simmer with a splash of water until soft.", "Mash with a fork and a pinch of cinnamon."],
+        "baked beans": ["Warm the beans in a small pot over medium-low.", "Stir in a little brown sugar or hot sauce to taste."],
+        "bruschetta": ["Toast baguette slices until golden.", "Top with diced tomato, garlic, basil and olive oil; salt to finish."],
+        "caesar salad": ["Toss chopped romaine with Caesar dressing.", "Top with parmesan and croutons."],
+        "chips & salsa": ["Pour salsa into a bowl.", "Open the chips. You've got this."],
+        "coleslaw": ["Toss shredded cabbage and carrot with mayo, vinegar, salt and a pinch of sugar.", "Chill 10 minutes so it softens."],
+        "corn salad": ["Mix corn, diced tomato, red onion and cilantro.", "Dress with lime juice, olive oil and salt."],
+        "cornbread": ["Make the batter per your mix or recipe.", "Bake in a greased pan at 400°F until golden, ~20 min."],
+        "crackers": ["Fan them out next to the bowl.", "That's it — they're crackers."],
+        "creamed spinach": ["Wilt spinach in butter with garlic.", "Stir in cream and a little parmesan; simmer until thick."],
+        "crusty bread": ["Warm the loaf in a 375°F oven for 8-10 minutes.", "Slice thick; serve with butter or olive oil."],
+        "cucumber salad": ["Slice cucumbers thin; salt them and let sit 5 minutes.", "Dress with vinegar, a pinch of sugar and dill."],
+        "dinner rolls": ["Warm rolls in a 350°F oven for 5-8 minutes.", "Brush with melted butter."],
+        "edamame": ["Boil or steam the pods 4-5 minutes.", "Toss with flaky salt while hot."],
+        "elote": ["Grill or boil the corn.", "Slather with mayo-crema, sprinkle cotija, chili powder and lime."],
+        "french fries": ["Bake frozen fries per the bag — hotter and longer beats soggy.", "Salt immediately out of the oven."],
+        "garlic bread": ["Mix soft butter with minced garlic and parsley.", "Spread on split bread; bake at 400°F until golden, ~10 min."],
+        "green beans": ["Blanch or steam the beans 3-4 minutes until crisp-tender.", "Toss with butter, salt and a squeeze of lemon."],
+        "grilled cheese": ["Butter the outside of two slices; cheese inside.", "Cook in a pan over medium until golden on both sides."],
+        "guacamole": ["Mash avocados with lime juice and salt.", "Fold in diced onion, tomato and cilantro."],
+        "lemon rice": ["Cook rice as usual.", "Stir in lemon zest, a squeeze of juice and a knob of butter."],
+        "mashed potatoes": ["Boil peeled potato chunks until fork-tender.", "Mash with butter, warm milk, salt and pepper."],
+        "mexican rice": ["Toast rice in oil until lightly golden.", "Add tomato sauce, broth and cumin; simmer covered until tender."],
+        "miso soup": ["Heat dashi or water just below a boil.", "Whisk in miso off the heat; add tofu cubes and scallions."],
+        "pickled vegetables": ["Pull them from the jar.", "Arrange prettily; feel accomplished."],
+        "pico de gallo": ["Dice tomato, onion and jalapeño; chop cilantro.", "Toss with lime juice and salt."],
+        "refried beans": ["Warm the beans in a pan with a splash of water.", "Top with a little cheese while hot."],
+        "roasted asparagus": ["Toss spears with olive oil, salt and pepper.", "Roast at 425°F for 10-12 minutes until tips crisp."],
+        "roasted potatoes": ["Chunk potatoes; toss with oil, salt and rosemary.", "Roast at 425°F for 25-30 minutes, flipping once."],
+        "roasted tomatoes": ["Halve tomatoes; toss with olive oil, salt and garlic.", "Roast cut-side up at 400°F for 20 minutes."],
+        "roasted vegetables": ["Chop whatever veg you have into even pieces.", "Toss with oil and salt; roast at 425°F for 20-25 minutes."],
+        "sesame noodles": ["Cook noodles and rinse cool.", "Toss with soy sauce, sesame oil, a little peanut butter and scallions."],
+        "side salad": ["Toss greens with whatever crunchy veg you have.", "Dress with olive oil, vinegar, salt and pepper."],
+        "spring rolls": ["Bake or air-fry frozen rolls per the package.", "Serve with sweet chili sauce."],
+        "steamed broccoli": ["Steam florets 4-5 minutes until bright green.", "Hit with salt, butter or a squeeze of lemon."],
+        "steamed rice": ["Rinse rice until the water runs clearish.", "Cook 1 part rice to 1.5 parts water — boil, cover, low for 15 min, rest 5."],
+        "sweet potato fries": ["Toss wedges with oil, salt and paprika.", "Bake at 425°F ~25 minutes, flipping halfway. They crisp as they cool."],
+    ]
+
     // Returns pairs of sides to rotate through. All data is local — no API calls.
     static func sets(for recipeName: String) -> [[SideDish]] {
         let pool = pool(for: recipeName.lowercased())
@@ -838,6 +885,15 @@ struct RecipeDetailSheet: View {
         var seen = Set<String>()
         return SidesSuggester.sets(for: recipe.name).flatMap { $0 }
             .filter { seen.insert($0.name).inserted }
+    }
+
+    // Picked sides (they live on the grocery list) whose how-to joins the
+    // steps section below.
+    private var selectedSides: [SideDish] {
+        allSides.filter { side in
+            !SidesSuggester.steps(for: side.name).isEmpty &&
+            grocery.items.contains { $0.name.caseInsensitiveCompare(side.name) == .orderedSame }
+        }
     }
 
     // A chip isn't dead UI: tap adds the side to the grocery list and the chip
@@ -941,11 +997,13 @@ struct RecipeDetailSheet: View {
 
                         // Ingredients — grouped, not merged: standing in a
                         // kitchen you scan "pull from the fridge" and "go buy"
-                        // as separate jobs. The header count carries the moat
-                        // ("5 of 7 in stock"); rows render as-is since imports
-                        // carry quantities inside the string ("1 cup heavy
-                        // cream") and generated dishes are bare names.
-                        let totalIngredients = recipe.uses.count + recipe.needs.count
+                        // as separate jobs. The split is computed LIVE against
+                        // the current pantry (via PantryMatch), never trusted
+                        // from when the recipe was created — buy the tortillas
+                        // and the recipe notices. Rows render as-is since
+                        // imports carry quantities inside the string.
+                        let split = PantryMatch.partition(recipe.uses + recipe.needs)
+                        let totalIngredients = split.have.count + split.need.count
                         if totalIngredients > 0 {
                             VStack(alignment: .leading, spacing: 14) {
                                 HStack(alignment: .firstTextBaseline) {
@@ -953,20 +1011,20 @@ struct RecipeDetailSheet: View {
                                         .font(FridjFont.size(18, weight: .bold))
                                         .foregroundColor(.fridjText)
                                     Spacer()
-                                    if !recipe.uses.isEmpty {
-                                        Text("\(recipe.uses.count) of \(totalIngredients) in stock")
+                                    if !split.have.isEmpty {
+                                        Text("\(split.have.count) of \(totalIngredients) in stock")
                                             .font(FridjFont.size(12, weight: .bold))
                                             .foregroundColor(.fridjGreen)
                                     }
                                 }
 
-                                if !recipe.uses.isEmpty {
+                                if !split.have.isEmpty {
                                     VStack(alignment: .leading, spacing: 8) {
                                         Text("IN YOUR FRIDGE")
                                             .font(FridjFont.size(9, weight: .bold))
                                             .tracking(0.9)
                                             .foregroundColor(.fridjGreen.opacity(0.8))
-                                        ForEach(recipe.uses, id: \.self) { item in
+                                        ForEach(split.have, id: \.self) { item in
                                             HStack(spacing: 9) {
                                                 Image(systemName: "checkmark")
                                                     .font(.system(size: 10, weight: .bold))
@@ -979,14 +1037,14 @@ struct RecipeDetailSheet: View {
                                     }
                                 }
 
-                                if !recipe.needs.isEmpty {
+                                if !split.need.isEmpty {
                                     VStack(alignment: .leading, spacing: 8) {
                                         Text(addedToList ? "ON YOUR GROCERY LIST" : "TO BUY")
                                             .font(FridjFont.size(9, weight: .bold))
                                             .tracking(0.9)
                                             .foregroundColor(addedToList ? .fridjGreen.opacity(0.8) : .fridjOrange.opacity(0.75))
                                             .contentTransition(.opacity)
-                                        ForEach(recipe.needs, id: \.self) { item in
+                                        ForEach(split.need, id: \.self) { item in
                                             HStack(spacing: 9) {
                                                 Image(systemName: addedToList ? "cart.fill" : "plus")
                                                     .font(.system(size: 10, weight: .bold))
@@ -1015,7 +1073,7 @@ struct RecipeDetailSheet: View {
                                             .padding(.top, 4)
                                         } else {
                                             Button {
-                                                grocery.add(recipe.needs)
+                                                grocery.add(split.need)
                                                 withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
                                                     addedToList = true
                                                 }
@@ -1023,7 +1081,7 @@ struct RecipeDetailSheet: View {
                                                 HStack(spacing: 7) {
                                                     Image(systemName: "cart.badge.plus")
                                                         .font(.system(size: 13, weight: .semibold))
-                                                    Text("Add \(recipe.needs.count) missing to grocery list")
+                                                    Text("Add \(split.need.count) missing to grocery list")
                                                         .font(FridjFont.size(13, weight: .bold))
                                                 }
                                                 .foregroundColor(.fridjOrange)
@@ -1039,7 +1097,7 @@ struct RecipeDetailSheet: View {
                                     // already on the list, show the settled state
                                     // instead of offering to add again.
                                     .onAppear {
-                                        addedToList = recipe.needs.allSatisfy { need in
+                                        addedToList = split.need.allSatisfy { need in
                                             let n = need.trimmingCharacters(in: .whitespaces).lowercased()
                                             return grocery.items.contains { $0.name.lowercased() == n }
                                         }
@@ -1091,6 +1149,34 @@ struct RecipeDetailSheet: View {
                                         .fixedSize(horizontal: false, vertical: true)
                                 }
                             }
+                        }
+
+                        // Selected sides join the cooking flow: a compact
+                        // how-to block per picked chip, gone the moment the
+                        // chip is un-picked (both read from the grocery list).
+                        ForEach(selectedSides) { side in
+                            VStack(alignment: .leading, spacing: 10) {
+                                Text("\(side.emoji)  For the \(side.name)")
+                                    .font(FridjFont.size(15, weight: .bold))
+                                    .foregroundColor(.fridjText)
+                                ForEach(Array(SidesSuggester.steps(for: side.name).enumerated()), id: \.offset) { _, step in
+                                    HStack(alignment: .top, spacing: 10) {
+                                        Circle()
+                                            .fill(Color.fridjGreen.opacity(0.45))
+                                            .frame(width: 7, height: 7)
+                                            .padding(.top, 6)
+                                        Text(step)
+                                            .font(FridjFont.size(14))
+                                            .foregroundColor(.fridjText.opacity(0.75))
+                                            .fixedSize(horizontal: false, vertical: true)
+                                    }
+                                }
+                            }
+                            .padding(.top, 4)
+                            .transition(.asymmetric(
+                                insertion: .opacity.combined(with: .offset(y: 10)),
+                                removal: .opacity
+                            ))
                         }
                     }
                     .padding(.horizontal, 20)

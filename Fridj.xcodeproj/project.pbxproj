@@ -37,6 +37,20 @@
 		};
 /* End PBXContainerItemProxy section */
 
+/* Begin PBXCopyFilesBuildPhase section */
+		FA5E0000000000000000000C /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				FA5E0000000000000000000D /* ShareImport.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
 		22CAE9FA2FC70BA2005D79CE /* Fridj.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Fridj.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		22CAEA072FC70BA4005D79CE /* FridjTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FridjTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -51,7 +65,6 @@
 		996599EA2FD5B4C500ED4B22 /* Exceptions for "Fridj" folder in "Fridj" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
-				Fridj.entitlements,
 				Info.plist,
 			);
 			target = 22CAE9F92FC70BA2005D79CE /* Fridj */;
@@ -60,7 +73,6 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
-				ShareImport.entitlements,
 			);
 			target = FA5E00000000000000000003 /* ShareImport */;
 		};
@@ -126,20 +138,6 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
-
-/* Begin PBXCopyFilesBuildPhase section */
-		FA5E0000000000000000000C /* Embed Foundation Extensions */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = "";
-			dstSubfolderSpec = 13;
-			files = (
-				FA5E0000000000000000000D /* ShareImport.appex in Embed Foundation Extensions */,
-			);
-			name = "Embed Foundation Extensions";
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXGroup section */
 		22CAE9F12FC70BA2005D79CE = {
@@ -388,15 +386,15 @@
 			target = 22CAE9F92FC70BA2005D79CE /* Fridj */;
 			targetProxy = 22CAEA082FC70BA4005D79CE /* PBXContainerItemProxy */;
 		};
-		FA5E0000000000000000000B /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = FA5E00000000000000000003 /* ShareImport */;
-			targetProxy = FA5E0000000000000000000A /* PBXContainerItemProxy */;
-		};
 		22CAEA132FC70BA4005D79CE /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 22CAE9F92FC70BA2005D79CE /* Fridj */;
 			targetProxy = 22CAEA122FC70BA4005D79CE /* PBXContainerItemProxy */;
+		};
+		FA5E0000000000000000000B /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = FA5E00000000000000000003 /* ShareImport */;
+			targetProxy = FA5E0000000000000000000A /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
