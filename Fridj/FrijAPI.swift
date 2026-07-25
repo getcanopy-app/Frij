@@ -137,13 +137,20 @@ enum FrijAPI {
     /// Accepts either a link OR pasted recipe/caption text — the text path is
     /// the escape hatch when Instagram walls off a post.
     static func importRecipe(_ input: String) async throws -> Recipe {
-        struct Resp: Decodable { let recipe: Recipe }
+        struct Resp: Decodable { let recipe: Recipe; let imageURL: String? }
         let trimmed = input.trimmingCharacters(in: .whitespacesAndNewlines)
         let body: [String: Any] = trimmed.lowercased().hasPrefix("http")
             ? ["url": trimmed] : ["text": trimmed]
         let data = try await post("/api/import-recipe", body: body)
-        let imported = try JSONDecoder().decode(Resp.self, from: data).recipe
-        return await crossCheckPantry(imported)
+        let resp = try JSONDecoder().decode(Resp.self, from: data)
+        // Show the creator's OWN thumbnail, not an AI reimagining of a dish the
+        // user just watched: seeding the cache makes every MealImageView for
+        // this dish render it instantly. If the CDN link later dies,
+        // MealImageView drops it and falls back to generation.
+        if let s = resp.imageURL, let url = URL(string: s) {
+            MealImageCache.shared.set(url, for: resp.recipe.name)
+        }
+        return await crossCheckPantry(resp.recipe)
     }
 
     /// The Frij twist on import — the part a recipe binder can't do. Partition

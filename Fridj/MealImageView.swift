@@ -9,6 +9,7 @@ struct MealImageView: View {
 
     @State private var url: URL?
     @State private var loadFailed = false
+    @State private var retriedAfterFailure = false
 
     var body: some View {
         ZStack {
@@ -20,7 +21,17 @@ struct MealImageView: View {
                             .resizable()
                             .scaledToFill()
                     case .failure:
+                        // A cached URL can die (creator thumbnails on platform
+                        // CDNs expire). Drop it and re-resolve once — the
+                        // backend then serves/generates its own image.
                         placeholder(failed: true)
+                            .task {
+                                guard !retriedAfterFailure else { return }
+                                retriedAfterFailure = true
+                                MealImageCache.shared.remove(for: dish)
+                                self.url = nil
+                                await resolve()
+                            }
                     case .empty:
                         ShimmerView()
                     @unknown default:
@@ -116,6 +127,13 @@ final class MealImageCache {
     }
 
     func url(for dish: String) -> URL? { map[dish.lowercased()] }
+
+    /// Drop a dead entry (e.g. an expired creator-thumbnail CDN link) so the
+    /// next resolve falls through to the backend.
+    func remove(for dish: String) {
+        map.removeValue(forKey: dish.lowercased())
+        persist()
+    }
 
     func set(_ url: URL, for dish: String) {
         map[dish.lowercased()] = url
