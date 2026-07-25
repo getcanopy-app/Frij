@@ -100,6 +100,9 @@ struct ContentView: View {
         .onChange(of: scenePhase) { _, phase in
             if phase == .active {
                 Task { await SubscriptionManager.shared.refreshStatus() }
+                // Recipes shared to Frij while we weren't running land in the
+                // App Group inbox — import them now.
+                Task { await ImportInbox.processPending() }
             }
         }
         // Lower the keyboard smoothly when switching tabs, rather than letting it

@@ -653,14 +653,14 @@ private struct ImportLinkSheet: View {
             Text("Import a recipe")
                 .font(FridjFont.style(.title, weight: .bold))
                 .foregroundColor(.fridjText)
-            Text("Paste a link from TikTok, Instagram, YouTube or Pinterest — Frij turns the post into a cookable recipe.")
+            Text("Paste a TikTok, Instagram, YouTube or Pinterest link — or the recipe text itself if a post won't import.")
                 .font(FridjFont.size(14))
                 .foregroundColor(.fridjText.opacity(0.55))
 
-            HStack(spacing: 8) {
-                TextField("https://…", text: $url)
+            HStack(alignment: .top, spacing: 8) {
+                TextField("Link or recipe text…", text: $url, axis: .vertical)
                     .font(FridjFont.size(15))
-                    .keyboardType(.URL)
+                    .lineLimit(1...4)
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
                     .focused($focused)
@@ -719,7 +719,7 @@ private struct ImportLinkSheet: View {
         isImporting = true
         defer { isImporting = false }
         do {
-            let recipe = try await FrijAPI.importRecipe(url: url.trimmingCharacters(in: .whitespaces))
+            let recipe = try await FrijAPI.importRecipe(url)
             onImported(recipe)
         } catch {
             errorText = error.localizedDescription

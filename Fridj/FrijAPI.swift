@@ -134,9 +134,14 @@ enum FrijAPI {
     /// platforms expose no saved-posts API to anyone) and either extracts the
     /// recipe or reconstructs the named dish. Throws with a friendly message
     /// for private posts, login walls, and non-food links.
-    static func importRecipe(url: String) async throws -> Recipe {
+    /// Accepts either a link OR pasted recipe/caption text — the text path is
+    /// the escape hatch when Instagram walls off a post.
+    static func importRecipe(_ input: String) async throws -> Recipe {
         struct Resp: Decodable { let recipe: Recipe }
-        let data = try await post("/api/import-recipe", body: ["url": url])
+        let trimmed = input.trimmingCharacters(in: .whitespacesAndNewlines)
+        let body: [String: Any] = trimmed.lowercased().hasPrefix("http")
+            ? ["url": trimmed] : ["text": trimmed]
+        let data = try await post("/api/import-recipe", body: body)
         let imported = try JSONDecoder().decode(Resp.self, from: data).recipe
         return await crossCheckPantry(imported)
     }

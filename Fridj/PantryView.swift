@@ -683,6 +683,29 @@ struct PantryView: View {
                     removal: .opacity.combined(with: .move(edge: .leading))
                 ))
             }
+
+            // Bulk move: once a couple of items are checked, one tap lands them
+            // all in the pantry instead of a per-row tap parade.
+            let checked = grocery.items.filter(\.isChecked)
+            if checked.count >= 2 {
+                Button {
+                    withAnimation(.spring(response: 0.38, dampingFraction: 0.82)) {
+                        for item in checked {
+                            store.addLocal(name: item.name, source: .manual)
+                            grocery.remove(item)
+                        }
+                    }
+                } label: {
+                    Text("Add all \(checked.count) to pantry")
+                        .font(FridjFont.size(15, weight: .bold))
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 13)
+                        .background(Color.fridjGreen,
+                                    in: RoundedRectangle(cornerRadius: FridjRadius.md, style: .continuous))
+                }
+                .transition(.opacity.combined(with: .move(edge: .bottom)))
+            }
         }
         .animation(.spring(response: 0.38, dampingFraction: 0.82), value: grocery.items.count)
     }

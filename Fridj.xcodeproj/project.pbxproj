@@ -10,6 +10,7 @@
 		99BF54B030069CB8002834FD /* StoreKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 99BF54AF30069CB8002834FD /* StoreKit.framework */; };
 		99E71FF92FD83C71001D2920 /* CelebrationCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99E71FF82FD83C71001D2920 /* CelebrationCoordinator.swift */; };
 		99E71FFB2FD83C8B001D2920 /* StreakCelebrationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99E71FFA2FD83C8B001D2920 /* StreakCelebrationView.swift */; };
+		FA5E0000000000000000000D /* ShareImport.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = FA5E00000000000000000001 /* ShareImport.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -27,6 +28,13 @@
 			remoteGlobalIDString = 22CAE9F92FC70BA2005D79CE;
 			remoteInfo = Fridj;
 		};
+		FA5E0000000000000000000A /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 22CAE9F22FC70BA2005D79CE /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = FA5E00000000000000000003;
+			remoteInfo = ShareImport;
+		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
@@ -36,15 +44,25 @@
 		99BF54AF30069CB8002834FD /* StoreKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = StoreKit.framework; path = System/Library/Frameworks/StoreKit.framework; sourceTree = SDKROOT; };
 		99E71FF82FD83C71001D2920 /* CelebrationCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CelebrationCoordinator.swift; sourceTree = "<group>"; };
 		99E71FFA2FD83C8B001D2920 /* StreakCelebrationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreakCelebrationView.swift; sourceTree = "<group>"; };
+		FA5E00000000000000000001 /* ShareImport.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = ShareImport.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
 		996599EA2FD5B4C500ED4B22 /* Exceptions for "Fridj" folder in "Fridj" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
+				Fridj.entitlements,
 				Info.plist,
 			);
 			target = 22CAE9F92FC70BA2005D79CE /* Fridj */;
+		};
+		FA5E0000000000000000000E /* Exceptions for "ShareImport" folder in "ShareImport" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+				ShareImport.entitlements,
+			);
+			target = FA5E00000000000000000003 /* ShareImport */;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
@@ -65,6 +83,14 @@
 		22CAEA142FC70BA4005D79CE /* FridjUITests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = FridjUITests;
+			sourceTree = "<group>";
+		};
+		FA5E00000000000000000002 /* ShareImport */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				FA5E0000000000000000000E /* Exceptions for "ShareImport" folder in "ShareImport" target */,
+			);
+			path = ShareImport;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -92,13 +118,35 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		FA5E00000000000000000005 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		FA5E0000000000000000000C /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				FA5E0000000000000000000D /* ShareImport.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXGroup section */
 		22CAE9F12FC70BA2005D79CE = {
 			isa = PBXGroup;
 			children = (
 				22CAE9FC2FC70BA2005D79CE /* Fridj */,
+				FA5E00000000000000000002 /* ShareImport */,
 				22CAEA0A2FC70BA4005D79CE /* FridjTests */,
 				22CAEA142FC70BA4005D79CE /* FridjUITests */,
 				22CAE9FB2FC70BA2005D79CE /* Products */,
@@ -112,6 +160,7 @@
 			isa = PBXGroup;
 			children = (
 				22CAE9FA2FC70BA2005D79CE /* Fridj.app */,
+				FA5E00000000000000000001 /* ShareImport.appex */,
 				22CAEA072FC70BA4005D79CE /* FridjTests.xctest */,
 				22CAEA112FC70BA4005D79CE /* FridjUITests.xctest */,
 			);
@@ -136,10 +185,12 @@
 				22CAE9F62FC70BA2005D79CE /* Sources */,
 				22CAE9F72FC70BA2005D79CE /* Frameworks */,
 				22CAE9F82FC70BA2005D79CE /* Resources */,
+				FA5E0000000000000000000C /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				FA5E0000000000000000000B /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				22CAE9FC2FC70BA2005D79CE /* Fridj */,
@@ -197,6 +248,28 @@
 			productReference = 22CAEA112FC70BA4005D79CE /* FridjUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
+		FA5E00000000000000000003 /* ShareImport */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = FA5E00000000000000000009 /* Build configuration list for PBXNativeTarget "ShareImport" */;
+			buildPhases = (
+				FA5E00000000000000000004 /* Sources */,
+				FA5E00000000000000000005 /* Frameworks */,
+				FA5E00000000000000000006 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				FA5E00000000000000000002 /* ShareImport */,
+			);
+			name = ShareImport;
+			packageProductDependencies = (
+			);
+			productName = ShareImport;
+			productReference = FA5E00000000000000000001 /* ShareImport.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -218,6 +291,9 @@
 						CreatedOnToolsVersion = 26.5;
 						TestTargetID = 22CAE9F92FC70BA2005D79CE;
 					};
+					FA5E00000000000000000003 = {
+						CreatedOnToolsVersion = 26.5;
+					};
 				};
 			};
 			buildConfigurationList = 22CAE9F52FC70BA2005D79CE /* Build configuration list for PBXProject "Fridj" */;
@@ -235,6 +311,7 @@
 			projectRoot = "";
 			targets = (
 				22CAE9F92FC70BA2005D79CE /* Fridj */,
+				FA5E00000000000000000003 /* ShareImport */,
 				22CAEA062FC70BA4005D79CE /* FridjTests */,
 				22CAEA102FC70BA4005D79CE /* FridjUITests */,
 			);
@@ -257,6 +334,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		22CAEA0F2FC70BA4005D79CE /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		FA5E00000000000000000006 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -289,6 +373,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		FA5E00000000000000000004 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -296,6 +387,11 @@
 			isa = PBXTargetDependency;
 			target = 22CAE9F92FC70BA2005D79CE /* Fridj */;
 			targetProxy = 22CAEA082FC70BA4005D79CE /* PBXContainerItemProxy */;
+		};
+		FA5E0000000000000000000B /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = FA5E00000000000000000003 /* ShareImport */;
+			targetProxy = FA5E0000000000000000000A /* PBXContainerItemProxy */;
 		};
 		22CAEA132FC70BA4005D79CE /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
@@ -433,6 +529,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Fridj/Fridj.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 5;
 				DEVELOPMENT_TEAM = 5SAX25WKUQ;
@@ -483,6 +580,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Fridj/Fridj.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 5;
 				DEVELOPMENT_TEAM = 5SAX25WKUQ;
@@ -612,6 +710,62 @@
 			};
 			name = Release;
 		};
+		FA5E00000000000000000007 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = ShareImport/ShareImport.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 5;
+				DEVELOPMENT_TEAM = 5SAX25WKUQ;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = ShareImport/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Frij;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0.1;
+				PRODUCT_BUNDLE_IDENTIFIER = com.hellofrij.frij.ShareImport;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		FA5E00000000000000000008 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = ShareImport/ShareImport.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 5;
+				DEVELOPMENT_TEAM = 5SAX25WKUQ;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = ShareImport/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Frij;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0.1;
+				PRODUCT_BUNDLE_IDENTIFIER = com.hellofrij.frij.ShareImport;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -647,6 +801,15 @@
 			buildConfigurations = (
 				22CAEA222FC70BA4005D79CE /* Debug */,
 				22CAEA232FC70BA4005D79CE /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		FA5E00000000000000000009 /* Build configuration list for PBXNativeTarget "ShareImport" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				FA5E00000000000000000007 /* Debug */,
+				FA5E00000000000000000008 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
