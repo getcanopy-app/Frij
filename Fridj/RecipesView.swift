@@ -832,9 +832,52 @@ struct RecipeDetailSheet: View {
     @State private var favorites = FavoritesStore.shared
     @State private var grocery = GroceryStore.shared
     @State private var addedToList = false
-    @State private var sideSetIndex = 0
+    // All sides in one swipeable row — swiping replaced the old "rotate"
+    // button, so no paging state needed. Deduped by name defensively.
+    private var allSides: [SideDish] {
+        var seen = Set<String>()
+        return SidesSuggester.sets(for: recipe.name).flatMap { $0 }
+            .filter { seen.insert($0.name).inserted }
+    }
 
-    private var sideSets: [[SideDish]] { SidesSuggester.sets(for: recipe.name) }
+    // A chip isn't dead UI: tap adds the side to the grocery list and the chip
+    // settles into a checked mint state (persisted — it reads from the list).
+    private func sideChip(_ side: SideDish) -> some View {
+        let onList = grocery.items.contains {
+            $0.name.caseInsensitiveCompare(side.name) == .orderedSame
+        }
+        return Button {
+            guard !onList else { return }
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                grocery.add([side.name])
+            }
+        } label: {
+            HStack(spacing: 7) {
+                Text(side.emoji)
+                    .font(.system(size: 17))
+                Text(side.name)
+                    .font(FridjFont.size(13, weight: .semibold))
+                    .foregroundColor(.fridjText.opacity(onList ? 0.6 : 1))
+                    .lineLimit(1)
+                if onList {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundColor(.fridjGreen)
+                        .transition(.scale.combined(with: .opacity))
+                }
+            }
+            .padding(.horizontal, 13).padding(.vertical, 10)
+            .background(onList ? Color.fridjMint.opacity(0.45) : Color(white: 1),
+                        in: Capsule())
+            .overlay(
+                Capsule().stroke(
+                    onList ? Color.fridjGreen.opacity(0.25) : Color.fridjText.opacity(0.08),
+                    lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
+        .sensoryFeedback(.impact(weight: .light), trigger: onList) { _, new in new }
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -997,56 +1040,27 @@ struct RecipeDetailSheet: View {
                             }
                         }
 
-                        if !sideSets.isEmpty {
+                        if !allSides.isEmpty {
                             Divider()
 
-                            HStack {
+                            // One swipeable row of chips — the swipe IS the
+                            // "rotate," so the header stays clean. A chip
+                            // peeking past the edge signals scrollability.
+                            VStack(alignment: .leading, spacing: 10) {
                                 Text("Pair it with")
                                     .font(FridjFont.size(17, weight: .bold))
                                     .foregroundColor(.fridjText)
-                                Spacer()
-                                if sideSets.count > 1 {
-                                    Button {
-                                        withAnimation(.spring(response: 0.42, dampingFraction: 0.76)) {
-                                            sideSetIndex = (sideSetIndex + 1) % sideSets.count
-                                        }
-                                    } label: {
-                                        HStack(spacing: 4) {
-                                            Image(systemName: "arrow.2.circlepath")
-                                                .font(.system(size: 11, weight: .bold))
-                                            Text("rotate")
-                                                .font(FridjFont.size(12, weight: .bold))
-                                        }
-                                        .foregroundColor(.fridjOrange)
-                                    }
-                                }
-                            }
 
-                            HStack(spacing: 10) {
-                                ForEach(sideSets[sideSetIndex]) { side in
+                                ScrollView(.horizontal, showsIndicators: false) {
                                     HStack(spacing: 8) {
-                                        Text(side.emoji)
-                                            .font(.system(size: 20))
-                                        Text(side.name)
-                                            .font(FridjFont.size(13, weight: .semibold))
-                                            .foregroundColor(.fridjText)
-                                            .lineLimit(1)
+                                        ForEach(allSides) { side in
+                                            sideChip(side)
+                                        }
                                     }
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                    .padding(.horizontal, 12).padding(.vertical, 13)
-                                    .background(Color(white: 1),
-                                                in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                            .stroke(Color.fridjText.opacity(0.08), lineWidth: 1)
-                                    )
+                                    .padding(.horizontal, 20)
                                 }
+                                .padding(.horizontal, -20)
                             }
-                            .id(sideSetIndex)
-                            .transition(.asymmetric(
-                                insertion: .move(edge: .trailing).combined(with: .opacity),
-                                removal: .move(edge: .leading).combined(with: .opacity)
-                            ))
                         }
 
                         Divider()
