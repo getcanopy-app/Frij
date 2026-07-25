@@ -136,19 +136,64 @@ struct RecipesView: View {
                 .font(FridjFont.size(13))
                 .foregroundColor(.fridjText.opacity(0.5))
 
-            // Compact rows, not hero cards: these are already secured, so they
-            // shouldn't push tonight's fresh ideas below the fold.
-            VStack(spacing: FridjSpacing.sm) {
-                ForEach(favorites.recipes) { recipe in
-                    historyRow(recipe)
-                        .transition(.asymmetric(
-                            insertion: .opacity.combined(with: .offset(y: 12)),
-                            removal: .opacity.combined(with: .offset(y: -8))
-                        ))
+            // A horizontal photo shelf: the images stay big and immediate (the
+            // whole point of generating them), but the section costs a FIXED
+            // height whether there are 3 saves or 30 — so it can never bury
+            // tonight's fresh ideas. Bleeds edge-to-edge so tiles peek past the
+            // screen edge, which is what signals "scroll me."
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(alignment: .top, spacing: FridjSpacing.sm) {
+                    ForEach(favorites.recipes) { recipe in
+                        savedTile(recipe)
+                            .transition(.opacity.combined(with: .scale(scale: 0.92)))
+                    }
+                }
+                .padding(.horizontal, FridjSpacing.lg)
+                .animation(.spring(response: 0.45, dampingFraction: 0.82), value: favorites.recipes.count)
+            }
+            .padding(.horizontal, -FridjSpacing.lg)
+        }
+    }
+
+    // One tile on the saved shelf — photo-led, name + time under it, heart to
+    // un-save floating on the image like everywhere else.
+    private func savedTile(_ recipe: Recipe) -> some View {
+        Button { selectedRecipe = recipe } label: {
+            VStack(alignment: .leading, spacing: 7) {
+                MealImageView(dish: recipe.name, cornerRadius: 14)
+                    .frame(width: 150, height: 108)
+                    .overlay(alignment: .topTrailing) {
+                        Button {
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.55)) {
+                                _ = favorites.toggle(recipe)
+                            }
+                        } label: {
+                            Image(systemName: "heart.fill")
+                                .font(.system(size: 12, weight: .bold))
+                                .foregroundColor(.fridjCoral)
+                                .frame(width: 27, height: 27)
+                                .background(.ultraThinMaterial, in: Circle())
+                        }
+                        .buttonStyle(.plain)
+                        .padding(6)
+                    }
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(recipe.name)
+                        .font(FridjFont.size(13, weight: .bold))
+                        .foregroundColor(.fridjText)
+                        .multilineTextAlignment(.leading)
+                        .lineLimit(2, reservesSpace: true)  // equal-height tiles
+                    if !recipe.cookTime.isEmpty {
+                        Text(recipe.cookTime)
+                            .font(FridjFont.size(11, weight: .semibold))
+                            .foregroundColor(.fridjText.opacity(0.45))
+                    }
                 }
             }
-            .animation(.spring(response: 0.45, dampingFraction: 0.82), value: favorites.recipes.count)
+            .frame(width: 150, alignment: .leading)
         }
+        .buttonStyle(.plain)
     }
 
     // MARK: Tonight
