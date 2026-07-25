@@ -292,6 +292,31 @@ Every idea here is real. None get built before:
 
 ---
 
+## Growth notes (Gemini brainstorm, 2026-07-25)
+
+- **Positioning line:** "Frij is the 10-second cure for decision fatigue in
+  your kitchen — snap what you have, get three meals you'll actually want to
+  cook tonight."
+- **Wedge audience:** urban professionals + students, 21–30. High TikTok use,
+  6pm decision fatigue, takeout-spend anxiety, small fridges.
+- **Channels (near-zero budget):** micro-creator "fridge audit" reels
+  (unscripted, messy real fridges), founder-led daily scans of submitted
+  fridges, subreddit launch posts (r/eatcheapandhealthy etc.) framed as
+  solo-dev anti-bloat project.
+- **Share loop ⭐ — "Fridge Roast":** after a scan, offer a 1-tap shareable
+  story card — "Frij rated my fridge 4/10 on diversity but still found 3
+  dinners." Playful self-deprecating stats get shared; recipe cards don't.
+  Could extend to a weekly "Rescue Score" (money/food saved).
+- **Vs. competitors, one line each:** ChatGPT = typing homework while hungry;
+  SuperCook = 50 inventory checkboxes. Frij = one photo, straight to dinner.
+- **Filter to apply to CORE-FLOW features only:** "does this reduce the time
+  between opening the fridge and starting to cook?" (Deliberately NOT applied
+  to the discovery layer — the board/import serve a different moment.)
+- **Standing risk to respect:** scan quality is load-bearing — two bad
+  recommendation sets = uninstall. Recognition accuracy > every new feature.
+
+---
+
 ## Running list
 
 **Identity / personalization:**
