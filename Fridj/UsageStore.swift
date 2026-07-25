@@ -25,7 +25,12 @@ final class UsageStore {
     private init() {
         generationsUsed = UserDefaults.standard.integer(forKey: key)
         #if DEBUG
-        isAdmin = UserDefaults.standard.bool(forKey: adminKey)
+        // Debug builds default to admin-ON so running from Xcode never hits the
+        // free limit — no 7-tap needed, even on a fresh install. An explicit
+        // toggle-off is still respected (stored value wins over the default), so
+        // the paywall/free-tier flow stays testable by tapping admin off.
+        // Release builds never see this: isAdmin is a hard-compiled `false`.
+        isAdmin = UserDefaults.standard.object(forKey: adminKey) as? Bool ?? true
         #endif
     }
 
