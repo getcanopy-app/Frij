@@ -888,41 +888,95 @@ struct RecipeDetailSheet: View {
                             .foregroundColor(.fridjOrange)
                         }
 
-                        VStack(alignment: .leading, spacing: 10) {
-                            // Teasers have no pantry-backed "uses" — hide the
-                            // line rather than render a dangling "uses ".
-                            if !recipe.uses.isEmpty {
-                                Text("uses " + recipe.uses.joined(separator: ", "))
-                                    .font(FridjFont.size(14))
-                                    .foregroundColor(.fridjText.opacity(0.5))
-                            }
-                            if !recipe.needs.isEmpty {
-                                Button {
-                                    grocery.add(recipe.needs)
-                                    withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
-                                        addedToList = true
+                        // Ingredients — grouped, not merged: standing in a
+                        // kitchen you scan "pull from the fridge" and "go buy"
+                        // as separate jobs. The header count carries the moat
+                        // ("5 of 7 in stock"); rows render as-is since imports
+                        // carry quantities inside the string ("1 cup heavy
+                        // cream") and generated dishes are bare names.
+                        let totalIngredients = recipe.uses.count + recipe.needs.count
+                        if totalIngredients > 0 {
+                            VStack(alignment: .leading, spacing: 14) {
+                                HStack(alignment: .firstTextBaseline) {
+                                    Text("Ingredients")
+                                        .font(FridjFont.size(18, weight: .bold))
+                                        .foregroundColor(.fridjText)
+                                    Spacer()
+                                    if !recipe.uses.isEmpty {
+                                        Text("\(recipe.uses.count) of \(totalIngredients) in stock")
+                                            .font(FridjFont.size(12, weight: .bold))
+                                            .foregroundColor(.fridjGreen)
                                     }
-                                    Task {
-                                        try? await Task.sleep(nanoseconds: 2_000_000_000)
-                                        addedToList = false
-                                    }
-                                } label: {
-                                    HStack(spacing: 8) {
-                                        Image(systemName: addedToList ? "checkmark.circle.fill" : "cart.badge.plus")
-                                            .font(.system(size: 14, weight: .semibold))
-                                        Text(addedToList ? "Added to grocery list" : "Add \(recipe.needs.joined(separator: ", ")) to list")
-                                            .font(FridjFont.size(13, weight: .semibold))
-                                            .lineLimit(1)
-                                            .truncationMode(.tail)
-                                    }
-                                    .foregroundColor(addedToList ? .fridjGreen : .fridjOrange)
-                                    .padding(.horizontal, 14).padding(.vertical, 10)
-                                    .background(
-                                        (addedToList ? Color.fridjGreen : Color.fridjOrange).opacity(0.1),
-                                        in: RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                    )
                                 }
-                                .buttonStyle(.plain)
+
+                                if !recipe.uses.isEmpty {
+                                    VStack(alignment: .leading, spacing: 8) {
+                                        Text("IN YOUR FRIDGE")
+                                            .font(FridjFont.size(9, weight: .bold))
+                                            .tracking(0.9)
+                                            .foregroundColor(.fridjGreen.opacity(0.8))
+                                        ForEach(recipe.uses, id: \.self) { item in
+                                            HStack(spacing: 9) {
+                                                Image(systemName: "checkmark")
+                                                    .font(.system(size: 10, weight: .bold))
+                                                    .foregroundColor(.fridjGreen)
+                                                Text(item)
+                                                    .font(FridjFont.size(14))
+                                                    .foregroundColor(.fridjText.opacity(0.7))
+                                            }
+                                        }
+                                    }
+                                }
+
+                                if !recipe.needs.isEmpty {
+                                    VStack(alignment: .leading, spacing: 8) {
+                                        Text("TO BUY")
+                                            .font(FridjFont.size(9, weight: .bold))
+                                            .tracking(0.9)
+                                            .foregroundColor(.fridjOrange.opacity(0.75))
+                                        ForEach(recipe.needs, id: \.self) { item in
+                                            HStack(spacing: 9) {
+                                                Image(systemName: "plus")
+                                                    .font(.system(size: 10, weight: .bold))
+                                                    .foregroundColor(.fridjOrange)
+                                                Text(item)
+                                                    .font(FridjFont.size(14))
+                                                    .foregroundColor(.fridjText)
+                                            }
+                                        }
+
+                                        // The add action lives where the missing
+                                        // items live — a quiet footer, not a
+                                        // banner floating mid-sheet.
+                                        Button {
+                                            grocery.add(recipe.needs)
+                                            withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                                                addedToList = true
+                                            }
+                                            Task {
+                                                try? await Task.sleep(nanoseconds: 2_000_000_000)
+                                                addedToList = false
+                                            }
+                                        } label: {
+                                            HStack(spacing: 7) {
+                                                Image(systemName: addedToList ? "checkmark.circle.fill" : "cart.badge.plus")
+                                                    .font(.system(size: 13, weight: .semibold))
+                                                Text(addedToList
+                                                     ? "Added to grocery list"
+                                                     : "Add \(recipe.needs.count) missing to grocery list")
+                                                    .font(FridjFont.size(13, weight: .bold))
+                                            }
+                                            .foregroundColor(addedToList ? .fridjGreen : .fridjOrange)
+                                            .padding(.horizontal, 13).padding(.vertical, 9)
+                                            .background(
+                                                (addedToList ? Color.fridjGreen : Color.fridjOrange).opacity(0.1),
+                                                in: Capsule()
+                                            )
+                                        }
+                                        .buttonStyle(.plain)
+                                        .padding(.top, 4)
+                                    }
+                                }
                             }
                         }
 
