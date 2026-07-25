@@ -283,12 +283,25 @@ Probably the homey style works best across cuisines.
 
 ---
 
-## Operational principle
+## Operational principle (rewritten 2026-07-25)
 
-Every idea here is real. None get built before:
-1. **TestFlight** ($99 → real strangers using Frij)
-2. **Watching real usage**
-3. **Hearing what users ask for unprompted** — that's the priority signal
+The original version said "nothing gets built before TestFlight." Reality:
+1.0 went straight to App Store review, and the review wait was spent building
+— which was right, because that work (voice capture, cancel, personalization)
+is what made the app worth putting in front of strangers. The principle isn't
+retired; it's updated to what it was always really about:
+
+**Pre-users, building was free because there was nothing to learn from. From
+the moment real users exist, real usage outranks speculation.**
+
+1. Once strangers have the app, a new feature needs either a **user signal**
+   (watched usage, unprompted asks) or a **load-bearing reason** — scan
+   accuracy is the standing example: it's the make-or-break of the core
+   promise and needs no vote.
+2. Waiting-on-review time may be spent building — but only what makes the
+   next release more worth reviewing, never a new surface nobody asked for.
+3. One week of ten real users reorders this roadmap better than any amount
+   of brainstorming. Ship, watch, then build.
 
 ---
 
