@@ -452,7 +452,24 @@ reels/TikToks/photos via the share sheet into one organized place. Takeaway:
 the share-sheet path is validated and people pay for it. Differentiation is
 NOT the filing cabinet (they own that); it's the pantry: "that reel you saved?
 You have 7 of its 9 ingredients — cook it tonight." Import + fridge is the
-version worth building, as a headline 1.1/1.2 feature once real users exist.
+version worth building. V1 (paste-a-link, caption→recipe) SHIPPED 2026-07-25;
+share extension deferred to post-users.
+
+Research findings (public sources, full cites in session notes):
+- **Their pipeline:** share extension + paste-URL; extraction falls back
+  caption → video AUDIO transcript → the creator's linked source site. No
+  visual/frame analysis claimed. They admit IG login walls beat them too
+  ("ReciMe can only see what's public") — same wall we hit; nobody solves it.
+- **Their documented failures (our bar to beat later):** video-only recipes
+  with no caption, recipes posted in COMMENTS (super common on IG),
+  multi-recipe posts, screenshot OCR misses.
+- **Business:** ~$2M raised (incl. Marissa Mayer), Melbourne→NYC, claims 10M
+  users, 4.8★/264K ratings. Sub-only $40–60/yr; free tier caps the CORE
+  promise at 5 imports — reviewers call it bait-and-switch (pricing lesson).
+- **The gap:** zero inventory awareness, no discovery, no "what can I make
+  tonight." Everything Frij is, they aren't. Import is the only overlap.
+- **Later upgrades to leapfrog their importer:** audio-transcript tier,
+  comments parsing, share extension.
 
 ### Dead end to avoid (settled 2026-07-24)
 
