@@ -14,6 +14,8 @@ struct RecipesView: View {
     // The dish behind the current undo banner, so Undo also reverses the
     // "cooked" taste signal — not just the pantry removal.
     @State private var lastCooked: Recipe?
+    // Rendered Fridge Roast card awaiting the share sheet.
+    @State private var roastImage: UIImage?
 
     var onJumpToScan: (() -> Void)? = nil
 
@@ -91,6 +93,15 @@ struct RecipesView: View {
             RecipeDetailSheet(recipe: recipe) {
                 markCooked(recipe)
                 selectedRecipe = nil
+            }
+        }
+        .sheet(isPresented: Binding(
+            get: { roastImage != nil },
+            set: { if !$0 { roastImage = nil } }
+        )) {
+            if let roastImage {
+                ShareSheet(items: [roastImage])
+                    .presentationDetents([.medium, .large])
             }
         }
     }
@@ -212,6 +223,18 @@ struct RecipesView: View {
                     .lineLimit(1)
                     .minimumScaleFactor(0.75)
                 Spacer()
+                // Fridge Roast: render the score + tonight's three dishes into
+                // a story-sized card and hand it to the share sheet. Local and
+                // instant, so no loading state needed.
+                Button {
+                    let score = FridgeScore.compute(names: store.items.map(\.name))
+                    roastImage = FridgeRoastCard.renderImage(score: score, dishes: recipes.map(\.name))
+                } label: {
+                    Image(systemName: "square.and.arrow.up")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundColor(.fridjText.opacity(0.45))
+                }
+                .buttonStyle(.plain)
                 Text("\(recipes.count)")
                     .font(FridjFont.size(14, weight: .bold))
                     .foregroundColor(.fridjText.opacity(0.4))
