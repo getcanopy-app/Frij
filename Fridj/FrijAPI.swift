@@ -77,6 +77,13 @@ enum FrijAPI {
         if let household = profile.household {
             body["household"] = household.rawValue
         }
+        // Taste profile — a soft lean derived from what the user has saved, so
+        // the picks (and the "Because you…" reasons) get personal over time.
+        // Not sent for desserts: the dessert brief is its own thing.
+        if mode != "dessert",
+           let taste = TasteProfile.brief(favorites: FavoritesStore.shared.recipes) {
+            body["tasteProfile"] = taste
+        }
 
         let data = try await post("/api/recipes", body: body)
         return try JSONDecoder().decode(RecipeResponse.self, from: data).recipes

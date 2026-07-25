@@ -52,13 +52,18 @@ struct Recipe: Codable, Identifiable, Hashable {
     let uses: [String]
     let needs: [String]
     let steps: [String]
+    // A one-line "Because you…" note explaining why this dish fits THIS user,
+    // returned by the backend only when a taste profile was sent. Optional so
+    // desserts, the no-profile case, and older saved favorites all decode fine.
+    let reason: String?
 
-    init(name: String, cookTime: String, uses: [String], needs: [String], steps: [String]) {
+    init(name: String, cookTime: String, uses: [String], needs: [String], steps: [String], reason: String? = nil) {
         self.name = name
         self.cookTime = cookTime
         self.uses = uses
         self.needs = needs
         self.steps = steps
+        self.reason = reason
     }
 
     // Migration-safe decoding. Recipe is persisted to disk (FavoritesStore) as
@@ -73,6 +78,7 @@ struct Recipe: Codable, Identifiable, Hashable {
         self.uses = try c.decodeIfPresent([String].self, forKey: .uses) ?? []
         self.needs = try c.decodeIfPresent([String].self, forKey: .needs) ?? []
         self.steps = try c.decodeIfPresent([String].self, forKey: .steps) ?? []
+        self.reason = try c.decodeIfPresent(String.self, forKey: .reason)
     }
 }
 

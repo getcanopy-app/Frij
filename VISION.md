@@ -364,6 +364,17 @@ But the *concept* is sound and worth holding onto. It's the move that takes
 Frij from "useful kitchen app" to "the bridge between social media food and
 your actual dinner." That's a real cultural position.
 
+### Dead end to avoid (settled 2026-07-24)
+
+The tempting version — "connect your Instagram/TikTok and we'll read your
+*saved* collection to cook from" — is **not buildable.** Neither platform
+exposes a user's saved/favorited posts through any official API (Instagram
+has none for saves at all; TikTok's API only reaches a user's own uploads).
+Scraping violates ToS and gets the app pulled. So the capture mechanism is
+**always the Share Sheet / a pasted link**, never account linking. Same magic
+("the food you saved but never made → dinner tonight"), just entered through
+the door iOS actually gives us. Don't re-litigate the account-connect route.
+
 ### Stepping stones
 
 Cheaper versions of the same idea that ship sooner:

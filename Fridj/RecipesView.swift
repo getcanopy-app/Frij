@@ -288,6 +288,21 @@ struct RecipesView: View {
                         .multilineTextAlignment(.leading)
                         .frame(maxWidth: .infinity, alignment: .leading)
 
+                    // The personal "Because you…" note — the moment Frij feels
+                    // like it knows you. Only present when a taste profile drove
+                    // this pick, so it never shows as empty filler.
+                    if let reason = recipe.reason?.trimmingCharacters(in: .whitespaces), !reason.isEmpty {
+                        HStack(alignment: .firstTextBaseline, spacing: 5) {
+                            Image(systemName: "sparkles")
+                                .font(FridjFont.size(11, weight: .semibold))
+                            Text(reason)
+                                .font(FridjFont.size(13, weight: .semibold))
+                                .multilineTextAlignment(.leading)
+                        }
+                        .foregroundColor(.fridjOrange)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+
                     if !recipe.uses.isEmpty {
                         Text("uses " + recipe.uses.joined(separator: ", "))
                             .font(FridjFont.size(13))
@@ -500,6 +515,17 @@ struct RecipeDetailSheet: View {
                             .foregroundColor(.fridjGreen)
                             .padding(.horizontal, 12).padding(.vertical, 6)
                             .background(Color.fridjMint.opacity(0.5), in: Capsule())
+
+                        if let reason = recipe.reason?.trimmingCharacters(in: .whitespaces), !reason.isEmpty {
+                            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                                Image(systemName: "sparkles")
+                                    .font(FridjFont.size(13, weight: .semibold))
+                                Text(reason)
+                                    .font(FridjFont.size(15, weight: .semibold))
+                                    .multilineTextAlignment(.leading)
+                            }
+                            .foregroundColor(.fridjOrange)
+                        }
 
                         VStack(alignment: .leading, spacing: 10) {
                             Text("uses " + recipe.uses.joined(separator: ", "))
