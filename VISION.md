@@ -445,6 +445,15 @@ But the *concept* is sound and worth holding onto. It's the move that takes
 Frij from "useful kitchen app" to "the bridge between social media food and
 your actual dinner." That's a real cultural position.
 
+### Competitor proof point (2026-07-25): ReciMe
+
+ReciMe (recime.app) already ships this capture flow — save recipes from IG
+reels/TikToks/photos via the share sheet into one organized place. Takeaway:
+the share-sheet path is validated and people pay for it. Differentiation is
+NOT the filing cabinet (they own that); it's the pantry: "that reel you saved?
+You have 7 of its 9 ingredients — cook it tonight." Import + fridge is the
+version worth building, as a headline 1.1/1.2 feature once real users exist.
+
 ### Dead end to avoid (settled 2026-07-24)
 
 The tempting version — "connect your Instagram/TikTok and we'll read your
