@@ -335,6 +335,10 @@ the moment real users exist, real usage outranks speculation.**
 **Identity / personalization:**
 - ☐ **Voice ingredient capture** ⭐ (the friction killer)
 - ☐ **Cuisine personalization** ⭐ (the "it sees me" feature)
+- ☐ **Pantry-aware sides** — "Pair it with" suggestions badged/filtered by
+  what's in (or expiring in) the fridge: "use up your bell peppers → roast
+  them as a side." Turns a generic widget into anti-waste. Also: replace the
+  tiny "rotate" text with a swipeable row. (Gemini audit, 2026-07-25)
 
 **The pantry as memory:**
 - ☐ **Real pantry quantity tracking** (the moat)
