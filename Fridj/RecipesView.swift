@@ -184,16 +184,14 @@ struct RecipesView: View {
                     }
 
                 VStack(alignment: .leading, spacing: 2) {
-                    // SF Pro (default design), not the app's rounded face —
-                    // reads cleaner at this small size under a photo.
                     Text(recipe.name)
-                        .font(.system(size: 13, weight: .semibold))
+                        .font(FridjFont.size(13, weight: .semibold))
                         .foregroundColor(.fridjText)
                         .multilineTextAlignment(.leading)
                         .lineLimit(2, reservesSpace: true)  // equal-height tiles
                     if !recipe.cookTime.isEmpty {
                         Text(recipe.cookTime)
-                            .font(.system(size: 11, weight: .medium))
+                            .font(FridjFont.size(11, weight: .medium))
                             .foregroundColor(.fridjText.opacity(0.45))
                     }
                 }
