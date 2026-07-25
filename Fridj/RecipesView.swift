@@ -162,6 +162,11 @@ struct RecipesView: View {
             VStack(alignment: .leading, spacing: 7) {
                 MealImageView(dish: recipe.name, cornerRadius: 14)
                     .frame(width: 150, height: 108)
+                    // Clip AFTER the frame: scaledToFill inside MealImageView
+                    // reports an oversized height (square photos in a landscape
+                    // frame), and its internal clip uses those oversized bounds
+                    // — without this the photo bleeds down onto the title.
+                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                     .overlay(alignment: .topTrailing) {
                         Button {
                             withAnimation(.spring(response: 0.3, dampingFraction: 0.55)) {
@@ -179,14 +184,16 @@ struct RecipesView: View {
                     }
 
                 VStack(alignment: .leading, spacing: 2) {
+                    // SF Pro (default design), not the app's rounded face —
+                    // reads cleaner at this small size under a photo.
                     Text(recipe.name)
-                        .font(FridjFont.size(13, weight: .bold))
+                        .font(.system(size: 13, weight: .semibold))
                         .foregroundColor(.fridjText)
                         .multilineTextAlignment(.leading)
                         .lineLimit(2, reservesSpace: true)  // equal-height tiles
                     if !recipe.cookTime.isEmpty {
                         Text(recipe.cookTime)
-                            .font(FridjFont.size(11, weight: .semibold))
+                            .font(.system(size: 11, weight: .medium))
                             .foregroundColor(.fridjText.opacity(0.45))
                     }
                 }
