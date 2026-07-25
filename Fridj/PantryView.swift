@@ -689,6 +689,15 @@ struct PantryView: View {
                 }
                 .padding(.horizontal, 14).padding(.vertical, 12)
                 .background(Color(white: 1), in: RoundedRectangle(cornerRadius: FridjRadius.md, style: .continuous))
+                // The whole card is the checkbox — tapping anywhere toggles.
+                // The inner buttons (add to pantry, remove) still win their
+                // own taps over this row-level gesture.
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    withAnimation(.spring(response: 0.25, dampingFraction: 0.7)) {
+                        grocery.toggle(item)
+                    }
+                }
                 .transition(.asymmetric(
                     insertion: .opacity.combined(with: .move(edge: .trailing)),
                     removal: .opacity.combined(with: .move(edge: .leading))

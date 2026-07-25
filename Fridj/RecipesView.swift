@@ -526,8 +526,13 @@ struct RecipesView: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                     }
 
-                    if !recipe.uses.isEmpty {
-                        Text("uses " + recipe.uses.joined(separator: ", "))
+                    // LIVE have/need against the current pantry — the stored
+                    // split goes stale the moment groceries land, and the card
+                    // must agree with the sheet behind it.
+                    let split = PantryMatch.partition(recipe.uses + recipe.needs)
+
+                    if !split.have.isEmpty {
+                        Text("uses " + split.have.joined(separator: ", "))
                             .font(FridjFont.size(13))
                             .foregroundColor(.fridjText.opacity(0.5))
                             .lineLimit(2)
@@ -537,7 +542,7 @@ struct RecipesView: View {
                     // The missing items are the one thing that decides whether
                     // you can cook this tonight, so they get chips rather than
                     // being buried in a wrapping sentence.
-                    if !recipe.needs.isEmpty {
+                    if !split.need.isEmpty {
                         VStack(alignment: .leading, spacing: 6) {
                             Text("YOU'LL NEED")
                                 .font(FridjFont.size(9, weight: .bold))
@@ -545,7 +550,7 @@ struct RecipesView: View {
                                 .foregroundColor(.fridjOrange.opacity(0.75))
 
                             FlowLayout(spacing: 6) {
-                                ForEach(recipe.needs, id: \.self) { need in
+                                ForEach(split.need, id: \.self) { need in
                                     Text(need)
                                         .font(FridjFont.size(12, weight: .semibold))
                                         .foregroundColor(.fridjOrange)
@@ -613,7 +618,10 @@ struct RecipesView: View {
         TasteSignalsStore.shared.logCooked(recipe)
         lastCooked = recipe
 
-        let removed = recipe.uses.filter { store.contains($0) }
+        // Uses + needs, not just uses: the stored split is a snapshot, and an
+        // ingredient bought since (stored under needs) is in the pantry now —
+        // cooking should consume it too. store.contains keeps it exact.
+        let removed = (recipe.uses + recipe.needs).filter { store.contains($0) }
         guard !removed.isEmpty else { return }
         for name in removed { store.remove(name: name) }
         CookingStore.shared.logToday()

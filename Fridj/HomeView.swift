@@ -351,8 +351,12 @@ struct RecipeGlassCard: View {
 
                     Spacer()
 
-                    if !recipe.needs.isEmpty {
-                        Text("needs \(recipe.needs.count) item\(recipe.needs.count == 1 ? "" : "s")")
+                    // LIVE against the current pantry (PantryMatch), never the
+                    // stored split — buy the missing item and every card badge
+                    // heals, matching what the detail sheet shows inside.
+                    let missing = PantryMatch.partition(recipe.uses + recipe.needs).need.count
+                    if missing > 0 {
+                        Text("needs \(missing) item\(missing == 1 ? "" : "s")")
                             .font(.system(size: 11, weight: .bold, design: .rounded))
                             .foregroundStyle(Color.fridjOrange)
                             .padding(.horizontal, 8)
