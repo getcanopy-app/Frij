@@ -620,6 +620,17 @@ struct PantryView: View {
                 Text("\(grocery.uncheckedCount) left")
                     .font(FridjFont.size(13))
                     .foregroundColor(.fridjText.opacity(0.4))
+                // One tap to check the whole list off (e.g. back from the
+                // store with everything bought).
+                if grocery.uncheckedCount >= 2 {
+                    Button("Check all") {
+                        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                            grocery.checkAll()
+                        }
+                    }
+                    .font(FridjFont.size(13, weight: .bold))
+                    .foregroundColor(.fridjGreen)
+                }
                 if grocery.items.contains(where: { $0.isChecked }) {
                     Button("Clear checked") {
                         withAnimation(.easeOut(duration: 0.2)) {

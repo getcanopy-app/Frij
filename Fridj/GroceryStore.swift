@@ -45,6 +45,11 @@ final class GroceryStore {
         save()
     }
 
+    func checkAll() {
+        for idx in items.indices { items[idx].isChecked = true }
+        save()
+    }
+
     func toggle(_ item: GroceryItem) {
         guard let idx = items.firstIndex(where: { $0.id == item.id }) else { return }
         items[idx].isChecked.toggle()
