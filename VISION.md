@@ -138,6 +138,15 @@ This is why it's V3, not V2. It depends on accounts + image gen + a catalog.
 But it's the *end goal* — the visual layer that turns Frij from "tool that
 sees my fridge" into "app I open when I'm bored, like Instagram for food."
 
+### Monetization idea (parked 2026-07-24)
+
+The board is a natural **paid unlock** — and worth trying as a *one-time
+payment* rather than a subscription, since it's a mode you unlock, not a
+service you consume monthly (one-time can beat recurring for a cooking app and
+dodges subscription fatigue). Keep the fridge-first generator free (the wedge);
+sell the aspirational board. Lean: keep taste personalization ("Because you…")
+free too — it's the hook that proves Frij gets you. A/B one-time vs. sub later.
+
 ### Connection to other features
 
 - **Cuisine personalization** feeds the board (lead with Persian dishes for
@@ -172,6 +181,40 @@ Stepping stones:
 
 Possible Frij V1.5 launch story: "Frij made me ghormeh sabzi from what's in
 my fridge" — way more compelling demo than generic chicken pasta.
+
+---
+
+## V2 — "Feeling Adventurous?" nudge (idea, 2026-07-24)
+
+> A one-tap escape hatch from the fridge, offered only when it helps —
+> "Feeling adventurous? Dishes worth a quick shop." Tap it and Frij suggests
+> things matched to your *taste*, not your current pantry, allowing a small
+> shopping list.
+
+### Why a nudge, not a setting
+
+We debated a mode toggle — "cook what I have" vs. "what I'd love." Rejected it:
+a permanent switch taxes every user on every visit, and the 6pm "feed me now"
+moment should stay one-tap. The two are different jobs at different moments,
+not two dials on one button. So the fridge-first generator stays the default
+(it's Frij's whole identity), and aspiration shows up *contextually*.
+
+### What it looks like
+
+- Appears only when it's actually useful: the pantry is thin, the results feel
+  repetitive, or the user just cleared their picks. Disappears otherwise.
+- One tap → recipes driven by the **taste profile** (the "Because you…" layer
+  we already built), with the pantry constraint relaxed — a couple of "you'll
+  need" items are fine, the point is the *craving*, not the inventory.
+- Cheap to build: it's the existing recipe call with the pantry constraint
+  loosened and taste weighted up. No new surface, no accounts, no image gen.
+
+### How it relates to the board
+
+This is the **lightweight, near-term taste of aspiration** — the full payoff
+is the Pinterest board (endless-scroll discovery). The nudge validates whether
+people even *want* aspiration inside Frij before we build the expensive board.
+If the nudge gets tapped a lot, that's the signal the board is worth it.
 
 ---
 
