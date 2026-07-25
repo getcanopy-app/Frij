@@ -646,6 +646,8 @@ private struct ImportLinkSheet: View {
     @State private var url = ""
     @State private var isImporting = false
     @State private var errorText: String?
+    // Drives the paste feedback: field flash + icon morphing to a checkmark.
+    @State private var justPasted = false
     @FocusState private var focused: Bool
 
     var body: some View {
@@ -666,19 +668,28 @@ private struct ImportLinkSheet: View {
                     .focused($focused)
                     .padding(.horizontal, 14).padding(.vertical, 12)
                     .background(Color(white: 1), in: RoundedRectangle(cornerRadius: FridjRadius.sm, style: .continuous))
+                    // A brief warm glow confirms the paste landed in the field.
+                    .overlay(
+                        RoundedRectangle(cornerRadius: FridjRadius.sm, style: .continuous)
+                            .stroke(Color.fridjOrange.opacity(justPasted ? 0.8 : 0), lineWidth: 2)
+                    )
 
-                Button {
-                    if let s = UIPasteboard.general.string { url = s }
-                } label: {
-                    Image(systemName: "doc.on.clipboard")
+                Button { paste() } label: {
+                    Image(systemName: justPasted ? "checkmark" : "doc.on.clipboard")
                         .font(.system(size: 15, weight: .semibold))
-                        .foregroundColor(.fridjOrange)
+                        .foregroundColor(justPasted ? .white : .fridjOrange)
                         .frame(width: 44, height: 44)
-                        .background(Color.fridjOrange.opacity(0.12),
+                        .background(justPasted ? Color.fridjOrange : Color.fridjOrange.opacity(0.12),
                                     in: RoundedRectangle(cornerRadius: FridjRadius.sm, style: .continuous))
+                        .contentTransition(.symbolEffect(.replace))
                 }
                 .buttonStyle(.plain)
             }
+            // Text growth (a pasted caption can be 4 lines) reflows smoothly
+            // instead of snapping.
+            .animation(.spring(response: 0.35, dampingFraction: 0.85), value: url)
+            .animation(.easeOut(duration: 0.2), value: justPasted)
+            .sensoryFeedback(.success, trigger: justPasted) { _, new in new }
 
             if let errorText {
                 Text(errorText)
@@ -712,6 +723,26 @@ private struct ImportLinkSheet: View {
         .presentationDetents([.height(320)])
         .presentationCornerRadius(28)
         .onAppear { focused = true }
+    }
+
+    // The clipboard often holds a URL OBJECT rather than a string (copying a
+    // link out of Instagram does this) — reading only .string silently fails,
+    // which read as "the button does nothing." Check both, animate the landing,
+    // and say so when the clipboard is genuinely empty.
+    private func paste() {
+        let pb = UIPasteboard.general
+        let pasted = pb.string ?? pb.url?.absoluteString
+        guard let pasted, !pasted.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            errorText = "Nothing on your clipboard — copy a link or caption first."
+            return
+        }
+        errorText = nil
+        withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) { url = pasted }
+        justPasted = true
+        Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 900_000_000)
+            withAnimation(.easeOut(duration: 0.25)) { justPasted = false }
+        }
     }
 
     private func runImport() async {
