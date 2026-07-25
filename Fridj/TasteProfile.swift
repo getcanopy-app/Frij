@@ -47,12 +47,15 @@ enum TasteProfile {
         var lines: [String] = []
 
         // 1a) Cooked dishes — the highest-signal input, called out as such.
+        // Both stores keep newest first, so telling the model the order is
+        // meaningful is the whole recency-weighting mechanism: tastes drift,
+        // and last week's cook says more than last month's.
         if !cookedNames.isEmpty {
-            lines.append("Dishes they've actually cooked (their strongest signal): \(cookedNames.prefix(10).joined(separator: ", ")).")
+            lines.append("Dishes they've actually cooked, most recent first (their strongest signal): \(cookedNames.prefix(10).joined(separator: ", ")).")
         }
         // 1b) Saved-but-not-yet-cooked dishes — a softer lean.
         if !savedNames.isEmpty {
-            lines.append("Dishes they've saved: \(savedNames.prefix(10).joined(separator: ", ")).")
+            lines.append("Dishes they've saved, most recent first: \(savedNames.prefix(10).joined(separator: ", ")).")
         }
         // 1c) The day-one quiz seed, weakest of the positives.
         if let quizLine { lines.append(quizLine) }
@@ -73,6 +76,12 @@ enum TasteProfile {
             .filter { !$0.isEmpty }.prefix(8)
         if !avoids.isEmpty {
             lines.append("Dishes they passed on — show fewer like these: \(avoids.joined(separator: ", ")).")
+        }
+
+        // Recency rule for the model — only worth stating when real history
+        // exists (the quiz seed has no meaningful order).
+        if positives > 0 {
+            lines.append("Recent items in these lists reflect their current taste best — weight them over older ones.")
         }
 
         return lines.isEmpty ? nil : lines.joined(separator: " ")
