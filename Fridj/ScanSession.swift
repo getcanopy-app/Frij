@@ -65,6 +65,9 @@ final class ScanSession {
                 // cancel or a failed request never costs a free idea.
                 if !subMgr.isSubscribed { usage.recordGeneration() }
                 recipes = result
+                // Bank the batch so the next "more options" excludes it, and so
+                // it survives in the "Recently generated" list.
+                RecipeHistoryStore.shared.record(result)
                 showRecipes = true
             } catch {
                 // Cancelling throws too (URLError.cancelled / CancellationError);

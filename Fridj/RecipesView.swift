@@ -4,6 +4,7 @@ struct RecipesView: View {
     @State private var selectedRecipe: Recipe?
     @State private var store = PantryStore.shared
     @State private var favorites = FavoritesStore.shared
+    @State private var history = RecipeHistoryStore.shared
     @Bindable private var session = ScanSession.shared
     @State private var sub = SubscriptionManager.shared
     @State private var usage = UsageStore.shared
@@ -19,7 +20,18 @@ struct RecipesView: View {
     private var recipes: [Recipe] { session.recipes }
     private var hasSaved: Bool { !favorites.recipes.isEmpty }
     private var hasFresh: Bool { !recipes.isEmpty }
-    private var isCompletelyEmpty: Bool { !hasSaved && !hasFresh }
+
+    // Meals seen before that aren't in tonight's fresh batch or already saved —
+    // the "don't lose it" archive. Capped so the page stays tight.
+    private var recentGenerated: [Recipe] {
+        let shownIDs = Set(recipes.map(\.id))
+        let savedIDs = Set(favorites.recipes.map(\.id))
+        return Array(history.recipes
+            .filter { !shownIDs.contains($0.id) && !savedIDs.contains($0.id) }
+            .prefix(12))
+    }
+    private var hasHistory: Bool { !recentGenerated.isEmpty }
+    private var isCompletelyEmpty: Bool { !hasSaved && !hasFresh && !hasHistory }
 
     var body: some View {
         ZStack {
@@ -43,6 +55,13 @@ struct RecipesView: View {
                         }
                         if hasFresh {
                             tonightSection
+                                .transition(.asymmetric(
+                                    insertion: .opacity.combined(with: .offset(y: 16)),
+                                    removal: .opacity
+                                ))
+                        }
+                        if hasHistory {
+                            recentlyGeneratedSection
                                 .transition(.asymmetric(
                                     insertion: .opacity.combined(with: .offset(y: 16)),
                                     removal: .opacity
@@ -203,6 +222,76 @@ struct RecipesView: View {
             }
         }
         .padding(.top, hasSaved ? FridjSpacing.md : 0)
+    }
+
+    // MARK: Recently generated (the "don't lose it" archive)
+
+    private var recentlyGeneratedSection: some View {
+        VStack(alignment: .leading, spacing: FridjSpacing.sm) {
+            HStack {
+                Text("Recently generated")
+                    .font(FridjFont.style(.title, weight: .bold))
+                    .foregroundColor(.fridjText)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.75)
+                Spacer()
+                Text("\(recentGenerated.count)")
+                    .font(FridjFont.size(14, weight: .bold))
+                    .foregroundColor(.fridjText.opacity(0.4))
+            }
+            Text("Meals you've seen before — tap to revisit or save.")
+                .font(FridjFont.size(13))
+                .foregroundColor(.fridjText.opacity(0.5))
+
+            VStack(spacing: FridjSpacing.sm) {
+                ForEach(recentGenerated) { recipe in
+                    historyRow(recipe)
+                }
+            }
+            .animation(.spring(response: 0.45, dampingFraction: 0.82), value: recentGenerated.count)
+        }
+    }
+
+    // Compact archive row — smaller than a "tonight" hero card so it reads as
+    // history, not a fresh suggestion. Tap opens the full recipe; heart saves it.
+    private func historyRow(_ recipe: Recipe) -> some View {
+        Button { selectedRecipe = recipe } label: {
+            HStack(spacing: 12) {
+                MealImageView(dish: recipe.name, cornerRadius: 12)
+                    .frame(width: 54, height: 54)
+
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(recipe.name)
+                        .font(FridjFont.size(15, weight: .bold))
+                        .foregroundColor(.fridjText)
+                        .lineLimit(1)
+                    if !recipe.cookTime.isEmpty {
+                        Text(recipe.cookTime)
+                            .font(FridjFont.size(12, weight: .semibold))
+                            .foregroundColor(.fridjText.opacity(0.45))
+                    }
+                }
+
+                Spacer(minLength: 8)
+
+                let isFav = favorites.isFavorite(recipe)
+                Button {
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.55)) {
+                        _ = favorites.toggle(recipe)
+                    }
+                } label: {
+                    Image(systemName: isFav ? "heart.fill" : "heart")
+                        .font(.system(size: 15, weight: .bold))
+                        .foregroundColor(isFav ? .fridjCoral : .fridjText.opacity(0.35))
+                        .frame(width: 40, height: 40)
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(8)
+            .background(Color(white: 1),
+                        in: RoundedRectangle(cornerRadius: FridjRadius.recipeCard, style: .continuous))
+        }
+        .buttonStyle(.plain)
     }
 
     // MARK: Empty

@@ -88,6 +88,12 @@ enum FrijAPI {
             body["tasteProfile"] = taste
         }
 
+        // Don't re-serve dishes the user just saw — this is what makes "more
+        // options" actually give new ideas. Read before the call; the new batch
+        // is recorded by ScanSession afterward.
+        let exclude = RecipeHistoryStore.shared.recentNames(limit: 12)
+        if !exclude.isEmpty { body["exclude"] = exclude }
+
         let data = try await post("/api/recipes", body: body)
         return try JSONDecoder().decode(RecipeResponse.self, from: data).recipes
     }
