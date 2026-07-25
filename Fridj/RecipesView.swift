@@ -10,6 +10,9 @@ struct RecipesView: View {
 
     @State private var lastRemoved: [String] = []
     @State private var showUndoFor: String?
+    // The dish behind the current undo banner, so Undo also reverses the
+    // "cooked" taste signal — not just the pantry removal.
+    @State private var lastCooked: Recipe?
 
     var onJumpToScan: (() -> Void)? = nil
 
@@ -252,6 +255,21 @@ struct RecipesView: View {
                     .frame(height: 170)
                     .clipShape(.rect(topLeadingRadius: FridjRadius.recipeCard,
                                     topTrailingRadius: FridjRadius.recipeCard))
+                    // "Not for me" — a quiet dismiss that mirrors the heart. Tap
+                    // to wave a dish off: it slides away and we learn to show
+                    // fewer like it. Deliberately low-contrast so it never
+                    // competes with the save.
+                    .overlay(alignment: .topLeading) {
+                        Button { dismissRecipe(recipe) } label: {
+                            Image(systemName: "xmark")
+                                .font(.system(size: 13, weight: .bold))
+                                .foregroundColor(.fridjText.opacity(0.5))
+                                .frame(width: 32, height: 32)
+                                .background(.ultraThinMaterial, in: Circle())
+                        }
+                        .buttonStyle(.plain)
+                        .padding(10)
+                    }
                     .overlay(alignment: .topTrailing) {
                         Button {
                             withAnimation(.spring(response: 0.3, dampingFraction: 0.55)) {
@@ -356,6 +374,8 @@ struct RecipesView: View {
                 Spacer()
                 Button("Undo") {
                     for name in lastRemoved { store.addLocal(name: name, source: .scanned) }
+                    if let cooked = lastCooked { TasteSignalsStore.shared.undoCooked(cooked) }
+                    lastCooked = nil
                     lastRemoved = []
                     showUndoFor = nil
                 }
@@ -373,7 +393,21 @@ struct RecipesView: View {
         .animation(.spring(response: 0.4, dampingFraction: 0.8), value: showUndoFor)
     }
 
+    // "Not for me" — record the soft-negative signal and slide the card out.
+    // No undo: it's low-stakes (regenerate anytime), and a banner here would
+    // clutter the exact minimalism we're protecting.
+    private func dismissRecipe(_ recipe: Recipe) {
+        TasteSignalsStore.shared.dislike(recipe)
+        withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) {
+            session.recipes.removeAll { $0.id == recipe.id }
+        }
+    }
+
     private func markCooked(_ recipe: Recipe) {
+        // Strongest taste signal — record the dish itself, not just the date.
+        TasteSignalsStore.shared.logCooked(recipe)
+        lastCooked = recipe
+
         let removed = recipe.uses.filter { store.contains($0) }
         guard !removed.isEmpty else { return }
         for name in removed { store.remove(name: name) }

@@ -81,7 +81,10 @@ enum FrijAPI {
         // the picks (and the "Because you…" reasons) get personal over time.
         // Not sent for desserts: the dessert brief is its own thing.
         if mode != "dessert",
-           let taste = TasteProfile.brief(favorites: FavoritesStore.shared.recipes) {
+           let taste = TasteProfile.brief(
+               favorites: FavoritesStore.shared.recipes,
+               cooked: TasteSignalsStore.shared.cooked,
+               disliked: TasteSignalsStore.shared.disliked) {
             body["tasteProfile"] = taste
         }
 
