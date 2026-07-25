@@ -930,51 +930,68 @@ struct RecipeDetailSheet: View {
 
                                 if !recipe.needs.isEmpty {
                                     VStack(alignment: .leading, spacing: 8) {
-                                        Text("TO BUY")
+                                        Text(addedToList ? "ON YOUR GROCERY LIST" : "TO BUY")
                                             .font(FridjFont.size(9, weight: .bold))
                                             .tracking(0.9)
-                                            .foregroundColor(.fridjOrange.opacity(0.75))
+                                            .foregroundColor(addedToList ? .fridjGreen.opacity(0.8) : .fridjOrange.opacity(0.75))
+                                            .contentTransition(.opacity)
                                         ForEach(recipe.needs, id: \.self) { item in
                                             HStack(spacing: 9) {
-                                                Image(systemName: "plus")
+                                                Image(systemName: addedToList ? "cart.fill" : "plus")
                                                     .font(.system(size: 10, weight: .bold))
-                                                    .foregroundColor(.fridjOrange)
+                                                    .foregroundColor(addedToList ? .fridjGreen : .fridjOrange)
+                                                    .contentTransition(.symbolEffect(.replace))
                                                 Text(item)
                                                     .font(FridjFont.size(14))
-                                                    .foregroundColor(.fridjText)
+                                                    .foregroundColor(.fridjText.opacity(addedToList ? 0.55 : 1))
                                             }
                                         }
 
                                         // The add action lives where the missing
-                                        // items live — a quiet footer, not a
-                                        // banner floating mid-sheet.
-                                        Button {
-                                            grocery.add(recipe.needs)
-                                            withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
-                                                addedToList = true
-                                            }
-                                            Task {
-                                                try? await Task.sleep(nanoseconds: 2_000_000_000)
-                                                addedToList = false
-                                            }
-                                        } label: {
+                                        // items live. Once tapped it STAYS
+                                        // confirmed (no snap-back), and the rows
+                                        // above flip to "on your list."
+                                        if addedToList {
                                             HStack(spacing: 7) {
-                                                Image(systemName: addedToList ? "checkmark.circle.fill" : "cart.badge.plus")
+                                                Image(systemName: "checkmark.circle.fill")
                                                     .font(.system(size: 13, weight: .semibold))
-                                                Text(addedToList
-                                                     ? "Added to grocery list"
-                                                     : "Add \(recipe.needs.count) missing to grocery list")
+                                                Text("Added to grocery list")
                                                     .font(FridjFont.size(13, weight: .bold))
                                             }
-                                            .foregroundColor(addedToList ? .fridjGreen : .fridjOrange)
+                                            .foregroundColor(.fridjGreen)
                                             .padding(.horizontal, 13).padding(.vertical, 9)
-                                            .background(
-                                                (addedToList ? Color.fridjGreen : Color.fridjOrange).opacity(0.1),
-                                                in: Capsule()
-                                            )
+                                            .background(Color.fridjGreen.opacity(0.1), in: Capsule())
+                                            .padding(.top, 4)
+                                        } else {
+                                            Button {
+                                                grocery.add(recipe.needs)
+                                                withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
+                                                    addedToList = true
+                                                }
+                                            } label: {
+                                                HStack(spacing: 7) {
+                                                    Image(systemName: "cart.badge.plus")
+                                                        .font(.system(size: 13, weight: .semibold))
+                                                    Text("Add \(recipe.needs.count) missing to grocery list")
+                                                        .font(FridjFont.size(13, weight: .bold))
+                                                }
+                                                .foregroundColor(.fridjOrange)
+                                                .padding(.horizontal, 13).padding(.vertical, 9)
+                                                .background(Color.fridjOrange.opacity(0.1), in: Capsule())
+                                            }
+                                            .buttonStyle(.plain)
+                                            .padding(.top, 4)
                                         }
-                                        .buttonStyle(.plain)
-                                        .padding(.top, 4)
+                                    }
+                                    .sensoryFeedback(.success, trigger: addedToList) { _, new in new }
+                                    // Reopening the sheet later: if everything's
+                                    // already on the list, show the settled state
+                                    // instead of offering to add again.
+                                    .onAppear {
+                                        addedToList = recipe.needs.allSatisfy { need in
+                                            let n = need.trimmingCharacters(in: .whitespaces).lowercased()
+                                            return grocery.items.contains { $0.name.lowercased() == n }
+                                        }
                                     }
                                 }
                             }
