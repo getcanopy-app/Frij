@@ -334,12 +334,19 @@ the moment real users exist, real usage outranks speculation.**
 
 **Pantry data hygiene + Scan-page preview (SPECCED — first post-TestFlight
 release, "1.0.2"):**
-- ☐ **Normalize at the grocery→pantry transfer gate.** Inventory stores
-  canonical names; quantities belong to recipes. Route transfers through
-  /api/parse-ingredients (extracts canonical_name, drops amounts + prep
-  modifiers — keep "greek yogurt" specific, don't flatten to "yogurt"), with
-  a local quantity-stripper as offline fallback. Exclude side-dish names
-  (Garlic Bread et al.) from entering the pantry at all.
+- ☐ **Separate name from amount AT THE SOURCE (upgraded 2026-07-26, Gabe's
+  call).** The name is data, the amount is metadata: backend import +
+  recipe endpoints return ingredients as {name, amount} ("cherry
+  tomatoes" / "2 cups") instead of one mashed string. Recipe rows display
+  name-leads-amount-whispers; grocery list keeps both; the PANTRY stores
+  the name only (inventory = existence; quantities-in-pantry stays the
+  V3 "Real Pantry" feature); PantryMatch matches on clean names, killing
+  the quantity-parsing bug class outright. Needs migration-safe schema
+  change on Recipe.needs (decodeIfPresent fallback for old saved data).
+  The grocery→pantry transfer gate then only handles legacy/typed strings
+  via /api/parse-ingredients — keep "greek yogurt" specific, don't flatten
+  to "yogurt". Exclude side-dish names (Garlic Bread et al.) from entering
+  the pantry at all.
 - ☐ **One-time migration** on first launch: re-normalize existing pantry
   entries, so all pre-fix dirty data ("250g pasta", "120g unflavored
   grass-fed whey protein powder") heals itself.
