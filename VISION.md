@@ -352,6 +352,21 @@ release, "1.0.2"):**
   unnecessary. Held out of build 5 deliberately — core-data-path change
   deserves its own test cycle.
 
+**Minimalism audit findings (2026-07-26 — ship with the same 1.0.2 pass):**
+- ☐ Grocery header → quiet count + ONE contextual control (Check all ↔
+  Clear checked); rows → circle + name only (✕ becomes swipe-to-delete,
+  per-row "Add to pantry" pill dropped, bulk button from 1 checked item).
+- ☐ Delete the Tonight's-options count badge (it is always "3" — dead
+  weight next to the share icon).
+- ☐ Cut permanent tutorial subtitles: Saved, Recently generated,
+  "Everything Frij knows you have.", the "tap to pick" hint. KEEP only
+  "From what's in your kitchen" and "Scan your fridge to make these real"
+  (both do honesty work, not tutorial work).
+- ☐ Home history tier: title only — the sparkle caption stays exclusively
+  on aspirational tiers.
+- Explicitly cleared as NOT clutter: detail sheet structure, USE SOON's
+  embedded "Cook these" action.
+
 **Identity / personalization:**
 - ☐ **Voice ingredient capture** ⭐ (the friction killer)
 - ☐ **Cuisine personalization** ⭐ (the "it sees me" feature)
