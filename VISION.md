@@ -332,6 +332,26 @@ the moment real users exist, real usage outranks speculation.**
 
 ## Running list
 
+**Pantry data hygiene + Scan-page preview (SPECCED — first post-TestFlight
+release, "1.0.2"):**
+- ☐ **Normalize at the grocery→pantry transfer gate.** Inventory stores
+  canonical names; quantities belong to recipes. Route transfers through
+  /api/parse-ingredients (extracts canonical_name, drops amounts + prep
+  modifiers — keep "greek yogurt" specific, don't flatten to "yogurt"), with
+  a local quantity-stripper as offline fallback. Exclude side-dish names
+  (Garlic Bread et al.) from entering the pantry at all.
+- ☐ **One-time migration** on first launch: re-normalize existing pantry
+  entries, so all pre-fix dirty data ("250g pasta", "120g unflavored
+  grass-fed whey protein powder") heals itself.
+- ☐ **Scan page inventory preview shrinks** to ~2 rows of clean read-only
+  chips + a quiet "+N more" that jumps to the Pantry page. Zero ✕ buttons
+  outside the Pantry page's Edit mode. (Alt if still noisy: category
+  micro-badges — "Produce (8) · Dairy (4) · +11 more".)
+- Rationale settled 2026-07-25 with Gemini concurring: fix the data
+  upstream and the layout hacks (sorting, truncating long strings) become
+  unnecessary. Held out of build 5 deliberately — core-data-path change
+  deserves its own test cycle.
+
 **Identity / personalization:**
 - ☐ **Voice ingredient capture** ⭐ (the friction killer)
 - ☐ **Cuisine personalization** ⭐ (the "it sees me" feature)
