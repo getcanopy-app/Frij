@@ -8,14 +8,25 @@ import Foundation
 enum PantryMatch {
     /// Whole-word match of any pantry item inside the ingredient text, so
     /// quantity-carrying strings ("1 cup heavy cream") still match the pantry's
-    /// "heavy cream". Tolerates simple plural s/es on the pantry side.
+    /// "heavy cream". Plurals are tolerated in BOTH directions — pantry "eggs"
+    /// must match "2 egg yolks" (singular in the phrase), and pantry "tomato"
+    /// must match "2 cups cherry tomatoes" (plural in the phrase).
     static func has(_ ingredient: String) -> Bool {
-        let pantry = PantryStore.shared.items.map(\.name)   // stored lowercased
         let hay = " " + ingredient.lowercased()
             .replacingOccurrences(of: ",", with: " ") + " "
-        return pantry.contains { item in
-            hay.contains(" \(item) ") || hay.contains(" \(item)s ") || hay.contains(" \(item)es ")
+        return PantryStore.shared.items.contains { item in
+            forms(of: item.name).contains { hay.contains(" \($0) ") }
         }
+    }
+
+    /// Plural/singular variants of a pantry name for whole-word matching.
+    private static func forms(of raw: String) -> [String] {
+        let name = raw.lowercased().trimmingCharacters(in: .whitespaces)
+        var forms = [name, name + "s", name + "es"]
+        if name.hasSuffix("ies") { forms.append(String(name.dropLast(3)) + "y") }
+        if name.hasSuffix("es") { forms.append(String(name.dropLast(2))) }
+        if name.hasSuffix("s") { forms.append(String(name.dropLast())) }
+        return forms
     }
 
     /// Split an ingredient list into (in your fridge, still to buy), preserving
