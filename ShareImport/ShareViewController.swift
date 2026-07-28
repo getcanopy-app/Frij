@@ -154,12 +154,16 @@ final class ShareViewController: UIViewController {
             }
         }
 
-        // EXIT: everything animates away first, then the sheet dismisses —
-        // never a hard cut.
+        // EXIT: staggered, never a cut. The card melts down first (ease-in-out,
+        // not ease-in — ease-in reads as "sucked away"), the dim lifts a beat
+        // later so the scene has depth on the way out, and only once the screen
+        // is fully clear does the sheet dismiss.
         DispatchQueue.main.asyncAfter(deadline: .now() + (saved ? 1.35 : 1.8)) { [weak self] in
-            UIView.animate(withDuration: 0.22, delay: 0, options: .curveEaseIn) {
+            UIView.animate(withDuration: 0.3, delay: 0, options: [.curveEaseInOut]) {
                 card.alpha = 0
-                card.transform = CGAffineTransform(translationX: 0, y: 12).scaledBy(x: 0.92, y: 0.92)
+                card.transform = CGAffineTransform(translationX: 0, y: 18).scaledBy(x: 0.94, y: 0.94)
+            }
+            UIView.animate(withDuration: 0.24, delay: 0.16, options: [.curveEaseInOut]) {
                 scrim.alpha = 0
             } completion: { _ in
                 self?.extensionContext?.completeRequest(returningItems: nil)
