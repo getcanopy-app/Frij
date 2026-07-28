@@ -22,6 +22,9 @@ struct RecipesView: View {
     // tap toggles checkmarks, floating bar deletes the batch.
     @State private var isSelecting = false
     @State private var selectedForDelete: Set<String> = []
+    // The item currently pressed-and-held — pops up slightly so the press
+    // visibly registers before selection mode engages.
+    @State private var pressedID: String?
 
     var onJumpToScan: (() -> Void)? = nil
 
@@ -99,6 +102,7 @@ struct RecipesView: View {
             }
         }
         .animation(.easeOut(duration: 0.45), value: session.isCooking)
+        .sensoryFeedback(.impact(weight: .light), trigger: pressedID) { _, new in new != nil }
         .sheet(item: $selectedRecipe) { recipe in
             RecipeDetailSheet(recipe: recipe) {
                 markCooked(recipe)
@@ -186,7 +190,17 @@ struct RecipesView: View {
                             .onTapGesture {
                                 if isSelecting { toggleSelection(recipe) } else { selectedRecipe = recipe }
                             }
-                            .onLongPressGesture { enterSelection(with: recipe) }
+                            // Press acknowledgment: the tile pops up under the
+                            // finger, springs back on release, and selection
+                            // mode engages.
+                            .scaleEffect(pressedID == recipe.id ? 1.06 : 1)
+                            .zIndex(pressedID == recipe.id ? 1 : 0)
+                            .animation(.spring(response: 0.28, dampingFraction: 0.55), value: pressedID)
+                            .onLongPressGesture(minimumDuration: 0.4) {
+                                enterSelection(with: recipe)
+                            } onPressingChanged: { pressing in
+                                pressedID = pressing ? recipe.id : nil
+                            }
                             .transition(.opacity.combined(with: .scale(scale: 0.92)))
                     }
                 }
@@ -359,7 +373,14 @@ struct RecipesView: View {
                         .onTapGesture {
                             if isSelecting { toggleSelection(recipe) } else { selectedRecipe = recipe }
                         }
-                        .onLongPressGesture { enterSelection(with: recipe) }
+                        .scaleEffect(pressedID == recipe.id ? 1.03 : 1)
+                        .zIndex(pressedID == recipe.id ? 1 : 0)
+                        .animation(.spring(response: 0.28, dampingFraction: 0.55), value: pressedID)
+                        .onLongPressGesture(minimumDuration: 0.4) {
+                            enterSelection(with: recipe)
+                        } onPressingChanged: { pressing in
+                            pressedID = pressing ? recipe.id : nil
+                        }
                 }
             }
             .animation(.spring(response: 0.45, dampingFraction: 0.82), value: recentGenerated.count)
