@@ -169,18 +169,23 @@ struct RecipesView: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(alignment: .top, spacing: FridjSpacing.sm) {
                     ForEach(favorites.recipes) { recipe in
-                        // Same gesture language as Recently generated: press
-                        // and the tile pops up; hold to un-save. The heart
-                        // still works for the tap-minded.
-                        HoldToDelete(onTap: { selectedRecipe = recipe },
-                                     onDelete: {
-                            withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-                                favorites.remove(recipe)
+                        // The native Apple pattern (Photos / Home Screen):
+                        // press-and-hold lifts the tile to show selection,
+                        // then the system platter offers a red Remove.
+                        savedTile(recipe)
+                            .onTapGesture { selectedRecipe = recipe }
+                            .contentShape(.contextMenuPreview,
+                                          RoundedRectangle(cornerRadius: 14, style: .continuous))
+                            .contextMenu {
+                                Button(role: .destructive) {
+                                    withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                                        favorites.remove(recipe)
+                                    }
+                                } label: {
+                                    Label("Remove from Saved", systemImage: "trash")
+                                }
                             }
-                        }) {
-                            savedTile(recipe)
-                        }
-                        .transition(.opacity.combined(with: .scale(scale: 0.92)))
+                            .transition(.opacity.combined(with: .scale(scale: 0.92)))
                     }
                 }
                 .padding(.horizontal, FridjSpacing.lg)
@@ -337,14 +342,19 @@ struct RecipesView: View {
             }
             VStack(spacing: FridjSpacing.sm) {
                 ForEach(recentGenerated) { recipe in
-                    HoldToDelete(onTap: { selectedRecipe = recipe },
-                                 onDelete: {
-                        withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-                            history.remove(recipe)
+                    historyRow(recipe)
+                        .onTapGesture { selectedRecipe = recipe }
+                        .contentShape(.contextMenuPreview,
+                                      RoundedRectangle(cornerRadius: FridjRadius.recipeCard, style: .continuous))
+                        .contextMenu {
+                            Button(role: .destructive) {
+                                withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                                    history.remove(recipe)
+                                }
+                            } label: {
+                                Label("Remove from history", systemImage: "trash")
+                            }
                         }
-                    }) {
-                        historyRow(recipe)
-                    }
                 }
             }
             .animation(.spring(response: 0.45, dampingFraction: 0.82), value: recentGenerated.count)
@@ -743,33 +753,6 @@ private struct ImportLinkSheet: View {
         } catch {
             errorText = error.localizedDescription
         }
-    }
-}
-
-// Duolingo-style hold-to-delete: press and the row pops up — lifts, grows,
-// shadows, haptic — hold it there and it deletes with a spring; let go early
-// and it settles back down unharmed. Tap still opens as normal.
-private struct HoldToDelete<Content: View>: View {
-    let onTap: () -> Void
-    let onDelete: () -> Void
-    @ViewBuilder var content: () -> Content
-
-    @State private var held = false
-
-    var body: some View {
-        content()
-            .scaleEffect(held ? 1.05 : 1)
-            .shadow(color: .black.opacity(held ? 0.18 : 0),
-                    radius: held ? 14 : 0, x: 0, y: held ? 8 : 0)
-            .zIndex(held ? 1 : 0)
-            .animation(.spring(response: 0.3, dampingFraction: 0.6), value: held)
-            .onTapGesture { onTap() }
-            .onLongPressGesture(minimumDuration: 0.45) {
-                onDelete()
-            } onPressingChanged: { pressing in
-                held = pressing
-            }
-            .sensoryFeedback(.impact(weight: .medium), trigger: held) { _, new in new }
     }
 }
 
