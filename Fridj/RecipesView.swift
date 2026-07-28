@@ -193,10 +193,10 @@ struct RecipesView: View {
                             // Press acknowledgment: the tile pops up under the
                             // finger, springs back on release, and selection
                             // mode engages.
-                            .scaleEffect(pressedID == recipe.id ? 1.06 : 1)
+                            .scaleEffect(pressedID == recipe.id ? 1.04 : 1)
                             .zIndex(pressedID == recipe.id ? 1 : 0)
                             .animation(.spring(response: 0.28, dampingFraction: 0.55), value: pressedID)
-                            .onLongPressGesture(minimumDuration: 0.4) {
+                            .onLongPressGesture(minimumDuration: 0.3) {
                                 enterSelection(with: recipe)
                             } onPressingChanged: { pressing in
                                 pressedID = pressing ? recipe.id : nil
@@ -208,6 +208,10 @@ struct RecipesView: View {
                 .animation(.spring(response: 0.45, dampingFraction: 0.82), value: favorites.recipes.count)
             }
             .padding(.horizontal, -FridjSpacing.lg)
+            // The press-pop scales tiles past the shelf bounds — without this
+            // the ScrollView shears the photo and the "30 min" line. Let the
+            // popped tile draw outside; zIndex keeps it above neighbors.
+            .scrollClipDisabled()
         }
     }
 
@@ -373,10 +377,10 @@ struct RecipesView: View {
                         .onTapGesture {
                             if isSelecting { toggleSelection(recipe) } else { selectedRecipe = recipe }
                         }
-                        .scaleEffect(pressedID == recipe.id ? 1.03 : 1)
+                        .scaleEffect(pressedID == recipe.id ? 1.02 : 1)
                         .zIndex(pressedID == recipe.id ? 1 : 0)
                         .animation(.spring(response: 0.28, dampingFraction: 0.55), value: pressedID)
-                        .onLongPressGesture(minimumDuration: 0.4) {
+                        .onLongPressGesture(minimumDuration: 0.3) {
                             enterSelection(with: recipe)
                         } onPressingChanged: { pressing in
                             pressedID = pressing ? recipe.id : nil
