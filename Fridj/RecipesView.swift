@@ -18,6 +18,10 @@ struct RecipesView: View {
     @State private var roastImage: UIImage?
     // Paste-a-link recipe import (TikTok/IG/YouTube).
     @State private var showImport = false
+    // Photos-style selection mode: long-press any saved/history meal to enter,
+    // tap toggles checkmarks, floating bar deletes the batch.
+    @State private var isSelecting = false
+    @State private var selectedForDelete: Set<String> = []
 
     var onJumpToScan: (() -> Void)? = nil
 
@@ -88,6 +92,10 @@ struct RecipesView: View {
 
             if let recipeId = showUndoFor, !lastRemoved.isEmpty {
                 undoBanner(recipeId: recipeId)
+            }
+
+            if isSelecting {
+                selectionBar
             }
         }
         .animation(.easeOut(duration: 0.45), value: session.isCooking)
@@ -172,19 +180,13 @@ struct RecipesView: View {
                         // The native Apple pattern (Photos / Home Screen):
                         // press-and-hold lifts the tile to show selection,
                         // then the system platter offers a red Remove.
-                        savedTile(recipe)
-                            .onTapGesture { selectedRecipe = recipe }
-                            .contextMenu {
-                                Button(role: .destructive) {
-                                    withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-                                        favorites.remove(recipe)
-                                    }
-                                } label: {
-                                    Label("Remove from Saved", systemImage: "trash")
-                                }
-                            } preview: {
-                                liftedPreview(recipe)
+                        savedTile(recipe,
+                                  selecting: isSelecting,
+                                  selected: selectedForDelete.contains(recipe.id))
+                            .onTapGesture {
+                                if isSelecting { toggleSelection(recipe) } else { selectedRecipe = recipe }
                             }
+                            .onLongPressGesture { enterSelection(with: recipe) }
                             .transition(.opacity.combined(with: .scale(scale: 0.92)))
                     }
                 }
@@ -197,16 +199,15 @@ struct RecipesView: View {
 
     // One tile on the saved shelf — photo-led, name + time under it, heart to
     // un-save floating on the image like everywhere else.
-    private func savedTile(_ recipe: Recipe) -> some View {
+    private func savedTile(_ recipe: Recipe, selecting: Bool = false, selected: Bool = false) -> some View {
         VStack(alignment: .leading, spacing: 7) {
-                MealImageView(dish: recipe.name, cornerRadius: 14)
-                    .frame(width: 150, height: 108)
-                    // Clip AFTER the frame: scaledToFill inside MealImageView
-                    // reports an oversized height (square photos in a landscape
-                    // frame), and its internal clip uses those oversized bounds
-                    // — without this the photo bleeds down onto the title.
-                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                    .overlay(alignment: .topTrailing) {
+            MealImageView(dish: recipe.name, cornerRadius: 14)
+                .frame(width: 150, height: 108)
+                // Clip AFTER the frame: scaledToFill inside MealImageView
+                // reports an oversized height and would bleed past the tile.
+                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .overlay(alignment: .topTrailing) {
+                    if !selecting {
                         Button {
                             withAnimation(.spring(response: 0.3, dampingFraction: 0.55)) {
                                 _ = favorites.toggle(recipe)
@@ -221,22 +222,32 @@ struct RecipesView: View {
                         .buttonStyle(.plain)
                         .padding(6)
                     }
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(recipe.name)
-                        .font(FridjFont.size(13, weight: .semibold))
-                        .foregroundColor(.fridjText)
-                        .multilineTextAlignment(.leading)
-                        .lineLimit(2, reservesSpace: true)  // equal-height tiles
-                    if !recipe.cookTime.isEmpty {
-                        Text(recipe.cookTime)
-                            .font(FridjFont.size(11, weight: .medium))
-                            .foregroundColor(.fridjText.opacity(0.45))
+                }
+                // Photos-style checkmark, bottom-trailing on the photo.
+                .overlay(alignment: .bottomTrailing) {
+                    if selecting {
+                        selectionBadge(selected: selected)
+                            .padding(7)
                     }
                 }
+                .opacity(selecting && !selected ? 0.8 : 1)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(recipe.name)
+                    .font(FridjFont.size(13, weight: .semibold))
+                    .foregroundColor(.fridjText)
+                    .multilineTextAlignment(.leading)
+                    .lineLimit(2, reservesSpace: true)  // equal-height tiles
+                if !recipe.cookTime.isEmpty {
+                    Text(recipe.cookTime)
+                        .font(FridjFont.size(11, weight: .medium))
+                        .foregroundColor(.fridjText.opacity(0.45))
+                }
             }
-            .frame(width: 150, alignment: .leading)
-            .contentShape(Rectangle())
+        }
+        .frame(width: 150, alignment: .leading)
+        .contentShape(Rectangle())
+        .animation(.spring(response: 0.3, dampingFraction: 0.8), value: selected)
     }
 
     // MARK: Tonight
@@ -342,73 +353,45 @@ struct RecipesView: View {
             }
             VStack(spacing: FridjSpacing.sm) {
                 ForEach(recentGenerated) { recipe in
-                    historyRow(recipe)
-                        .onTapGesture { selectedRecipe = recipe }
-                        .contextMenu {
-                            Button(role: .destructive) {
-                                withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-                                    history.remove(recipe)
-                                }
-                            } label: {
-                                Label("Remove from history", systemImage: "trash")
-                            }
-                        } preview: {
-                            liftedPreview(recipe)
+                    historyRow(recipe,
+                               selecting: isSelecting,
+                               selected: selectedForDelete.contains(recipe.id))
+                        .onTapGesture {
+                            if isSelecting { toggleSelection(recipe) } else { selectedRecipe = recipe }
                         }
+                        .onLongPressGesture { enterSelection(with: recipe) }
                 }
             }
             .animation(.spring(response: 0.45, dampingFraction: 0.82), value: recentGenerated.count)
         }
     }
 
-    // The card shown while a meal is "picked up" (context-menu lift): a real
-    // designed card — full-bleed photo, name + time on cream — instead of the
-    // system's raw gray snapshot of the tile.
-    private func liftedPreview(_ recipe: Recipe) -> some View {
-        VStack(alignment: .leading, spacing: 0) {
-            MealImageView(dish: recipe.name, cornerRadius: 0)
-                .frame(width: 290, height: 195)
-                .clipped()
+    // Compact archive row — smaller than a "tonight" hero card so it reads as
+    // history, not a fresh suggestion.
+    private func historyRow(_ recipe: Recipe, selecting: Bool = false, selected: Bool = false) -> some View {
+        HStack(spacing: 12) {
+            if selecting {
+                selectionBadge(selected: selected)
+            }
+
+            MealImageView(dish: recipe.name, cornerRadius: 12)
+                .frame(width: 54, height: 54)
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(recipe.name)
-                    .font(FridjFont.size(18, weight: .bold))
+                    .font(FridjFont.size(15, weight: .bold))
                     .foregroundColor(.fridjText)
-                    .lineLimit(2)
+                    .lineLimit(1)
                 if !recipe.cookTime.isEmpty {
                     Text(recipe.cookTime)
-                        .font(FridjFont.size(13, weight: .semibold))
-                        .foregroundColor(.fridjText.opacity(0.5))
+                        .font(FridjFont.size(12, weight: .semibold))
+                        .foregroundColor(.fridjText.opacity(0.45))
                 }
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 13)
-            .frame(width: 290, alignment: .leading)
-            .background(Color.fridjBg)
-        }
-    }
 
-    // Compact archive row — smaller than a "tonight" hero card so it reads as
-    // history, not a fresh suggestion. Tap opens the full recipe; heart saves it.
-    private func historyRow(_ recipe: Recipe) -> some View {
-        HStack(spacing: 12) {
-                MealImageView(dish: recipe.name, cornerRadius: 12)
-                    .frame(width: 54, height: 54)
+            Spacer(minLength: 8)
 
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(recipe.name)
-                        .font(FridjFont.size(15, weight: .bold))
-                        .foregroundColor(.fridjText)
-                        .lineLimit(1)
-                    if !recipe.cookTime.isEmpty {
-                        Text(recipe.cookTime)
-                            .font(FridjFont.size(12, weight: .semibold))
-                            .foregroundColor(.fridjText.opacity(0.45))
-                    }
-                }
-
-                Spacer(minLength: 8)
-
+            if !selecting {
                 let isFav = favorites.isFavorite(recipe)
                 Button {
                     withAnimation(.spring(response: 0.3, dampingFraction: 0.55)) {
@@ -422,10 +405,101 @@ struct RecipesView: View {
                 }
                 .buttonStyle(.plain)
             }
-            .padding(8)
-            .background(Color(white: 1),
-                        in: RoundedRectangle(cornerRadius: FridjRadius.recipeCard, style: .continuous))
-            .contentShape(Rectangle())
+        }
+        .padding(8)
+        .background(
+            selected ? Color.fridjOrange.opacity(0.08) : Color(white: 1),
+            in: RoundedRectangle(cornerRadius: FridjRadius.recipeCard, style: .continuous)
+        )
+        .contentShape(Rectangle())
+        .animation(.spring(response: 0.3, dampingFraction: 0.8), value: selected)
+    }
+
+    // MARK: Selection mode (Photos-style)
+
+    private func selectionBadge(selected: Bool) -> some View {
+        ZStack {
+            if selected {
+                Circle().fill(Color.fridjOrange)
+                Image(systemName: "checkmark")
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundColor(.white)
+            } else {
+                Circle().fill(.black.opacity(0.2))
+                Circle().stroke(.white, lineWidth: 1.6).padding(1)
+            }
+        }
+        .frame(width: 22, height: 22)
+        .transition(.scale.combined(with: .opacity))
+    }
+
+    private func enterSelection(with recipe: Recipe) {
+        guard !isSelecting else { return }
+        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+            isSelecting = true
+            selectedForDelete = [recipe.id]
+        }
+    }
+
+    private func toggleSelection(_ recipe: Recipe) {
+        withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) {
+            if selectedForDelete.contains(recipe.id) {
+                selectedForDelete.remove(recipe.id)
+            } else {
+                selectedForDelete.insert(recipe.id)
+            }
+        }
+    }
+
+    private func exitSelection() {
+        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+            isSelecting = false
+            selectedForDelete = []
+        }
+    }
+
+    private func deleteSelected() {
+        withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) {
+            for recipe in favorites.recipes where selectedForDelete.contains(recipe.id) {
+                favorites.remove(recipe)
+            }
+            for recipe in history.recipes where selectedForDelete.contains(recipe.id) {
+                history.remove(recipe)
+            }
+            isSelecting = false
+            selectedForDelete = []
+        }
+    }
+
+    // Floating action bar while selecting: Done on the left, red Delete (N)
+    // on the right — Photos' select-then-act, in Frij's dress.
+    private var selectionBar: some View {
+        VStack {
+            Spacer()
+            HStack {
+                Button("Done") { exitSelection() }
+                    .font(FridjFont.size(15, weight: .bold))
+                    .foregroundColor(.fridjText.opacity(0.65))
+                Spacer()
+                Button { deleteSelected() } label: {
+                    Text(selectedForDelete.isEmpty ? "Delete" : "Delete (\(selectedForDelete.count))")
+                        .font(FridjFont.size(15, weight: .bold))
+                        .foregroundColor(selectedForDelete.isEmpty ? .fridjText.opacity(0.35) : .white)
+                        .padding(.horizontal, 18).padding(.vertical, 10)
+                        .background(
+                            selectedForDelete.isEmpty ? Color.fridjText.opacity(0.08) : Color.fridjCoral,
+                            in: Capsule()
+                        )
+                }
+                .disabled(selectedForDelete.isEmpty)
+            }
+            .padding(.horizontal, 16).padding(.vertical, 11)
+            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 26, style: .continuous))
+            .padding(.horizontal, FridjSpacing.lg)
+            .padding(.bottom, 100)
+        }
+        .transition(.move(edge: .bottom).combined(with: .opacity))
+        .sensoryFeedback(.impact(weight: .light), trigger: isSelecting)
     }
 
     // MARK: Empty
