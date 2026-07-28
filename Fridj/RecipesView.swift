@@ -87,6 +87,9 @@ struct RecipesView: View {
                     .padding(.top, 60)
                     .padding(.bottom, 120)
                 }
+                // Tap on any empty space while selecting = smooth exit; item
+                // taps win their own gesture, so toggling still works.
+                .onTapGesture { if isSelecting { exitSelection() } }
                 .transition(.asymmetric(
                     insertion: .opacity.combined(with: .offset(y: 24)),
                     removal: .opacity
@@ -467,6 +470,9 @@ struct RecipesView: View {
         withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
             isSelecting = true
             selectedForDelete = [recipe.id]
+            // The tab bar slides away and the Delete bar takes its place —
+            // a mode swap, not two bars fighting for the same bottom edge.
+            ScanSession.shared.hidesTabBar = true
         }
     }
 
@@ -484,6 +490,7 @@ struct RecipesView: View {
         withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
             isSelecting = false
             selectedForDelete = []
+            ScanSession.shared.hidesTabBar = false
         }
     }
 
@@ -497,6 +504,7 @@ struct RecipesView: View {
             }
             isSelecting = false
             selectedForDelete = []
+            ScanSession.shared.hidesTabBar = false
         }
     }
 
@@ -525,7 +533,7 @@ struct RecipesView: View {
             .padding(.horizontal, 16).padding(.vertical, 11)
             .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 26, style: .continuous))
             .padding(.horizontal, FridjSpacing.lg)
-            .padding(.bottom, 100)
+            .padding(.bottom, 30)
         }
         .transition(.move(edge: .bottom).combined(with: .opacity))
         .sensoryFeedback(.impact(weight: .light), trigger: isSelecting)
@@ -887,9 +895,10 @@ private struct ImportLinkSheet: View {
 }
 
 // Siri-style edge glow: on activation a warm Frij-palette ring blooms in
-// from the screen borders — wide and bright — then settles into a thin,
-// softly breathing glow that stays while the mode is active and fades out
-// with it. Pure decoration: never intercepts a touch.
+// from the screen borders, then settles into a breathing glow for as long
+// as the mode lives. Two layers — a wide blurred halo for the atmosphere
+// and a crisp core line so it reads even against the cream background.
+// Pure decoration: never intercepts a touch.
 private struct SelectionGlow: View {
     let active: Bool
 
@@ -897,37 +906,44 @@ private struct SelectionGlow: View {
     @State private var breathe = false
 
     var body: some View {
-        RoundedRectangle(cornerRadius: 56, style: .continuous)
+        ZStack {
+            glowRing(width: settled ? 12 : 30, blur: settled ? 16 : 34)
+            glowRing(width: settled ? 4 : 9, blur: settled ? 1.5 : 5)
+        }
+        .opacity(active ? (settled ? (breathe ? 0.55 : 0.9) : 1.0) : 0)
+        .allowsHitTesting(false)
+        .animation(.easeOut(duration: 0.3), value: active)
+        .onChange(of: active) { _, on in
+            if on {
+                settled = false
+                breathe = false
+                // Hold the big bloom for a beat before settling…
+                withAnimation(.spring(response: 0.8, dampingFraction: 0.85).delay(0.15)) {
+                    settled = true
+                }
+                // …then breathe for as long as the mode lives.
+                withAnimation(.easeInOut(duration: 1.4)
+                    .repeatForever(autoreverses: true).delay(0.95)) {
+                    breathe = true
+                }
+            } else {
+                breathe = false
+            }
+        }
+    }
+
+    private func glowRing(width: CGFloat, blur: CGFloat) -> some View {
+        RoundedRectangle(cornerRadius: 54, style: .continuous)
             .strokeBorder(
                 AngularGradient(
                     colors: [.fridjOrange, .fridjCoral, .fridjPeach,
                              .fridjMint, .fridjOrange],
                     center: .center
                 ),
-                lineWidth: settled ? 5 : 18
+                lineWidth: width
             )
-            .blur(radius: settled ? 9 : 24)
-            .opacity(active ? (settled ? (breathe ? 0.4 : 0.65) : 1.0) : 0)
+            .blur(radius: blur)
             .ignoresSafeArea()
-            .allowsHitTesting(false)
-            .animation(.easeOut(duration: 0.3), value: active)
-            .onChange(of: active) { _, on in
-                if on {
-                    // Bloom big, then settle thin…
-                    settled = false
-                    breathe = false
-                    withAnimation(.spring(response: 0.65, dampingFraction: 0.8)) {
-                        settled = true
-                    }
-                    // …and breathe gently for as long as the mode lives.
-                    withAnimation(.easeInOut(duration: 1.5)
-                        .repeatForever(autoreverses: true).delay(0.65)) {
-                        breathe = true
-                    }
-                } else {
-                    breathe = false
-                }
-            }
     }
 }
 
