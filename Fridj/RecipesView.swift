@@ -100,6 +100,10 @@ struct RecipesView: View {
             if isSelecting {
                 selectionBar
             }
+
+            // Siri-style announcement: the screen's border glows when
+            // selection mode engages, then breathes softly while it's active.
+            SelectionGlow(active: isSelecting)
         }
         .animation(.easeOut(duration: 0.45), value: session.isCooking)
         .sensoryFeedback(.impact(weight: .light), trigger: pressedID) { _, new in new != nil }
@@ -879,6 +883,51 @@ private struct ImportLinkSheet: View {
         } catch {
             errorText = error.localizedDescription
         }
+    }
+}
+
+// Siri-style edge glow: on activation a warm Frij-palette ring blooms in
+// from the screen borders — wide and bright — then settles into a thin,
+// softly breathing glow that stays while the mode is active and fades out
+// with it. Pure decoration: never intercepts a touch.
+private struct SelectionGlow: View {
+    let active: Bool
+
+    @State private var settled = false
+    @State private var breathe = false
+
+    var body: some View {
+        RoundedRectangle(cornerRadius: 56, style: .continuous)
+            .strokeBorder(
+                AngularGradient(
+                    colors: [.fridjOrange, .fridjCoral, .fridjPeach,
+                             .fridjMint, .fridjOrange],
+                    center: .center
+                ),
+                lineWidth: settled ? 5 : 18
+            )
+            .blur(radius: settled ? 9 : 24)
+            .opacity(active ? (settled ? (breathe ? 0.4 : 0.65) : 1.0) : 0)
+            .ignoresSafeArea()
+            .allowsHitTesting(false)
+            .animation(.easeOut(duration: 0.3), value: active)
+            .onChange(of: active) { _, on in
+                if on {
+                    // Bloom big, then settle thin…
+                    settled = false
+                    breathe = false
+                    withAnimation(.spring(response: 0.65, dampingFraction: 0.8)) {
+                        settled = true
+                    }
+                    // …and breathe gently for as long as the mode lives.
+                    withAnimation(.easeInOut(duration: 1.5)
+                        .repeatForever(autoreverses: true).delay(0.65)) {
+                        breathe = true
+                    }
+                } else {
+                    breathe = false
+                }
+            }
     }
 }
 
