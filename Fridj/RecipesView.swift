@@ -174,8 +174,6 @@ struct RecipesView: View {
                         // then the system platter offers a red Remove.
                         savedTile(recipe)
                             .onTapGesture { selectedRecipe = recipe }
-                            .contentShape(.contextMenuPreview,
-                                          RoundedRectangle(cornerRadius: 14, style: .continuous))
                             .contextMenu {
                                 Button(role: .destructive) {
                                     withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
@@ -184,6 +182,8 @@ struct RecipesView: View {
                                 } label: {
                                     Label("Remove from Saved", systemImage: "trash")
                                 }
+                            } preview: {
+                                liftedPreview(recipe)
                             }
                             .transition(.opacity.combined(with: .scale(scale: 0.92)))
                     }
@@ -344,8 +344,6 @@ struct RecipesView: View {
                 ForEach(recentGenerated) { recipe in
                     historyRow(recipe)
                         .onTapGesture { selectedRecipe = recipe }
-                        .contentShape(.contextMenuPreview,
-                                      RoundedRectangle(cornerRadius: FridjRadius.recipeCard, style: .continuous))
                         .contextMenu {
                             Button(role: .destructive) {
                                 withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
@@ -354,10 +352,39 @@ struct RecipesView: View {
                             } label: {
                                 Label("Remove from history", systemImage: "trash")
                             }
+                        } preview: {
+                            liftedPreview(recipe)
                         }
                 }
             }
             .animation(.spring(response: 0.45, dampingFraction: 0.82), value: recentGenerated.count)
+        }
+    }
+
+    // The card shown while a meal is "picked up" (context-menu lift): a real
+    // designed card — full-bleed photo, name + time on cream — instead of the
+    // system's raw gray snapshot of the tile.
+    private func liftedPreview(_ recipe: Recipe) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            MealImageView(dish: recipe.name, cornerRadius: 0)
+                .frame(width: 290, height: 195)
+                .clipped()
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text(recipe.name)
+                    .font(FridjFont.size(18, weight: .bold))
+                    .foregroundColor(.fridjText)
+                    .lineLimit(2)
+                if !recipe.cookTime.isEmpty {
+                    Text(recipe.cookTime)
+                        .font(FridjFont.size(13, weight: .semibold))
+                        .foregroundColor(.fridjText.opacity(0.5))
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 13)
+            .frame(width: 290, alignment: .leading)
+            .background(Color.fridjBg)
         }
     }
 
