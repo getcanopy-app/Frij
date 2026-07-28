@@ -329,18 +329,14 @@ struct RecipesView: View {
             }
             VStack(spacing: FridjSpacing.sm) {
                 ForEach(recentGenerated) { recipe in
-                    historyRow(recipe)
-                        // Deletion without a permanent ✕ (the audit rule):
-                        // long-press → Remove, the standard iOS pattern.
-                        .contextMenu {
-                            Button(role: .destructive) {
-                                withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) {
-                                    history.remove(recipe)
-                                }
-                            } label: {
-                                Label("Remove from history", systemImage: "trash")
-                            }
+                    HoldToDelete(onTap: { selectedRecipe = recipe },
+                                 onDelete: {
+                        withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                            history.remove(recipe)
                         }
+                    }) {
+                        historyRow(recipe)
+                    }
                 }
             }
             .animation(.spring(response: 0.45, dampingFraction: 0.82), value: recentGenerated.count)
@@ -350,8 +346,7 @@ struct RecipesView: View {
     // Compact archive row — smaller than a "tonight" hero card so it reads as
     // history, not a fresh suggestion. Tap opens the full recipe; heart saves it.
     private func historyRow(_ recipe: Recipe) -> some View {
-        Button { selectedRecipe = recipe } label: {
-            HStack(spacing: 12) {
+        HStack(spacing: 12) {
                 MealImageView(dish: recipe.name, cornerRadius: 12)
                     .frame(width: 54, height: 54)
 
@@ -385,8 +380,7 @@ struct RecipesView: View {
             .padding(8)
             .background(Color(white: 1),
                         in: RoundedRectangle(cornerRadius: FridjRadius.recipeCard, style: .continuous))
-        }
-        .buttonStyle(.plain)
+            .contentShape(Rectangle())
     }
 
     // MARK: Empty
@@ -741,6 +735,33 @@ private struct ImportLinkSheet: View {
         } catch {
             errorText = error.localizedDescription
         }
+    }
+}
+
+// Duolingo-style hold-to-delete: press and the row pops up — lifts, grows,
+// shadows, haptic — hold it there and it deletes with a spring; let go early
+// and it settles back down unharmed. Tap still opens as normal.
+private struct HoldToDelete<Content: View>: View {
+    let onTap: () -> Void
+    let onDelete: () -> Void
+    @ViewBuilder var content: () -> Content
+
+    @State private var held = false
+
+    var body: some View {
+        content()
+            .scaleEffect(held ? 1.05 : 1)
+            .shadow(color: .black.opacity(held ? 0.18 : 0),
+                    radius: held ? 14 : 0, x: 0, y: held ? 8 : 0)
+            .zIndex(held ? 1 : 0)
+            .animation(.spring(response: 0.3, dampingFraction: 0.6), value: held)
+            .onTapGesture { onTap() }
+            .onLongPressGesture(minimumDuration: 0.45) {
+                onDelete()
+            } onPressingChanged: { pressing in
+                held = pressing
+            }
+            .sensoryFeedback(.impact(weight: .medium), trigger: held) { _, new in new }
     }
 }
 
