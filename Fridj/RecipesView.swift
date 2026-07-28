@@ -103,10 +103,6 @@ struct RecipesView: View {
             if isSelecting {
                 selectionBar
             }
-
-            // Siri-style announcement: the screen's border glows when
-            // selection mode engages, then breathes softly while it's active.
-            SelectionGlow(active: isSelecting)
         }
         .animation(.easeOut(duration: 0.45), value: session.isCooking)
         .sensoryFeedback(.impact(weight: .light), trigger: pressedID) { _, new in new != nil }
@@ -256,6 +252,16 @@ struct RecipesView: View {
                     }
                 }
                 .opacity(selecting && !selected ? 0.8 : 1)
+                // Selected = the meal itself glows: crisp orange edge plus a
+                // soft warm halo, right where the eye already is.
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .strokeBorder(Color.fridjOrange.opacity(selected ? 1 : 0), lineWidth: 2.5)
+                )
+                .shadow(color: Color.fridjOrange.opacity(selected ? 0.55 : 0),
+                        radius: selected ? 10 : 0, x: 0, y: 0)
+                .shadow(color: Color.fridjOrange.opacity(selected ? 0.3 : 0),
+                        radius: selected ? 20 : 0, x: 0, y: 0)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(recipe.name)
@@ -443,6 +449,14 @@ struct RecipesView: View {
             selected ? Color.fridjOrange.opacity(0.08) : Color(white: 1),
             in: RoundedRectangle(cornerRadius: FridjRadius.recipeCard, style: .continuous)
         )
+        .overlay(
+            RoundedRectangle(cornerRadius: FridjRadius.recipeCard, style: .continuous)
+                .strokeBorder(Color.fridjOrange.opacity(selected ? 0.9 : 0), lineWidth: 2)
+        )
+        .shadow(color: Color.fridjOrange.opacity(selected ? 0.45 : 0),
+                radius: selected ? 12 : 0, x: 0, y: 0)
+        .shadow(color: Color.fridjOrange.opacity(selected ? 0.25 : 0),
+                radius: selected ? 22 : 0, x: 0, y: 0)
         .contentShape(Rectangle())
         .animation(.spring(response: 0.3, dampingFraction: 0.8), value: selected)
     }
@@ -891,59 +905,6 @@ private struct ImportLinkSheet: View {
         } catch {
             errorText = error.localizedDescription
         }
-    }
-}
-
-// Siri-style edge glow: on activation a warm Frij-palette ring blooms in
-// from the screen borders, then settles into a breathing glow for as long
-// as the mode lives. Two layers — a wide blurred halo for the atmosphere
-// and a crisp core line so it reads even against the cream background.
-// Pure decoration: never intercepts a touch.
-private struct SelectionGlow: View {
-    let active: Bool
-
-    @State private var settled = false
-    @State private var breathe = false
-
-    var body: some View {
-        ZStack {
-            glowRing(width: settled ? 12 : 30, blur: settled ? 16 : 34)
-            glowRing(width: settled ? 4 : 9, blur: settled ? 1.5 : 5)
-        }
-        .opacity(active ? (settled ? (breathe ? 0.55 : 0.9) : 1.0) : 0)
-        .allowsHitTesting(false)
-        .animation(.easeOut(duration: 0.3), value: active)
-        .onChange(of: active) { _, on in
-            if on {
-                settled = false
-                breathe = false
-                // Hold the big bloom for a beat before settling…
-                withAnimation(.spring(response: 0.8, dampingFraction: 0.85).delay(0.15)) {
-                    settled = true
-                }
-                // …then breathe for as long as the mode lives.
-                withAnimation(.easeInOut(duration: 1.4)
-                    .repeatForever(autoreverses: true).delay(0.95)) {
-                    breathe = true
-                }
-            } else {
-                breathe = false
-            }
-        }
-    }
-
-    private func glowRing(width: CGFloat, blur: CGFloat) -> some View {
-        RoundedRectangle(cornerRadius: 54, style: .continuous)
-            .strokeBorder(
-                AngularGradient(
-                    colors: [.fridjOrange, .fridjCoral, .fridjPeach,
-                             .fridjMint, .fridjOrange],
-                    center: .center
-                ),
-                lineWidth: width
-            )
-            .blur(radius: blur)
-            .ignoresSafeArea()
     }
 }
 
