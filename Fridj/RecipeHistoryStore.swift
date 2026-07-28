@@ -41,6 +41,12 @@ final class RecipeHistoryStore {
         Array(recipes.prefix(limit).map(\.name))
     }
 
+    /// User-initiated removal from the archive (long-press → Remove).
+    func remove(_ recipe: Recipe) {
+        recipes.removeAll { $0.id == recipe.id }
+        save()
+    }
+
     func clear() {
         recipes = []
         save()

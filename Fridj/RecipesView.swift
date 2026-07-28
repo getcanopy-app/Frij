@@ -330,6 +330,17 @@ struct RecipesView: View {
             VStack(spacing: FridjSpacing.sm) {
                 ForEach(recentGenerated) { recipe in
                     historyRow(recipe)
+                        // Deletion without a permanent ✕ (the audit rule):
+                        // long-press → Remove, the standard iOS pattern.
+                        .contextMenu {
+                            Button(role: .destructive) {
+                                withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) {
+                                    history.remove(recipe)
+                                }
+                            } label: {
+                                Label("Remove from history", systemImage: "trash")
+                            }
+                        }
                 }
             }
             .animation(.spring(response: 0.45, dampingFraction: 0.82), value: recentGenerated.count)
