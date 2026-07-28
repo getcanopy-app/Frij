@@ -161,10 +161,6 @@ struct RecipesView: View {
                     .font(FridjFont.size(14, weight: .bold))
                     .foregroundColor(.fridjText.opacity(0.4))
             }
-            Text("Your hearted meals, ready to cook again.")
-                .font(FridjFont.size(13))
-                .foregroundColor(.fridjText.opacity(0.5))
-
             // A horizontal photo shelf: the images stay big and immediate (the
             // whole point of generating them), but the section costs a FIXED
             // height whether there are 3 saves or 30 — so it can never bury
@@ -253,9 +249,6 @@ struct RecipesView: View {
                         .foregroundColor(.fridjText.opacity(0.45))
                 }
                 .buttonStyle(.plain)
-                Text("\(recipes.count)")
-                    .font(FridjFont.size(14, weight: .bold))
-                    .foregroundColor(.fridjText.opacity(0.4))
             }
 
             // Refresh sits with the subtitle rather than the title. Sharing the
@@ -334,10 +327,6 @@ struct RecipesView: View {
                     .font(FridjFont.size(14, weight: .bold))
                     .foregroundColor(.fridjText.opacity(0.4))
             }
-            Text("Meals you've seen before — tap to revisit or save.")
-                .font(FridjFont.size(13))
-                .foregroundColor(.fridjText.opacity(0.5))
-
             VStack(spacing: FridjSpacing.sm) {
                 ForEach(recentGenerated) { recipe in
                     historyRow(recipe)
@@ -1015,9 +1004,15 @@ struct RecipeDetailSheet: View {
                                                 Image(systemName: "checkmark")
                                                     .font(.system(size: 10, weight: .bold))
                                                     .foregroundColor(.fridjGreen)
-                                                Text(item)
+                                                let parts = PantryMatch.displaySplit(item)
+                                                Text(parts.name)
                                                     .font(FridjFont.size(14))
                                                     .foregroundColor(.fridjText.opacity(0.7))
+                                                if let amount = parts.amount {
+                                                    Text(amount)
+                                                        .font(FridjFont.size(12, weight: .semibold))
+                                                        .foregroundColor(.fridjText.opacity(0.4))
+                                                }
                                             }
                                         }
                                     }
@@ -1036,9 +1031,15 @@ struct RecipeDetailSheet: View {
                                                     .font(.system(size: 10, weight: .bold))
                                                     .foregroundColor(addedToList ? .fridjGreen : .fridjOrange)
                                                     .contentTransition(.symbolEffect(.replace))
-                                                Text(item)
+                                                let parts = PantryMatch.displaySplit(item)
+                                                Text(parts.name)
                                                     .font(FridjFont.size(14))
                                                     .foregroundColor(.fridjText.opacity(addedToList ? 0.55 : 1))
+                                                if let amount = parts.amount {
+                                                    Text(amount)
+                                                        .font(FridjFont.size(12, weight: .semibold))
+                                                        .foregroundColor(.fridjText.opacity(0.4))
+                                                }
                                             }
                                         }
 

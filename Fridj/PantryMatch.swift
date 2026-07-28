@@ -19,6 +19,22 @@ enum PantryMatch {
         }
     }
 
+    /// Display-time split of "2 cups cherry tomatoes" into (name: "cherry
+    /// tomatoes", amount: "2 cups"). Purely cosmetic — storage and matching
+    /// still use the full string; the real {name, amount} schema separation is
+    /// the 1.0.2 data work. Only fires when the string LEADS with a quantity,
+    /// so plain names pass through untouched.
+    static func displaySplit(_ text: String) -> (name: String, amount: String?) {
+        let s = text.trimmingCharacters(in: .whitespaces)
+        let pattern = "^((?:\\d[\\d/.,]*|[½⅓¼¾⅔])(?:\\s?(?:g|kg|mg|ml|l|cups?|tbsp|tablespoons?|tsp|teaspoons?|lbs?|pounds?|oz|ounces?|cloves?|cans?|slices?|sticks?|pinches?|pinch|pieces?|bunch(?:es)?))?)\\s+(.+)$"
+        guard let regex = try? NSRegularExpression(pattern: pattern, options: [.caseInsensitive]),
+              let match = regex.firstMatch(in: s, range: NSRange(s.startIndex..., in: s)),
+              let amountRange = Range(match.range(at: 1), in: s),
+              let nameRange = Range(match.range(at: 2), in: s)
+        else { return (s, nil) }
+        return (String(s[nameRange]), String(s[amountRange]))
+    }
+
     /// Plural/singular variants of a pantry name for whole-word matching.
     private static func forms(of raw: String) -> [String] {
         let name = raw.lowercased().trimmingCharacters(in: .whitespaces)

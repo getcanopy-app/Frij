@@ -96,7 +96,6 @@ struct PantryView: View {
             Text("Your kitchen")
                 .font(FridjFont.style(.title, weight: .bold))
                 .foregroundColor(.fridjText)
-            Text("Everything Frij knows you have.")
                 .font(FridjFont.size(14))
                 .foregroundColor(.fridjText.opacity(0.5))
         }
@@ -598,7 +597,7 @@ struct PantryView: View {
     private var countLabel: String {
         if !selectedIDs.isEmpty { return "\(selectedIDs.count) selected" }
         if isEditing { return "\(store.items.count) items" }
-        return "\(store.items.count) items · tap to pick"
+        return "\(store.items.count) items"
     }
 
     private func urgency(_ warning: PantryItem.FreshnessWarning) -> Int {
@@ -620,9 +619,10 @@ struct PantryView: View {
                 Text("\(grocery.uncheckedCount) left")
                     .font(FridjFont.size(13))
                     .foregroundColor(.fridjText.opacity(0.4))
-                // One tap to check the whole list off (e.g. back from the
-                // store with everything bought).
-                if grocery.uncheckedCount >= 2 {
+                // ONE contextual control (title + one, per the audit rule):
+                // "Check all" while shopping; once everything's checked, the
+                // same slot offers the cleanup instead.
+                if grocery.uncheckedCount > 0 {
                     Button("Check all") {
                         withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
                             grocery.checkAll()
@@ -630,8 +630,7 @@ struct PantryView: View {
                     }
                     .font(FridjFont.size(13, weight: .bold))
                     .foregroundColor(.fridjGreen)
-                }
-                if grocery.items.contains(where: { $0.isChecked }) {
+                } else {
                     Button("Clear checked") {
                         withAnimation(.easeOut(duration: 0.2)) {
                             grocery.clearChecked()
@@ -654,28 +653,19 @@ struct PantryView: View {
                             .foregroundColor(item.isChecked ? .fridjGreen : .fridjText.opacity(0.25))
                     }
 
-                    Text(item.name)
+                    let parts = PantryMatch.displaySplit(item.name)
+                    Text(parts.name)
                         .font(FridjFont.size(15))
                         .foregroundColor(item.isChecked ? .fridjText.opacity(0.35) : .fridjText)
                         .strikethrough(item.isChecked, color: .fridjText.opacity(0.35))
                         .animation(.easeOut(duration: 0.15), value: item.isChecked)
+                    if let amount = parts.amount {
+                        Text(amount)
+                            .font(FridjFont.size(12, weight: .semibold))
+                            .foregroundColor(.fridjText.opacity(0.4))
+                    }
 
                     Spacer()
-
-                    if item.isChecked {
-                        Button {
-                            withAnimation(.easeOut(duration: 0.15)) {
-                                store.addLocal(name: item.name, source: .manual)
-                                grocery.remove(item)
-                            }
-                        } label: {
-                            Text("Add to pantry")
-                                .font(FridjFont.size(11, weight: .bold))
-                                .foregroundColor(.fridjGreen)
-                                .padding(.horizontal, 8).padding(.vertical, 4)
-                                .background(Color.fridjMint.opacity(0.5), in: Capsule())
-                        }
-                    }
 
                     Button {
                         withAnimation(.easeOut(duration: 0.15)) {
@@ -704,10 +694,10 @@ struct PantryView: View {
                 ))
             }
 
-            // Bulk move: once a couple of items are checked, one tap lands them
-            // all in the pantry instead of a per-row tap parade.
+            // The one add-to-pantry path: appears as soon as anything's
+            // checked (the per-row pill it used to duplicate is gone).
             let checked = grocery.items.filter(\.isChecked)
-            if checked.count >= 2 {
+            if checked.count >= 1 {
                 Button {
                     withAnimation(.spring(response: 0.38, dampingFraction: 0.82)) {
                         for item in checked {

@@ -209,8 +209,6 @@ struct HomeView: View {
         let title = !recent.isEmpty ? "From your recent ideas"
                   : !quiz.isEmpty ? "Tuned to your taste"
                   : "Tonight you could make"
-        let caption = !recent.isEmpty ? "Tap to revisit — or scan for a fresh three."
-                    : "Scan your fridge to make these real"
 
         return VStack(alignment: .leading, spacing: 12) {
             Text(title)
@@ -249,15 +247,17 @@ struct HomeView: View {
             .contentMargins(.horizontal, 20, for: .scrollContent)
             .padding(.horizontal, -20)
 
-            HStack(spacing: 6) {
-                Image(systemName: "sparkles")
-                    .font(.system(size: 12, weight: .semibold))
-                Text(caption)
-                    .font(.system(size: 12, weight: .medium, design: .rounded))
+            if recent.isEmpty {
+                HStack(spacing: 6) {
+                    Image(systemName: "sparkles")
+                        .font(.system(size: 12, weight: .semibold))
+                    Text("Scan your fridge to make these real")
+                        .font(.system(size: 12, weight: .medium, design: .rounded))
+                }
+                .foregroundStyle(.black.opacity(0.4))
+                .padding(.leading, 2)
+                .padding(.top, 2)
             }
-            .foregroundStyle(.black.opacity(0.4))
-            .padding(.leading, 2)
-            .padding(.top, 2)
         }
     }
 
