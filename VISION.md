@@ -528,6 +528,14 @@ Scraping violates ToS and gets the app pulled. So the capture mechanism is
 ("the food you saved but never made → dinner tonight"), just entered through
 the door iOS actually gives us. Don't re-litigate the account-connect route.
 
+### Share-sheet discoverability (note, 2026-07-28)
+
+iOS buries new share extensions behind "More" until the user favorites
+them — nobody finds Frij in the share sheet on their own. When the Share
+Extension is promoted as a feature (1.1), ship a one-time in-app hint
+("Share any food reel straight to Frij — here's the two-tap setup")
+mirroring ReciMe's onboarding walkthrough.
+
 ### Stepping stones
 
 Cheaper versions of the same idea that ship sooner:
