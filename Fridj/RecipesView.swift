@@ -169,8 +169,18 @@ struct RecipesView: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(alignment: .top, spacing: FridjSpacing.sm) {
                     ForEach(favorites.recipes) { recipe in
-                        savedTile(recipe)
-                            .transition(.opacity.combined(with: .scale(scale: 0.92)))
+                        // Same gesture language as Recently generated: press
+                        // and the tile pops up; hold to un-save. The heart
+                        // still works for the tap-minded.
+                        HoldToDelete(onTap: { selectedRecipe = recipe },
+                                     onDelete: {
+                            withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                                favorites.remove(recipe)
+                            }
+                        }) {
+                            savedTile(recipe)
+                        }
+                        .transition(.opacity.combined(with: .scale(scale: 0.92)))
                     }
                 }
                 .padding(.horizontal, FridjSpacing.lg)
@@ -183,8 +193,7 @@ struct RecipesView: View {
     // One tile on the saved shelf — photo-led, name + time under it, heart to
     // un-save floating on the image like everywhere else.
     private func savedTile(_ recipe: Recipe) -> some View {
-        Button { selectedRecipe = recipe } label: {
-            VStack(alignment: .leading, spacing: 7) {
+        VStack(alignment: .leading, spacing: 7) {
                 MealImageView(dish: recipe.name, cornerRadius: 14)
                     .frame(width: 150, height: 108)
                     // Clip AFTER the frame: scaledToFill inside MealImageView
@@ -222,8 +231,7 @@ struct RecipesView: View {
                 }
             }
             .frame(width: 150, alignment: .leading)
-        }
-        .buttonStyle(.plain)
+            .contentShape(Rectangle())
     }
 
     // MARK: Tonight
