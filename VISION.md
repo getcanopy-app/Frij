@@ -375,10 +375,9 @@ release, "1.0.2"):**
   embedded "Cook these" action.
 
 **Post-1.0 spec deltas (Gemini roadmap audit, 2026-07-29 — the keepers):**
-- ◐ **Staples are immortal:** DONE 2026-07-29 for USE SOON (only
-  produce/dairy/protein can be flagged; staples and unknown items never).
-  REMAINING: "I cooked this" must stop consuming staples (it currently
-  eats the olive oil).
+- ☑ **Staples are immortal:** DONE 2026-07-29, both halves — USE SOON
+  flags only produce/dairy/protein, and "I cooked this" consumes only
+  perishables (olive oil survives dinner).
 - ☐ **Expiry-rescue notification:** quiet 4 PM push only when perishables
   hit day 4+ ("your milk's on day 5 — 3 dinners to clear it tonight");
   deep-link opens the pantry with those items pre-prioritized and

@@ -784,7 +784,11 @@ struct RecipesView: View {
         // Uses + needs, not just uses: the stored split is a snapshot, and an
         // ingredient bought since (stored under needs) is in the pantry now —
         // cooking should consume it too. store.contains keeps it exact.
-        let removed = (recipe.uses + recipe.needs).filter { store.contains($0) }
+        // Staples are immortal here too: cooking a stir fry uses your olive
+        // oil, it doesn't finish it — only perishables leave the pantry.
+        let removed = (recipe.uses + recipe.needs).filter {
+            store.contains($0) && PantryCategory.classify($0).isPerishable
+        }
         guard !removed.isEmpty else { return }
         for name in removed { store.remove(name: name) }
         CookingStore.shared.logToday()
