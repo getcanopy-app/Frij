@@ -374,6 +374,14 @@ release, "1.0.2"):**
 - Explicitly cleared as NOT clutter: detail sheet structure, USE SOON's
   embedded "Cook these" action.
 
+**1.1 monetization mapping (working hypothesis, 2026-07-29 — TestFlight
+data outranks this):** goal-aware cooking = the Frij+ paywall headline
+(natural paywall moment: setting a goal in the profile; fitness users are
+proven payers). Expiry notifications = FREE, deliberately — charging to
+not waste food reads punitive, and its real value is re-opens (the
+retention engine conversion runs on). Adventurous nudge = free delight.
+Net shape: free = the relief loop, paid = the ambition layer.
+
 **Post-1.0 spec deltas (Gemini roadmap audit, 2026-07-29 — the keepers):**
 - ☑ **Staples are immortal:** DONE 2026-07-29, both halves — USE SOON
   flags only produce/dairy/protein, and "I cooked this" consumes only
