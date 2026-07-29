@@ -54,8 +54,8 @@ enum FrijAPI {
                         mode: String = "dinner", prioritize: [String] = []) async throws -> [Recipe] {
         let profile = ProfileStore.shared.profile
         var body: [String: Any] = ["ingredients": ingredients]
-        // Only sent for desserts; the backend treats anything else as dinner.
-        if mode == "dessert" { body["mode"] = mode }
+        // Dinner is the unmarked default; any detour mode rides along.
+        if mode != "dinner" { body["mode"] = mode }
         // "Use it up" — items about to spoil the backend should build around.
         if !prioritize.isEmpty { body["prioritize"] = prioritize }
 
@@ -79,8 +79,8 @@ enum FrijAPI {
         }
         // Taste profile — a soft lean derived from what the user has saved, so
         // the picks (and the "Because you…" reasons) get personal over time.
-        // Not sent for desserts: the dessert brief is its own thing.
-        if mode != "dessert",
+        // Dinner-only: the dessert and snack briefs are their own thing.
+        if mode == "dinner",
            let taste = TasteProfile.brief(
                favorites: FavoritesStore.shared.recipes,
                cooked: TasteSignalsStore.shared.cooked,

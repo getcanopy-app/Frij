@@ -20,7 +20,8 @@ struct PantryView: View {
     @State private var isEditing = false
     // Per-session choice, not a saved preference — you pick it when you're
     // deciding what to make, so it resets each visit.
-    @State private var isDessert = false
+    // "dinner" is the unmarked default; chips below are the occasion detours.
+    @State private var mealMode = "dinner"
     // Empty means "cook with everything" — the original behaviour, so someone
     // who never discovers tap-to-pick gets exactly what they got before.
     @State private var selectedIDs: Set<UUID> = []
@@ -102,39 +103,52 @@ struct PantryView: View {
         .padding(.top, 60)
     }
 
-    /// Dinner is green, dessert is coral — the screen's whole accent shifts so
-    /// the mode is felt at a glance, not just read.
-    private var accent: Color { isDessert ? .fridjCoral : .fridjGreen }
+    /// The screen's whole accent shifts with the mode so it's felt at a
+    /// glance, not just read: dinner green, dessert coral, snack orange.
+    private var accent: Color {
+        Self.detourModes.first { $0.mode == mealMode }?.color ?? .fridjGreen
+    }
 
-    /// One chip rather than a two-up switch. Dinner is the everyday case, so it
-    /// is the unmarked default and gets no control at all; dessert is the
-    /// occasional detour you opt into. A 50/50 segmented control claimed the two
-    /// were equally likely, which they aren't, and it crowded the cook button.
-    ///
-    /// A single chip is unambiguous here because the cook button underneath
-    /// always states the current mode in words.
-    ///
-    /// Always coral, never `accent`: the chip advertises desserts, so in dinner
-    /// mode it reads as coral-on-cream against a green screen — which is what
-    /// makes it legible as "somewhere else you can go".
+    /// The occasion detours, one chip each. Dinner is the unmarked default and
+    /// gets no chip. Adding a future category = one line here (the row is the
+    /// only thing that grows). Capped at these two until real users ask.
+    private static let detourModes: [(mode: String, emoji: String, label: String, color: Color)] = [
+        ("dessert", "🍰", "Desserts", .fridjCoral),
+        ("snack",   "🍿", "Snacks",   .fridjOrange),
+    ]
+
+    /// Chips advertise the detours; each stays its own color even when idle so
+    /// it reads as "somewhere else you can go". Tapping the active one returns
+    /// to dinner.
     private var modeToggle: some View {
-        Button {
-            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) { isDessert.toggle() }
+        HStack(spacing: 8) {
+            ForEach(Self.detourModes, id: \.mode) { detour in
+                modeChip(detour)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func modeChip(_ detour: (mode: String, emoji: String, label: String, color: Color)) -> some View {
+        let on = mealMode == detour.mode
+        return Button {
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                mealMode = on ? "dinner" : detour.mode
+            }
         } label: {
             HStack(spacing: 5) {
-                Text("🍰").font(.system(size: 12))
-                Text("Desserts").font(FridjFont.size(13, weight: .bold))
+                Text(detour.emoji).font(.system(size: 12))
+                Text(detour.label).font(FridjFont.size(13, weight: .bold))
             }
-            .foregroundColor(isDessert ? .white : .fridjCoral)
+            .foregroundColor(on ? .white : detour.color)
             .padding(.horizontal, 13)
             .padding(.vertical, 7)
-            .background(isDessert ? Color.fridjCoral : Color(white: 1), in: Capsule())
+            .background(on ? detour.color : Color(white: 1), in: Capsule())
             .overlay(
-                Capsule().stroke(Color.fridjCoral.opacity(isDessert ? 0 : 0.55), lineWidth: 1)
+                Capsule().stroke(detour.color.opacity(on ? 0 : 0.55), lineWidth: 1)
             )
         }
         .buttonStyle(.plain)
-        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     /// Selection wins when there is one; otherwise the whole pantry goes over.
@@ -145,12 +159,13 @@ struct PantryView: View {
 
     private var cookButtonTitle: String {
         if session.isCooking { return "Cooking up ideas…  tap to cancel" }
-        guard !selectedIDs.isEmpty else {
-            return isDessert ? "Get 3 desserts from this" : "Get 3 dinners from this"
+        let word = mealMode == "dessert" ? "desserts" : mealMode == "snack" ? "snacks" : "dinners"
+        guard !selectedIDs.isEmpty else { return "Get 3 \(word) from this" }
+        switch mealMode {
+        case "dessert": return "Desserts from these \(selectedIDs.count)"
+        case "snack":   return "Snacks from these \(selectedIDs.count)"
+        default:        return "Cook with these \(selectedIDs.count)"
         }
-        return isDessert
-            ? "Dessert from these \(selectedIDs.count)"
-            : "Cook with these \(selectedIDs.count)"
     }
 
     private var cookButton: some View {
@@ -160,7 +175,7 @@ struct PantryView: View {
             if session.isCooking {
                 session.cancelCook()
             } else {
-                session.cook(ingredients: cookIngredients, mode: isDessert ? "dessert" : "dinner")
+                session.cook(ingredients: cookIngredients, mode: mealMode)
             }
         } label: {
             HStack {
@@ -501,7 +516,7 @@ struct PantryView: View {
                 Spacer()
                 Button {
                     session.cook(ingredients: store.allNames,
-                                 mode: isDessert ? "dessert" : "dinner",
+                                 mode: mealMode,
                                  prioritize: useSoonItems.map(\.name))
                 } label: {
                     HStack(spacing: 4) {
