@@ -150,7 +150,24 @@ enum FrijAPI {
         if let s = resp.imageURL, let url = URL(string: s) {
             MealImageCache.shared.set(url, for: resp.recipe.name)
         }
-        return await crossCheckPantry(resp.recipe)
+        // Stamp where it came from so the UI can tell imported meals from
+        // generated ones forever after.
+        let d = resp.recipe
+        let stamped = Recipe(name: d.name, cookTime: d.cookTime, uses: d.uses,
+                             needs: d.needs, steps: d.steps, reason: d.reason,
+                             origin: importOrigin(from: trimmed))
+        return await crossCheckPantry(stamped)
+    }
+
+    /// Platform name from the shared/pasted input — nil for plain text and
+    /// for anything generated in-app.
+    private static func importOrigin(from input: String) -> String? {
+        guard let url = URL(string: input), let host = url.host?.lowercased() else { return nil }
+        if host.contains("tiktok") { return "TikTok" }
+        if host.contains("instagram") { return "Instagram" }
+        if host.contains("youtu") { return "YouTube" }
+        if host.contains("pinterest") { return "Pinterest" }
+        return "Web"
     }
 
     /// The Frij twist on import — the part a recipe binder can't do. Partition
@@ -165,7 +182,8 @@ enum FrijAPI {
         return Recipe(name: recipe.name, cookTime: recipe.cookTime,
                       uses: split.have,
                       needs: split.need,
-                      steps: recipe.steps, reason: recipe.reason)
+                      steps: recipe.steps, reason: recipe.reason,
+                      origin: recipe.origin)
     }
 
     /// One messy phrase — typed or dictated — into a clean, normalized list.
