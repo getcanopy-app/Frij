@@ -833,6 +833,14 @@ rule holds: never make the whole app about calories.
 
 ## V3 — Ingredient Sourcing / Store Finder *(new in v5)*
 
+> **Decision 2026-07-29 (Gabe raised building it now; call: park it).** A
+> maps page + "best supermarket" is heavy (location permission, new surface,
+> and "best" really means price data = partnership work) and drifts from
+> "cook what you have" toward shopping-app identity. The 90%-cheaper shape
+> if users ever ask: ONE small button on the grocery list — "Find groceries
+> nearby" — that opens Apple Maps pre-searched for supermarkets. No
+> permission, no page, ~10 lines. Even that waits for a real user signal.
+
 > The user wants to make something but is missing a niche ingredient. Frij
 > doesn't just say "you need gochujang" — it says "here's where to get it:
 > H Mart, 25 min away, likely in stock." Maps + a stock-confidence read, so a
