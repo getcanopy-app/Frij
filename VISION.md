@@ -804,6 +804,21 @@ staples.
 
 ## V3 — Calorie Tracking & Scanning *(new in v5)*
 
+> **Decision 2026-07-29 (Gabe raised; call: split it).**
+> - **IN-IDENTITY — build as a 1.1-tier feature: goal-aware cooking.** A
+>   `goal` on the profile (bulking / cutting / maintaining — keto already
+>   lives in `diet`) that shapes the three picks, plus a quiet per-recipe
+>   macro estimate ("~620 cal · 42g protein") whispered beside the cook
+>   time. Same surfaces, zero new pages, pillar-two of the thesis. Labeled
+>   as estimates (LLM-derived), never lab values. Strongest Frij+ paid
+>   candidate identified so far.
+> - **OUT — calorie TRACKING / scan-a-plate-for-calories.** That's a
+>   tracker's identity (MyFitnessPal's job: "how much did I eat" vs ours:
+>   "what should I cook"), needs new logging surfaces, and photo calorie
+>   estimation is ±30-40% wrong — the exact on-point trust-killer we just
+>   purged from USE SOON. If demand appears: export cooked-meal macros to
+>   Apple Health — feed their tracker, don't become one.
+
 > A health-focused mode. The user scans (or logs) what they eat and Frij
 > tracks it — building a running daily calorie + macro total. "You've had
 > 1,850 calories today." Set goals ("hit 2,200 with 180g protein"), and Frij
