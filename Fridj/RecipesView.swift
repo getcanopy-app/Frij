@@ -513,15 +513,22 @@ struct RecipesView: View {
     }
 
     private func exitSelection() {
-        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+        // Two-beat exit: the Delete bar and selection chrome glide away first
+        // (high damping = no bounce, reads as silk), THEN the tab bar returns
+        // into the cleared space — two bars never cross mid-flight.
+        withAnimation(.spring(response: 0.42, dampingFraction: 0.92)) {
             isSelecting = false
             selectedForDelete = []
+        }
+        withAnimation(.spring(response: 0.45, dampingFraction: 0.88).delay(0.14)) {
             ScanSession.shared.hidesTabBar = false
         }
     }
 
     private func deleteSelected() {
-        withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) {
+        // Same two-beat exit as Done: deletions + bar leave together, tab bar
+        // follows into the cleared space.
+        withAnimation(.spring(response: 0.42, dampingFraction: 0.92)) {
             for recipe in favorites.recipes where selectedForDelete.contains(recipe.id) {
                 favorites.remove(recipe)
             }
@@ -530,6 +537,8 @@ struct RecipesView: View {
             }
             isSelecting = false
             selectedForDelete = []
+        }
+        withAnimation(.spring(response: 0.45, dampingFraction: 0.88).delay(0.14)) {
             ScanSession.shared.hidesTabBar = false
         }
     }
