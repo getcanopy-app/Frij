@@ -56,14 +56,19 @@ struct Recipe: Codable, Identifiable, Hashable {
     // returned by the backend only when a taste profile was sent. Optional so
     // desserts, the no-profile case, and older saved favorites all decode fine.
     let reason: String?
+    // Where an imported meal came from ("Instagram", "TikTok", "YouTube"…).
+    // nil = generated in the app. Optional for the same migration reasons.
+    let origin: String?
 
-    init(name: String, cookTime: String, uses: [String], needs: [String], steps: [String], reason: String? = nil) {
+    init(name: String, cookTime: String, uses: [String], needs: [String], steps: [String],
+         reason: String? = nil, origin: String? = nil) {
         self.name = name
         self.cookTime = cookTime
         self.uses = uses
         self.needs = needs
         self.steps = steps
         self.reason = reason
+        self.origin = origin
     }
 
     // Migration-safe decoding. Recipe is persisted to disk (FavoritesStore) as
@@ -79,6 +84,7 @@ struct Recipe: Codable, Identifiable, Hashable {
         self.needs = try c.decodeIfPresent([String].self, forKey: .needs) ?? []
         self.steps = try c.decodeIfPresent([String].self, forKey: .steps) ?? []
         self.reason = try c.decodeIfPresent(String.self, forKey: .reason)
+        self.origin = try c.decodeIfPresent(String.self, forKey: .origin)
     }
 }
 

@@ -244,6 +244,21 @@ struct RecipesView: View {
                         .padding(6)
                     }
                 }
+                // Imported meals wear their origin — tiny chip, photo corner.
+                .overlay(alignment: .bottomLeading) {
+                    if let origin = recipe.origin {
+                        HStack(spacing: 3) {
+                            Image(systemName: "link")
+                                .font(.system(size: 8, weight: .bold))
+                            Text(origin)
+                                .font(FridjFont.size(9, weight: .bold))
+                        }
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 7).padding(.vertical, 4)
+                        .background(.black.opacity(0.45), in: Capsule())
+                        .padding(6)
+                    }
+                }
                 // Photos-style checkmark, bottom-trailing on the photo.
                 .overlay(alignment: .bottomTrailing) {
                     if selecting {
@@ -1128,11 +1143,24 @@ struct RecipeDetailSheet: View {
                             }
                         }
 
-                        Text(recipe.cookTime)
-                            .font(FridjFont.size(13, weight: .bold))
-                            .foregroundColor(.fridjGreen)
-                            .padding(.horizontal, 12).padding(.vertical, 6)
-                            .background(Color.fridjMint.opacity(0.5), in: Capsule())
+                        HStack(spacing: 8) {
+                            Text(recipe.cookTime)
+                                .font(FridjFont.size(13, weight: .bold))
+                                .foregroundColor(.fridjGreen)
+                                .padding(.horizontal, 12).padding(.vertical, 6)
+                                .background(Color.fridjMint.opacity(0.5), in: Capsule())
+                            if let origin = recipe.origin {
+                                HStack(spacing: 4) {
+                                    Image(systemName: "link")
+                                        .font(.system(size: 11, weight: .bold))
+                                    Text("From \(origin)")
+                                        .font(FridjFont.size(13, weight: .bold))
+                                }
+                                .foregroundColor(.fridjOrange)
+                                .padding(.horizontal, 12).padding(.vertical, 6)
+                                .background(Color.fridjOrange.opacity(0.12), in: Capsule())
+                            }
+                        }
 
                         if let reason = recipe.reason?.trimmingCharacters(in: .whitespaces), !reason.isEmpty {
                             HStack(alignment: .firstTextBaseline, spacing: 6) {
