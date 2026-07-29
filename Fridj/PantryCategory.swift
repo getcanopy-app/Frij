@@ -20,6 +20,17 @@ import Foundation
 enum PantryCategory: String, CaseIterable, Hashable {
     case produce, protein, dairy, staples, other
 
+    /// Whether items in this category genuinely spoil. Drives USE SOON: only
+    /// perishables may ever be flagged — a false "your rice is expiring" costs
+    /// more trust than a missed warning ever could. `.other` is deliberately
+    /// NOT perishable: unknown items stay silent rather than nagging wrongly.
+    var isPerishable: Bool {
+        switch self {
+        case .produce, .protein, .dairy: return true
+        case .staples, .other:           return false
+        }
+    }
+
     /// Display order follows `allCases`.
     var title: String {
         switch self {

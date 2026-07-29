@@ -36,6 +36,9 @@ struct PantryItem: Codable, Identifiable, Equatable {
 
     var freshnessWarning: FreshnessWarning {
         guard source != .default else { return .none }
+        // Only things that actually spoil get flagged. Salt, rice, and farofa
+        // are immortal — warning about them kills trust in every real warning.
+        guard PantryCategory.classify(name).isPerishable else { return .none }
         switch daysSinceLastSeen {
         case 0..<4:  return .none
         case 4..<7:  return .watch
