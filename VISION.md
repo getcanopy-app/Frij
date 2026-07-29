@@ -374,6 +374,26 @@ release, "1.0.2"):**
 - Explicitly cleared as NOT clutter: detail sheet structure, USE SOON's
   embedded "Cook these" action.
 
+**Post-1.0 spec deltas (Gemini roadmap audit, 2026-07-29 — the keepers):**
+- ☐ **Staples are immortal:** USE SOON must never flag staples/spices (it
+  currently flags rice/farofa), and "I cooked this" must never consume
+  them (it currently eats the olive oil). Staple-aware everywhere.
+- ☐ **Expiry-rescue notification:** quiet 4 PM push only when perishables
+  hit day 4+ ("your milk's on day 5 — 3 dinners to clear it tonight");
+  deep-link opens the pantry with those items pre-prioritized and
+  generates ON OPEN (never pre-generate at push time — wasted API spend).
+- ☐ **"Still fresh / Tossed" one-tap** on aging items instead of guilt UI.
+- ☐ **Scan graceful-fail:** blurry/dark photo → immediate friendly toast,
+  plus clutter-rejection hardening in the scan prompt (part of the
+  scan-accuracy pass).
+- ☐ **Roast v2 (later):** LLM-generated culinary archetype ("The
+  Protein-Powder Sommelier") + 2-line roast; upgrade only after the
+  current deterministic roast proves share-worthy. Tone guardrails: roast
+  the pantry, never the person.
+- Rejected from the same spec, for the record: a PERMANENT Adventurous
+  toggle (settled: contextual nudge only) and MANDATORY expiring-item
+  anchors (ours stays priority-with-escape-hatch).
+
 **Identity / personalization:**
 - ☐ **Voice ingredient capture** ⭐ (the friction killer)
 - ☐ **Cuisine personalization** ⭐ (the "it sees me" feature)
