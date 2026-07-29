@@ -172,9 +172,6 @@ struct RecipesView: View {
                         .foregroundColor(.fridjText.opacity(0.45))
                 }
                 .buttonStyle(.plain)
-                Text("\(favorites.recipes.count)")
-                    .font(FridjFont.size(14, weight: .bold))
-                    .foregroundColor(.fridjText.opacity(0.4))
             }
             // A horizontal photo shelf: the images stay big and immediate (the
             // whole point of generating them), but the section costs a FIXED
