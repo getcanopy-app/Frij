@@ -536,9 +536,15 @@ struct PantryView: View {
                     .transition(.scale.combined(with: .opacity))
             }
 
-            Text(item.name)
+            let parts = PantryMatch.displaySplit(item.name)
+            Text(parts.name)
                 .font(FridjFont.size(13, weight: .semibold))
                 .foregroundColor(isSelected ? .white : .fridjText)
+            if let amount = parts.amount {
+                Text(amount)
+                    .font(FridjFont.size(10, weight: .semibold))
+                    .foregroundColor(isSelected ? .white.opacity(0.75) : .fridjText.opacity(0.4))
+            }
 
             if isWarning {
                 Text("\(item.daysSinceLastSeen)d")

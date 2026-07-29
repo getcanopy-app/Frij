@@ -562,7 +562,16 @@ struct ScanFlowCoordinator: View {
             FlowLayout(spacing: 8) {
                 ForEach(store.items) { item in
                     HStack(spacing: 6) {
-                        Text(item.name).font(FridjFont.size(14, weight: .medium)).lineLimit(1)
+                        // Name leads, amount whispers — "12 oz fettuccine"
+                        // reads as fettuccine · 12 oz instead of one blob.
+                        let parts = PantryMatch.displaySplit(item.name)
+                        Text(parts.name).font(FridjFont.size(14, weight: .medium)).lineLimit(1)
+                        if let amount = parts.amount {
+                            Text(amount)
+                                .font(FridjFont.size(11, weight: .semibold))
+                                .foregroundColor(.fridjText.opacity(0.4))
+                                .lineLimit(1)
+                        }
                         Button {
                             withAnimation(.easeOut(duration: 0.15)) { store.remove(id: item.id) }
                         } label: {
