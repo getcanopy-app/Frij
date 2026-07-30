@@ -116,9 +116,17 @@ struct TonightShareCard: View {
     /// Render to a real one-page PDF in the temp directory.
     @MainActor
     static func renderPDF(recipes: [Recipe]) -> URL? {
-        let renderer = ImageRenderer(content: TonightShareCard(recipes: recipes))
+        PDFRender.render(TonightShareCard(recipes: recipes), named: "Frij-Tonight")
+    }
+}
+
+// Shared one-page vector-PDF renderer for any share card.
+@MainActor
+enum PDFRender {
+    static func render<V: View>(_ content: V, named name: String) -> URL? {
+        let renderer = ImageRenderer(content: content)
         let url = FileManager.default.temporaryDirectory
-            .appendingPathComponent("Frij-Tonight.pdf")
+            .appendingPathComponent("\(name).pdf")
         var rendered = false
         renderer.render { size, render in
             var mediaBox = CGRect(origin: .zero, size: size)
@@ -130,5 +138,116 @@ struct TonightShareCard: View {
             rendered = true
         }
         return rendered ? url : nil
+    }
+}
+
+// A single meal as a complete, printable recipe card: name, time, origin,
+// ingredient chips with to-buy dots, and the full numbered steps.
+struct RecipeShareCard: View {
+    let recipe: Recipe
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text("FRIJ RECIPE")
+                .font(.system(size: 13, weight: .bold, design: .rounded))
+                .tracking(2.4)
+                .foregroundStyle(.black.opacity(0.4))
+            Text(recipe.name)
+                .font(.system(size: 26, weight: .heavy, design: .rounded))
+                .foregroundStyle(.black.opacity(0.85))
+                .padding(.top, 2)
+            HStack(spacing: 10) {
+                if !recipe.cookTime.isEmpty {
+                    Text(recipe.cookTime)
+                        .font(.system(size: 13, weight: .bold, design: .rounded))
+                        .foregroundStyle(Color.fridjGreen)
+                }
+                if let origin = recipe.origin {
+                    Text("from \(origin)")
+                        .font(.system(size: 13, weight: .semibold, design: .rounded))
+                        .foregroundStyle(.black.opacity(0.4))
+                }
+            }
+            .padding(.top, 5)
+
+            Text("INGREDIENTS")
+                .font(.system(size: 11, weight: .bold, design: .rounded))
+                .tracking(1.8)
+                .foregroundStyle(.black.opacity(0.4))
+                .padding(.top, 22)
+
+            let split = PantryMatch.partition(recipe.uses + recipe.needs)
+            FlowLayout(spacing: 5) {
+                ForEach(Array((split.have + split.need).enumerated()), id: \.offset) { idx, item in
+                    let parts = PantryMatch.displaySplit(item)
+                    let toBuy = idx >= split.have.count
+                    HStack(spacing: 4) {
+                        if toBuy { Circle().fill(Color.fridjOrange).frame(width: 5, height: 5) }
+                        Text(parts.name)
+                            .font(.system(size: 11.5, weight: .semibold, design: .rounded))
+                            .foregroundStyle(.black.opacity(0.75))
+                        if let amount = parts.amount {
+                            Text(amount)
+                                .font(.system(size: 10, weight: .medium, design: .rounded))
+                                .foregroundStyle(.black.opacity(0.4))
+                        }
+                    }
+                    .padding(.horizontal, 8).padding(.vertical, 4)
+                    .background(Color.white, in: Capsule())
+                }
+            }
+            .padding(.top, 8)
+
+            if !split.need.isEmpty {
+                HStack(spacing: 5) {
+                    Circle().fill(Color.fridjOrange).frame(width: 5, height: 5)
+                    Text("= still to buy")
+                        .font(.system(size: 10.5, weight: .medium, design: .rounded))
+                        .foregroundStyle(.black.opacity(0.4))
+                }
+                .padding(.top, 8)
+            }
+
+            Text("STEPS")
+                .font(.system(size: 11, weight: .bold, design: .rounded))
+                .tracking(1.8)
+                .foregroundStyle(.black.opacity(0.4))
+                .padding(.top, 22)
+
+            VStack(alignment: .leading, spacing: 9) {
+                ForEach(Array(recipe.steps.prefix(9).enumerated()), id: \.offset) { idx, step in
+                    HStack(alignment: .firstTextBaseline, spacing: 8) {
+                        Text("\(idx + 1)")
+                            .font(.system(size: 12, weight: .heavy, design: .rounded))
+                            .foregroundStyle(Color.fridjOrange)
+                            .frame(width: 14, alignment: .trailing)
+                        Text(step)
+                            .font(.system(size: 12.5, weight: .medium, design: .rounded))
+                            .foregroundStyle(.black.opacity(0.78))
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+            }
+            .padding(.top, 8)
+
+            Spacer(minLength: 0)
+
+            HStack(spacing: 6) {
+                Image(systemName: "refrigerator.fill")
+                    .font(.system(size: 12, weight: .semibold))
+                Text("Frij — cook what you have")
+                    .font(.system(size: 13, weight: .semibold, design: .rounded))
+            }
+            .foregroundStyle(.black.opacity(0.35))
+        }
+        .padding(38)
+        .frame(width: 612, height: 792, alignment: .topLeading)
+        .background(Color.fridjBg)
+    }
+
+    @MainActor
+    static func renderPDF(recipe: Recipe) -> URL? {
+        let safe = recipe.name.replacingOccurrences(of: "/", with: "-")
+        return PDFRender.render(RecipeShareCard(recipe: recipe), named: safe)
     }
 }

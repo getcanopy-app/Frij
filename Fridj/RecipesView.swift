@@ -1050,6 +1050,8 @@ struct RecipeDetailSheet: View {
     @State private var favorites = FavoritesStore.shared
     @State private var grocery = GroceryStore.shared
     @State private var addedToList = false
+    // The rendered single-recipe PDF awaiting the share sheet.
+    @State private var shareDoc: ShareDoc?
     // All sides in one swipeable row — swiping replaced the old "rotate"
     // button, so no paging state needed. Deduped by name defensively.
     private var allSides: [SideDish] {
@@ -1137,6 +1139,18 @@ struct RecipeDetailSheet: View {
                                 .font(FridjFont.size(26, weight: .bold))
                                 .foregroundColor(.fridjText)
                             Spacer()
+                            // Any meal shares as a complete printable recipe
+                            // card (same PDF pattern as tonight's trio).
+                            Button {
+                                if let url = RecipeShareCard.renderPDF(recipe: recipe) {
+                                    shareDoc = ShareDoc(url: url)
+                                }
+                            } label: {
+                                Image(systemName: "square.and.arrow.up")
+                                    .font(.system(size: 20, weight: .semibold))
+                                    .foregroundColor(.fridjText.opacity(0.35))
+                            }
+                            .padding(.trailing, 4)
                             let isFav = favorites.isFavorite(recipe)
                             Button {
                                 withAnimation(.spring(response: 0.3, dampingFraction: 0.55)) {
@@ -1401,6 +1415,10 @@ struct RecipeDetailSheet: View {
                 .padding(.bottom, 36)
                 .background(.ultraThinMaterial)
             }
+        }
+        .sheet(item: $shareDoc) { doc in
+            ShareSheet(items: [doc.url])
+                .presentationDetents([.medium, .large])
         }
         .presentationDetents([.large])
         .presentationCornerRadius(32)
