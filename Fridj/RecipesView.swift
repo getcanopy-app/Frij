@@ -14,8 +14,8 @@ struct RecipesView: View {
     // The dish behind the current undo banner, so Undo also reverses the
     // "cooked" taste signal — not just the pantry removal.
     @State private var lastCooked: Recipe?
-    // Rendered Fridge Roast card awaiting the share sheet.
-    @State private var roastImage: UIImage?
+    // The rendered "Tonight's dinners" PDF awaiting the share sheet.
+    @State private var shareDoc: ShareDoc?
     // Paste-a-link recipe import (TikTok/IG/YouTube).
     @State private var showImport = false
     // Photos-style selection mode: long-press any saved/history meal to enter,
@@ -112,14 +112,9 @@ struct RecipesView: View {
                 selectedRecipe = nil
             }
         }
-        .sheet(isPresented: Binding(
-            get: { roastImage != nil },
-            set: { if !$0 { roastImage = nil } }
-        )) {
-            if let roastImage {
-                ShareSheet(items: [roastImage])
-                    .presentationDetents([.medium, .large])
-            }
+        .sheet(item: $shareDoc) { doc in
+            ShareSheet(items: [doc.url])
+                .presentationDetents([.medium, .large])
         }
         .sheet(isPresented: $showImport) {
             ImportLinkSheet { recipe in
@@ -304,12 +299,13 @@ struct RecipesView: View {
                     .lineLimit(1)
                     .minimumScaleFactor(0.75)
                 Spacer()
-                // Fridge Roast: render the score + tonight's three dishes into
-                // a story-sized card and hand it to the share sheet. Local and
-                // instant, so no loading state needed.
+                // Share tonight's dinners as a designed one-page PDF card
+                // (dishes + ingredients, to-buy items dotted) — the thing you
+                // send to a partner or pin to the fridge. Local and instant.
                 Button {
-                    let score = FridgeScore.compute(names: store.items.map(\.name))
-                    roastImage = FridgeRoastCard.renderImage(score: score, dishes: recipes.map(\.name))
+                    if let url = TonightShareCard.renderPDF(recipes: recipes) {
+                        shareDoc = ShareDoc(url: url)
+                    }
                 } label: {
                     Image(systemName: "square.and.arrow.up")
                         .font(.system(size: 15, weight: .semibold))
