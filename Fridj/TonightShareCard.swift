@@ -9,7 +9,7 @@ import SwiftUI
 // .sheet(item:) presentation (same pattern as the recipe detail sheet).
 struct ShareDoc: Identifiable {
     let id = UUID()
-    let url: URL
+    let items: [Any]
 }
 
 struct TonightShareCard: View {
@@ -113,31 +113,12 @@ struct TonightShareCard: View {
         return (Array(chips.prefix(cap)), max(0, chips.count - cap))
     }
 
-    /// Render to a real one-page PDF in the temp directory.
+    /// Render the card as a crisp 3x image.
     @MainActor
-    static func renderPDF(recipes: [Recipe]) -> URL? {
-        PDFRender.render(TonightShareCard(recipes: recipes), named: "Frij-Tonight")
-    }
-}
-
-// Shared one-page vector-PDF renderer for any share card.
-@MainActor
-enum PDFRender {
-    static func render<V: View>(_ content: V, named name: String) -> URL? {
-        let renderer = ImageRenderer(content: content)
-        let url = FileManager.default.temporaryDirectory
-            .appendingPathComponent("\(name).pdf")
-        var rendered = false
-        renderer.render { size, render in
-            var mediaBox = CGRect(origin: .zero, size: size)
-            guard let ctx = CGContext(url as CFURL, mediaBox: &mediaBox, nil) else { return }
-            ctx.beginPDFPage(nil)
-            render(ctx)
-            ctx.endPDFPage()
-            ctx.closePDF()
-            rendered = true
-        }
-        return rendered ? url : nil
+    static func renderImage(recipes: [Recipe]) -> UIImage? {
+        let renderer = ImageRenderer(content: TonightShareCard(recipes: recipes))
+        renderer.scale = 3
+        return renderer.uiImage
     }
 }
 
@@ -294,9 +275,10 @@ struct RecipeShareCard: View {
         .padding(.top, 7)
     }
 
-    /// Fetch the dish photo (cache first), then render the card as a PDF.
+    /// Fetch the dish photo (cache first), then render the card as a crisp
+    /// 3x image — previews inline in iMessage, posts straight to stories.
     @MainActor
-    static func renderPDF(recipe: Recipe) async -> URL? {
+    static func renderImage(recipe: Recipe) async -> UIImage? {
         var hero: UIImage?
         let imageURL: URL?
         if let cached = MealImageCache.shared.url(for: recipe.name) {
@@ -307,7 +289,8 @@ struct RecipeShareCard: View {
         if let imageURL, let (data, _) = try? await URLSession.shared.data(from: imageURL) {
             hero = UIImage(data: data)
         }
-        let safe = recipe.name.replacingOccurrences(of: "/", with: "-")
-        return PDFRender.render(RecipeShareCard(recipe: recipe, heroImage: hero), named: safe)
+        let renderer = ImageRenderer(content: RecipeShareCard(recipe: recipe, heroImage: hero))
+        renderer.scale = 3
+        return renderer.uiImage
     }
 }

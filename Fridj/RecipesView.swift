@@ -113,7 +113,7 @@ struct RecipesView: View {
             }
         }
         .sheet(item: $shareDoc) { doc in
-            ShareSheet(items: [doc.url])
+            ShareSheet(items: doc.items)
                 .presentationDetents([.medium, .large])
         }
         .sheet(isPresented: $showImport) {
@@ -303,8 +303,8 @@ struct RecipesView: View {
                 // (dishes + ingredients, to-buy items dotted) — the thing you
                 // send to a partner or pin to the fridge. Local and instant.
                 Button {
-                    if let url = TonightShareCard.renderPDF(recipes: recipes) {
-                        shareDoc = ShareDoc(url: url)
+                    if let image = TonightShareCard.renderImage(recipes: recipes) {
+                        shareDoc = ShareDoc(items: [image])
                     }
                 } label: {
                     Image(systemName: "square.and.arrow.up")
@@ -1143,8 +1143,8 @@ struct RecipeDetailSheet: View {
                             // card (same PDF pattern as tonight's trio).
                             Button {
                                 Task {
-                                    if let url = await RecipeShareCard.renderPDF(recipe: recipe) {
-                                        shareDoc = ShareDoc(url: url)
+                                    if let image = await RecipeShareCard.renderImage(recipe: recipe) {
+                                        shareDoc = ShareDoc(items: [image])
                                     }
                                 }
                             } label: {
@@ -1419,7 +1419,7 @@ struct RecipeDetailSheet: View {
             }
         }
         .sheet(item: $shareDoc) { doc in
-            ShareSheet(items: [doc.url])
+            ShareSheet(items: doc.items)
                 .presentationDetents([.medium, .large])
         }
         .presentationDetents([.large])
