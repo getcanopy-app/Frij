@@ -1144,7 +1144,13 @@ struct RecipeDetailSheet: View {
                             Button {
                                 Task {
                                     if let image = await RecipeShareCard.renderImage(recipe: recipe) {
-                                        shareDoc = ShareDoc(items: [image])
+                                        // Image sells the meal; the link lets a
+                                        // Frij owner import it in one tap.
+                                        var items: [Any] = [image]
+                                        if let link = RecipeShareLink.url(for: recipe) {
+                                            items.append(link)
+                                        }
+                                        shareDoc = ShareDoc(items: items)
                                     }
                                 }
                             } label: {

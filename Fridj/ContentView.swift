@@ -13,6 +13,9 @@ struct ContentView: View {
     // proper @State change (AppStorage writes don't reliably animate).
     @State private var showOnboarding: Bool = !UserDefaults.standard.bool(forKey: "hasSeenOnboarding")
     @Environment(\.scenePhase) private var scenePhase
+    // A meal that arrived via a shared Frij link — saved on arrival, then
+    // opened so the recipient sees what they just received.
+    @State private var receivedRecipe: Recipe?
 
     var body: some View {
         ZStack {
@@ -94,6 +97,20 @@ struct ContentView: View {
         // Present paywall whenever any feature triggers it.
         .sheet(isPresented: $subscription.showPaywall) {
             PaywallView()
+        }
+        // A shared meal link: save it, cross-check it against THIS user's
+        // pantry, and open it.
+        .onOpenURL { url in
+            guard let recipe = RecipeShareLink.decode(from: url) else { return }
+            if !FavoritesStore.shared.isFavorite(recipe) {
+                _ = FavoritesStore.shared.toggle(recipe)
+            }
+            receivedRecipe = recipe
+        }
+        .sheet(item: $receivedRecipe) { recipe in
+            RecipeDetailSheet(recipe: recipe) {
+                receivedRecipe = nil
+            }
         }
         // Re-verify subscription on every foreground.
         // This catches refunds, expirations, and family-sharing changes.
