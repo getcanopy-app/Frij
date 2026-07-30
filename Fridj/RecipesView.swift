@@ -1142,8 +1142,10 @@ struct RecipeDetailSheet: View {
                             // Any meal shares as a complete printable recipe
                             // card (same PDF pattern as tonight's trio).
                             Button {
-                                if let url = RecipeShareCard.renderPDF(recipe: recipe) {
-                                    shareDoc = ShareDoc(url: url)
+                                Task {
+                                    if let url = await RecipeShareCard.renderPDF(recipe: recipe) {
+                                        shareDoc = ShareDoc(url: url)
+                                    }
                                 }
                             } label: {
                                 Image(systemName: "square.and.arrow.up")

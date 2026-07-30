@@ -141,96 +141,122 @@ enum PDFRender {
     }
 }
 
-// A single meal as a complete, printable recipe card: name, time, origin,
-// ingredient chips with to-buy dots, and the full numbered steps.
+// A single meal as a shareable card that mirrors the in-app recipe sheet:
+// hero photo, mint time pill, grouped IN YOUR FRIDGE / TO BUY ingredient
+// rows, green-circle steps. Page is phone-card proportioned (fixed width,
+// natural height) so the PDF *is* the card, just crisper.
 struct RecipeShareCard: View {
     let recipe: Recipe
+    let heroImage: UIImage?
+
+    private let pageWidth: CGFloat = 430
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("FRIJ RECIPE")
-                .font(.system(size: 13, weight: .bold, design: .rounded))
-                .tracking(2.4)
-                .foregroundStyle(.black.opacity(0.4))
+            // Hero photo — the same star it is in the app.
+            Group {
+                if let heroImage {
+                    Image(uiImage: heroImage)
+                        .resizable()
+                        .scaledToFill()
+                } else {
+                    ZStack {
+                        Color.fridjText.opacity(0.06)
+                        Image(systemName: "fork.knife")
+                            .font(.system(size: 34, weight: .light))
+                            .foregroundStyle(Color.fridjText.opacity(0.25))
+                    }
+                }
+            }
+            .frame(width: pageWidth - 56, height: 240)
+            .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+
             Text(recipe.name)
-                .font(.system(size: 26, weight: .heavy, design: .rounded))
-                .foregroundStyle(.black.opacity(0.85))
-                .padding(.top, 2)
-            HStack(spacing: 10) {
+                .font(.system(size: 27, weight: .bold, design: .rounded))
+                .foregroundStyle(Color.fridjText)
+                .padding(.top, 18)
+
+            HStack(spacing: 8) {
                 if !recipe.cookTime.isEmpty {
                     Text(recipe.cookTime)
                         .font(.system(size: 13, weight: .bold, design: .rounded))
                         .foregroundStyle(Color.fridjGreen)
+                        .padding(.horizontal, 12).padding(.vertical, 6)
+                        .background(Color.fridjMint.opacity(0.5), in: Capsule())
                 }
                 if let origin = recipe.origin {
-                    Text("from \(origin)")
-                        .font(.system(size: 13, weight: .semibold, design: .rounded))
-                        .foregroundStyle(.black.opacity(0.4))
+                    HStack(spacing: 4) {
+                        Image(systemName: "link")
+                            .font(.system(size: 11, weight: .bold))
+                        Text("From \(origin)")
+                            .font(.system(size: 13, weight: .bold, design: .rounded))
+                    }
+                    .foregroundStyle(Color.fridjOrange)
+                    .padding(.horizontal, 12).padding(.vertical, 6)
+                    .background(Color.fridjOrange.opacity(0.12), in: Capsule())
                 }
             }
-            .padding(.top, 5)
+            .padding(.top, 10)
 
-            Text("INGREDIENTS")
-                .font(.system(size: 11, weight: .bold, design: .rounded))
-                .tracking(1.8)
-                .foregroundStyle(.black.opacity(0.4))
+            // Ingredients — the sheet's exact grouped layout.
+            let split = PantryMatch.partition(recipe.uses + recipe.needs)
+            let total = split.have.count + split.need.count
+            if total > 0 {
+                HStack(alignment: .firstTextBaseline) {
+                    Text("Ingredients")
+                        .font(.system(size: 18, weight: .bold, design: .rounded))
+                        .foregroundStyle(Color.fridjText)
+                    Spacer()
+                    if !split.have.isEmpty {
+                        Text("\(split.have.count) of \(total) in stock")
+                            .font(.system(size: 12, weight: .bold, design: .rounded))
+                            .foregroundStyle(Color.fridjGreen)
+                    }
+                }
                 .padding(.top, 22)
 
-            let split = PantryMatch.partition(recipe.uses + recipe.needs)
-            FlowLayout(spacing: 5) {
-                ForEach(Array((split.have + split.need).enumerated()), id: \.offset) { idx, item in
-                    let parts = PantryMatch.displaySplit(item)
-                    let toBuy = idx >= split.have.count
-                    HStack(spacing: 4) {
-                        if toBuy { Circle().fill(Color.fridjOrange).frame(width: 5, height: 5) }
-                        Text(parts.name)
-                            .font(.system(size: 11.5, weight: .semibold, design: .rounded))
-                            .foregroundStyle(.black.opacity(0.75))
-                        if let amount = parts.amount {
-                            Text(amount)
-                                .font(.system(size: 10, weight: .medium, design: .rounded))
-                                .foregroundStyle(.black.opacity(0.4))
+                if !split.have.isEmpty {
+                    Text("IN YOUR FRIDGE")
+                        .font(.system(size: 9, weight: .bold, design: .rounded))
+                        .tracking(0.9)
+                        .foregroundStyle(Color.fridjGreen.opacity(0.8))
+                        .padding(.top, 12)
+                    ingredientRows(split.have, icon: "checkmark", tint: .fridjGreen, dim: true)
+                }
+                if !split.need.isEmpty {
+                    Text("TO BUY")
+                        .font(.system(size: 9, weight: .bold, design: .rounded))
+                        .tracking(0.9)
+                        .foregroundStyle(Color.fridjOrange.opacity(0.75))
+                        .padding(.top, 12)
+                    ingredientRows(split.need, icon: "plus", tint: .fridjOrange, dim: false)
+                }
+            }
+
+            // Steps — green circles, like the sheet.
+            if !recipe.steps.isEmpty {
+                Text("How to make it")
+                    .font(.system(size: 18, weight: .bold, design: .rounded))
+                    .foregroundStyle(Color.fridjText)
+                    .padding(.top, 24)
+
+                VStack(alignment: .leading, spacing: 12) {
+                    ForEach(Array(recipe.steps.enumerated()), id: \.offset) { idx, step in
+                        HStack(alignment: .top, spacing: 12) {
+                            Text("\(idx + 1)")
+                                .font(.system(size: 12, weight: .bold, design: .rounded))
+                                .foregroundStyle(.white)
+                                .frame(width: 24, height: 24)
+                                .background(Color.fridjGreen, in: Circle())
+                            Text(step)
+                                .font(.system(size: 14, weight: .regular, design: .rounded))
+                                .foregroundStyle(Color.fridjText.opacity(0.8))
+                                .fixedSize(horizontal: false, vertical: true)
                         }
                     }
-                    .padding(.horizontal, 8).padding(.vertical, 4)
-                    .background(Color.white, in: Capsule())
                 }
+                .padding(.top, 12)
             }
-            .padding(.top, 8)
-
-            if !split.need.isEmpty {
-                HStack(spacing: 5) {
-                    Circle().fill(Color.fridjOrange).frame(width: 5, height: 5)
-                    Text("= still to buy")
-                        .font(.system(size: 10.5, weight: .medium, design: .rounded))
-                        .foregroundStyle(.black.opacity(0.4))
-                }
-                .padding(.top, 8)
-            }
-
-            Text("STEPS")
-                .font(.system(size: 11, weight: .bold, design: .rounded))
-                .tracking(1.8)
-                .foregroundStyle(.black.opacity(0.4))
-                .padding(.top, 22)
-
-            VStack(alignment: .leading, spacing: 9) {
-                ForEach(Array(recipe.steps.prefix(9).enumerated()), id: \.offset) { idx, step in
-                    HStack(alignment: .firstTextBaseline, spacing: 8) {
-                        Text("\(idx + 1)")
-                            .font(.system(size: 12, weight: .heavy, design: .rounded))
-                            .foregroundStyle(Color.fridjOrange)
-                            .frame(width: 14, alignment: .trailing)
-                        Text(step)
-                            .font(.system(size: 12.5, weight: .medium, design: .rounded))
-                            .foregroundStyle(.black.opacity(0.78))
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                }
-            }
-            .padding(.top, 8)
-
-            Spacer(minLength: 0)
 
             HStack(spacing: 6) {
                 Image(systemName: "refrigerator.fill")
@@ -238,16 +264,50 @@ struct RecipeShareCard: View {
                 Text("Frij — cook what you have")
                     .font(.system(size: 13, weight: .semibold, design: .rounded))
             }
-            .foregroundStyle(.black.opacity(0.35))
+            .foregroundStyle(Color.fridjText.opacity(0.35))
+            .padding(.top, 28)
         }
-        .padding(38)
-        .frame(width: 612, height: 792, alignment: .topLeading)
+        .padding(28)
+        .frame(width: pageWidth, alignment: .topLeading)
         .background(Color.fridjBg)
     }
 
+    private func ingredientRows(_ items: [String], icon: String, tint: Color, dim: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 7) {
+            ForEach(items, id: \.self) { item in
+                let parts = PantryMatch.displaySplit(item)
+                HStack(spacing: 9) {
+                    Image(systemName: icon)
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundStyle(tint)
+                    Text(parts.name)
+                        .font(.system(size: 14, weight: .regular, design: .rounded))
+                        .foregroundStyle(Color.fridjText.opacity(dim ? 0.7 : 1))
+                    if let amount = parts.amount {
+                        Text(amount)
+                            .font(.system(size: 12, weight: .semibold, design: .rounded))
+                            .foregroundStyle(Color.fridjText.opacity(0.4))
+                    }
+                }
+            }
+        }
+        .padding(.top, 7)
+    }
+
+    /// Fetch the dish photo (cache first), then render the card as a PDF.
     @MainActor
-    static func renderPDF(recipe: Recipe) -> URL? {
+    static func renderPDF(recipe: Recipe) async -> URL? {
+        var hero: UIImage?
+        let imageURL: URL?
+        if let cached = MealImageCache.shared.url(for: recipe.name) {
+            imageURL = cached
+        } else {
+            imageURL = try? await FrijAPI.mealImage(dish: recipe.name)
+        }
+        if let imageURL, let (data, _) = try? await URLSession.shared.data(from: imageURL) {
+            hero = UIImage(data: data)
+        }
         let safe = recipe.name.replacingOccurrences(of: "/", with: "-")
-        return PDFRender.render(RecipeShareCard(recipe: recipe), named: safe)
+        return PDFRender.render(RecipeShareCard(recipe: recipe, heroImage: hero), named: safe)
     }
 }
