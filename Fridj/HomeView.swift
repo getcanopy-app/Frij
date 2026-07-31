@@ -318,18 +318,38 @@ struct HomeView: View {
                                     .font(.system(size: 12, weight: .heavy))
                                     .foregroundStyle(.white)
                             } else if isToday {
+                                // Today is an invitation, not a hole: warm
+                                // coin, dashed ring, a flame waiting to light.
                                 Circle()
-                                    .strokeBorder(Color.fridjOrange.opacity(0.75),
+                                    .fill(Color.fridjOrange.opacity(0.12))
+                                Circle()
+                                    .strokeBorder(Color.fridjOrange.opacity(0.7),
                                                   style: StrokeStyle(lineWidth: 1.8, dash: [3.5, 3.5]))
+                                Image(systemName: "flame")
+                                    .font(.system(size: 12, weight: .semibold))
+                                    .foregroundStyle(Color.fridjOrange.opacity(0.85))
                             } else {
+                                // Blank coins, not holes: softly solid so an
+                                // empty week reads as "waiting", not failure.
                                 Circle()
-                                    .strokeBorder(Color.black.opacity(isFuture ? 0.08 : 0.14), lineWidth: 1.5)
+                                    .fill(.white.opacity(isFuture ? 0.35 : 0.6))
+                                Circle()
+                                    .strokeBorder(Color.black.opacity(isFuture ? 0.05 : 0.09), lineWidth: 1)
                             }
                         }
-                        .frame(width: 32, height: 32)
+                        .frame(width: 33, height: 33)
                     }
                     .frame(maxWidth: .infinity)
                 }
+            }
+
+            // Only when the whole week is blank: one line that turns the
+            // emptiness into an invitation. Disappears after the first cook.
+            if !weekDates.contains(where: { cooking.hasCooked(on: $0) }) {
+                Text("Cook tonight and light the first flame 🔥")
+                    .font(.system(size: 12.5, weight: .semibold, design: .rounded))
+                    .foregroundStyle(.black.opacity(0.4))
+                    .frame(maxWidth: .infinity)
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 14)
