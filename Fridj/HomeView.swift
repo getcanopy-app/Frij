@@ -276,82 +276,93 @@ struct HomeView: View {
         let streak = cooking.currentStreak
 
         return VStack(alignment: .leading, spacing: 14) {
-            HStack(alignment: .firstTextBaseline) {
-                Text("This week's progress")
-                    .font(.system(size: 18, weight: .bold, design: .rounded))
-                    .foregroundStyle(.black.opacity(0.82))
-                Spacer()
-                // The streak, finally visible where the week lives.
-                if streak > 0 {
-                    Text("🔥 \(streak)")
-                        .font(.system(size: 15, weight: .heavy, design: .rounded))
-                        .foregroundStyle(Color.fridjOrange)
-                }
-            }
+            Text("This week's progress")
+                .font(.system(size: 18, weight: .bold, design: .rounded))
+                .foregroundStyle(.black.opacity(0.82))
 
-            // Seven articulated day coins instead of one solid loaf: cooked
-            // days glow in a warm gradient that deepens across the week,
-            // today-uncooked invites with a dashed ring, future days recede.
-            VStack(spacing: 12) {
-            HStack(spacing: 0) {
-                ForEach(Array(weekDates.enumerated()), id: \.offset) { index, date in
-                    let cooked = cooking.hasCooked(on: date)
-                    let isToday = calendar.isDate(date, inSameDayAs: today)
-                    let isFuture = date > today && !isToday
+            VStack(spacing: 16) {
+                // The Duolingo pattern: the streak flame is the emotional
+                // hero, big and first; the week trail supports it below.
+                HStack(spacing: 12) {
+                    Image(systemName: streak > 0 ? "flame.fill" : "flame")
+                        .font(.system(size: 33, weight: .semibold))
+                        .foregroundStyle(
+                            streak > 0
+                            ? AnyShapeStyle(LinearGradient(
+                                colors: [Color.fridjOrange, Color(hue: 0.12, saturation: 0.85, brightness: 0.98)],
+                                startPoint: .top, endPoint: .bottom))
+                            : AnyShapeStyle(Color.black.opacity(0.18))
+                        )
+                        .shadow(color: Color.fridjOrange.opacity(streak > 0 ? 0.35 : 0), radius: 7, x: 0, y: 2)
 
-                    VStack(spacing: 7) {
-                        Text(labels[index])
-                            .font(.system(size: 11, weight: .bold, design: .rounded))
-                            .foregroundStyle(isToday ? Color.fridjOrange : .black.opacity(isFuture ? 0.25 : 0.45))
-
-                        ZStack {
-                            if cooked {
-                                Circle()
-                                    .fill(LinearGradient(
-                                        colors: [
-                                            Color(hue: 0.075 - Double(index) * 0.004, saturation: 0.82, brightness: 0.96),
-                                            Color(hue: 0.11 + Double(index) * 0.004, saturation: 0.85, brightness: 0.98),
-                                        ],
-                                        startPoint: .topLeading, endPoint: .bottomTrailing
-                                    ))
-                                    .shadow(color: Color.fridjOrange.opacity(0.35), radius: 5, x: 0, y: 2)
-                                Image(systemName: "checkmark")
-                                    .font(.system(size: 12, weight: .heavy))
-                                    .foregroundStyle(.white)
-                            } else if isToday {
-                                // Today is an invitation, not a hole: warm
-                                // coin, dashed ring, a flame waiting to light.
-                                Circle()
-                                    .fill(Color.fridjOrange.opacity(0.12))
-                                Circle()
-                                    .strokeBorder(Color.fridjOrange.opacity(0.7),
-                                                  style: StrokeStyle(lineWidth: 1.8, dash: [3.5, 3.5]))
-                                Image(systemName: "flame")
-                                    .font(.system(size: 12, weight: .semibold))
-                                    .foregroundStyle(Color.fridjOrange.opacity(0.85))
-                            } else {
-                                // Blank coins, not holes: softly solid so an
-                                // empty week reads as "waiting", not failure.
-                                Circle()
-                                    .fill(.white.opacity(isFuture ? 0.35 : 0.6))
-                                Circle()
-                                    .strokeBorder(Color.black.opacity(isFuture ? 0.05 : 0.09), lineWidth: 1)
-                            }
+                    VStack(alignment: .leading, spacing: 1) {
+                        if streak > 0 {
+                            Text("\(streak)")
+                                .font(.system(size: 25, weight: .heavy, design: .rounded))
+                                .foregroundStyle(.black.opacity(0.85))
+                            Text(streak == 1 ? "day streak" : "day streak — keep it lit")
+                                .font(.system(size: 12, weight: .semibold, design: .rounded))
+                                .foregroundStyle(.black.opacity(0.45))
+                        } else {
+                            Text("Start your streak")
+                                .font(.system(size: 17, weight: .heavy, design: .rounded))
+                                .foregroundStyle(.black.opacity(0.8))
+                            Text("cook tonight to light the flame")
+                                .font(.system(size: 12, weight: .semibold, design: .rounded))
+                                .foregroundStyle(.black.opacity(0.45))
                         }
-                        .frame(width: 33, height: 33)
                     }
-                    .frame(maxWidth: .infinity)
+                    Spacer()
                 }
-            }
 
-            // Only when the whole week is blank: one line that turns the
-            // emptiness into an invitation. Disappears after the first cook.
-            if !weekDates.contains(where: { cooking.hasCooked(on: $0) }) {
-                Text("Cook tonight and light the first flame 🔥")
-                    .font(.system(size: 12.5, weight: .semibold, design: .rounded))
-                    .foregroundStyle(.black.opacity(0.4))
-                    .frame(maxWidth: .infinity)
-            }
+                // Week trail: coins first, labels beneath (the modern read),
+                // today slightly larger so the row has a focal point.
+                HStack(spacing: 0) {
+                    ForEach(Array(weekDates.enumerated()), id: \.offset) { index, date in
+                        let cooked = cooking.hasCooked(on: date)
+                        let isToday = calendar.isDate(date, inSameDayAs: today)
+                        let isFuture = date > today && !isToday
+
+                        VStack(spacing: 6) {
+                            ZStack {
+                                if cooked {
+                                    Circle()
+                                        .fill(LinearGradient(
+                                            colors: [
+                                                Color(hue: 0.075 - Double(index) * 0.004, saturation: 0.82, brightness: 0.96),
+                                                Color(hue: 0.11 + Double(index) * 0.004, saturation: 0.85, brightness: 0.98),
+                                            ],
+                                            startPoint: .topLeading, endPoint: .bottomTrailing
+                                        ))
+                                        .shadow(color: Color.fridjOrange.opacity(0.35), radius: 5, x: 0, y: 2)
+                                    Image(systemName: "checkmark")
+                                        .font(.system(size: isToday ? 13 : 11, weight: .heavy))
+                                        .foregroundStyle(.white)
+                                } else if isToday {
+                                    Circle()
+                                        .fill(Color.fridjOrange.opacity(0.12))
+                                    Circle()
+                                        .strokeBorder(Color.fridjOrange.opacity(0.7),
+                                                      style: StrokeStyle(lineWidth: 1.8, dash: [3.5, 3.5]))
+                                    Image(systemName: "flame")
+                                        .font(.system(size: 13, weight: .semibold))
+                                        .foregroundStyle(Color.fridjOrange.opacity(0.85))
+                                } else {
+                                    Circle()
+                                        .fill(.white.opacity(isFuture ? 0.35 : 0.6))
+                                    Circle()
+                                        .strokeBorder(Color.black.opacity(isFuture ? 0.05 : 0.09), lineWidth: 1)
+                                }
+                            }
+                            .frame(width: isToday ? 37 : 30, height: isToday ? 37 : 30)
+
+                            Text(labels[index])
+                                .font(.system(size: 10.5, weight: .bold, design: .rounded))
+                                .foregroundStyle(isToday ? Color.fridjOrange : .black.opacity(isFuture ? 0.25 : 0.45))
+                        }
+                        .frame(maxWidth: .infinity)
+                    }
+                }
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 14)
