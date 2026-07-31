@@ -273,38 +273,62 @@ struct HomeView: View {
         let labels = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"]
         let todayLabel = labels[calendar.component(.weekday, from: today) - 1]
 
+        let streak = cooking.currentStreak
+
         return VStack(alignment: .leading, spacing: 14) {
-            Text("This week's progress")
-                .font(.system(size: 18, weight: .bold, design: .rounded))
-                .foregroundStyle(.black.opacity(0.82))
-
-            VStack(spacing: 10) {
-                HStack {
-                    ForEach(labels, id: \.self) { day in
-                        Text(day)
-                            .font(.system(size: 12, weight: .bold, design: .rounded))
-                            .foregroundStyle(day == todayLabel ? .orange : .black.opacity(0.45))
-                            .frame(maxWidth: .infinity)
-                    }
+            HStack(alignment: .firstTextBaseline) {
+                Text("This week's progress")
+                    .font(.system(size: 18, weight: .bold, design: .rounded))
+                    .foregroundStyle(.black.opacity(0.82))
+                Spacer()
+                // The streak, finally visible where the week lives.
+                if streak > 0 {
+                    Text("🔥 \(streak)")
+                        .font(.system(size: 15, weight: .heavy, design: .rounded))
+                        .foregroundStyle(Color.fridjOrange)
                 }
+            }
 
-                HStack {
-                    ForEach(Array(weekDates.enumerated()), id: \.offset) { _, date in
-                        let cooked = cooking.hasCooked(on: date)
-                        Image(systemName: "checkmark")
-                            .font(.system(size: 13, weight: .bold))
-                            .foregroundStyle(.white.opacity(cooked ? 0.9 : 0.25))
-                            .frame(maxWidth: .infinity)
+            // Seven articulated day coins instead of one solid loaf: cooked
+            // days glow in a warm gradient that deepens across the week,
+            // today-uncooked invites with a dashed ring, future days recede.
+            HStack(spacing: 0) {
+                ForEach(Array(weekDates.enumerated()), id: \.offset) { index, date in
+                    let cooked = cooking.hasCooked(on: date)
+                    let isToday = calendar.isDate(date, inSameDayAs: today)
+                    let isFuture = date > today && !isToday
+
+                    VStack(spacing: 7) {
+                        Text(labels[index])
+                            .font(.system(size: 11, weight: .bold, design: .rounded))
+                            .foregroundStyle(isToday ? Color.fridjOrange : .black.opacity(isFuture ? 0.25 : 0.45))
+
+                        ZStack {
+                            if cooked {
+                                Circle()
+                                    .fill(LinearGradient(
+                                        colors: [
+                                            Color(hue: 0.075 - Double(index) * 0.004, saturation: 0.82, brightness: 0.96),
+                                            Color(hue: 0.11 + Double(index) * 0.004, saturation: 0.85, brightness: 0.98),
+                                        ],
+                                        startPoint: .topLeading, endPoint: .bottomTrailing
+                                    ))
+                                    .shadow(color: Color.fridjOrange.opacity(0.35), radius: 5, x: 0, y: 2)
+                                Image(systemName: "checkmark")
+                                    .font(.system(size: 12, weight: .heavy))
+                                    .foregroundStyle(.white)
+                            } else if isToday {
+                                Circle()
+                                    .strokeBorder(Color.fridjOrange.opacity(0.75),
+                                                  style: StrokeStyle(lineWidth: 1.8, dash: [3.5, 3.5]))
+                            } else {
+                                Circle()
+                                    .strokeBorder(Color.black.opacity(isFuture ? 0.08 : 0.14), lineWidth: 1.5)
+                            }
+                        }
+                        .frame(width: 32, height: 32)
                     }
-                }
-                .frame(height: 38)
-                .background {
-                    Capsule()
-                        .fill(LinearGradient(
-                            colors: [.orange, .yellow.opacity(0.92)],
-                            startPoint: .leading,
-                            endPoint: .trailing
-                        ))
+                    .frame(maxWidth: .infinity)
                 }
             }
             .padding(.horizontal, 16)
