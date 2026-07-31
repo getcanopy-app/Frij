@@ -274,11 +274,11 @@ struct HomeView: View {
         let todayLabel = labels[calendar.component(.weekday, from: today) - 1]
 
         let streak = cooking.currentStreak
-        // The week sweeps through the warm side of the palette — Sunday
-        // orange melting into Saturday berry — so a full week reads as a
-        // little sunset, not seven copies of one dot.
-        let dayHues = ["EE7D4D", "ED714F", "EC5D62", "DE6070", "CB6580",
-                       "B36890", "9C6B9E"].map { Color(hex: $0) }
+        // The week sweeps left-to-right through the ORIGINAL bar's gradient —
+        // Sunday orange melting into Saturday gold — vivid against the white
+        // card, exactly the color story v1 had.
+        let dayHues = ["F1832F", "F3902B", "F59D28", "F7AA25", "F9B722",
+                       "FBC41F", "FDD01C"].map { Color(hex: $0) }
 
         return VStack(alignment: .leading, spacing: 14) {
             Text("This week's progress")
@@ -354,17 +354,16 @@ struct HomeView: View {
                                         .foregroundStyle(Color.fridjOrange.opacity(0.85))
                                 } else {
                                     Circle()
-                                        .fill(dayHues[index].opacity(isFuture ? 0.1 : 0.16))
+                                        .fill(dayHues[index].opacity(isFuture ? 0.13 : 0.22))
                                     Circle()
-                                        .strokeBorder(dayHues[index].opacity(isFuture ? 0.22 : 0.4), lineWidth: 1.2)
+                                        .strokeBorder(dayHues[index].opacity(isFuture ? 0.25 : 0.45), lineWidth: 1.2)
                                 }
                             }
                             .frame(width: isToday ? 37 : 30, height: isToday ? 37 : 30)
 
                             Text(labels[index])
                                 .font(.system(size: 10.5, weight: .bold, design: .rounded))
-                                .foregroundStyle(isToday ? Color.fridjOrange
-                                                 : dayHues[index].opacity(isFuture ? 0.4 : 0.7))
+                                .foregroundStyle(isToday ? Color.fridjOrange : .black.opacity(isFuture ? 0.25 : 0.45))
                         }
                         .frame(maxWidth: .infinity)
                     }
@@ -374,10 +373,7 @@ struct HomeView: View {
             .padding(.vertical, 14)
             .background {
                 RoundedRectangle(cornerRadius: 24, style: .continuous)
-                    .fill(LinearGradient(
-                        colors: [Color.fridjPeach.opacity(0.95), Color.fridjOrange.opacity(0.28)],
-                        startPoint: .topLeading, endPoint: .bottomTrailing
-                    ))
+                    .fill(.white.opacity(0.55))
                     .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
                     .overlay {
                         RoundedRectangle(cornerRadius: 24, style: .continuous)
