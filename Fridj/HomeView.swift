@@ -297,7 +297,9 @@ struct HomeView: View {
                                 colors: [Color(hue: 0.115, saturation: 0.85, brightness: 0.98),
                                          Color.fridjOrange, Color.fridjCoral],
                                 startPoint: .top, endPoint: .bottom))
-                            : AnyShapeStyle(Color.black.opacity(0.18))
+                            : AnyShapeStyle(LinearGradient(
+                                colors: [Color.fridjOrange.opacity(0.55), Color.fridjCoral.opacity(0.4)],
+                                startPoint: .top, endPoint: .bottom))
                         )
                         .shadow(color: Color.fridjOrange.opacity(streak > 0 ? 0.35 : 0), radius: 7, x: 0, y: 2)
 
@@ -315,7 +317,7 @@ struct HomeView: View {
                                 .foregroundStyle(.black.opacity(0.8))
                             Text("cook tonight to light the flame")
                                 .font(.system(size: 12, weight: .semibold, design: .rounded))
-                                .foregroundStyle(.black.opacity(0.45))
+                                .foregroundStyle(Color.fridjOrange.opacity(0.8))
                         }
                     }
                     Spacer()
@@ -343,7 +345,7 @@ struct HomeView: View {
                                         .foregroundStyle(.white)
                                 } else if isToday {
                                     Circle()
-                                        .fill(Color.fridjOrange.opacity(0.12))
+                                        .fill(Color.fridjOrange.opacity(0.2))
                                     Circle()
                                         .strokeBorder(Color.fridjOrange.opacity(0.7),
                                                       style: StrokeStyle(lineWidth: 1.8, dash: [3.5, 3.5]))
@@ -352,16 +354,17 @@ struct HomeView: View {
                                         .foregroundStyle(Color.fridjOrange.opacity(0.85))
                                 } else {
                                     Circle()
-                                        .fill(.white.opacity(isFuture ? 0.35 : 0.6))
+                                        .fill(dayHues[index].opacity(isFuture ? 0.1 : 0.16))
                                     Circle()
-                                        .strokeBorder(Color.black.opacity(isFuture ? 0.05 : 0.09), lineWidth: 1)
+                                        .strokeBorder(dayHues[index].opacity(isFuture ? 0.22 : 0.4), lineWidth: 1.2)
                                 }
                             }
                             .frame(width: isToday ? 37 : 30, height: isToday ? 37 : 30)
 
                             Text(labels[index])
                                 .font(.system(size: 10.5, weight: .bold, design: .rounded))
-                                .foregroundStyle(isToday ? Color.fridjOrange : .black.opacity(isFuture ? 0.25 : 0.45))
+                                .foregroundStyle(isToday ? Color.fridjOrange
+                                                 : dayHues[index].opacity(isFuture ? 0.4 : 0.7))
                         }
                         .frame(maxWidth: .infinity)
                     }
@@ -372,7 +375,7 @@ struct HomeView: View {
             .background {
                 RoundedRectangle(cornerRadius: 24, style: .continuous)
                     .fill(LinearGradient(
-                        colors: [Color.fridjPeach.opacity(0.55), Color.fridjMint.opacity(0.28)],
+                        colors: [Color.fridjPeach.opacity(0.95), Color.fridjOrange.opacity(0.28)],
                         startPoint: .topLeading, endPoint: .bottomTrailing
                     ))
                     .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
