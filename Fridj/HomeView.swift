@@ -274,6 +274,11 @@ struct HomeView: View {
         let todayLabel = labels[calendar.component(.weekday, from: today) - 1]
 
         let streak = cooking.currentStreak
+        // The week sweeps through the warm side of the palette — Sunday
+        // orange melting into Saturday berry — so a full week reads as a
+        // little sunset, not seven copies of one dot.
+        let dayHues = ["EE7D4D", "ED714F", "EC5D62", "DE6070", "CB6580",
+                       "B36890", "9C6B9E"].map { Color(hex: $0) }
 
         return VStack(alignment: .leading, spacing: 14) {
             Text("This week's progress")
@@ -289,7 +294,8 @@ struct HomeView: View {
                         .foregroundStyle(
                             streak > 0
                             ? AnyShapeStyle(LinearGradient(
-                                colors: [Color.fridjOrange, Color(hue: 0.12, saturation: 0.85, brightness: 0.98)],
+                                colors: [Color(hue: 0.115, saturation: 0.85, brightness: 0.98),
+                                         Color.fridjOrange, Color.fridjCoral],
                                 startPoint: .top, endPoint: .bottom))
                             : AnyShapeStyle(Color.black.opacity(0.18))
                         )
@@ -328,13 +334,10 @@ struct HomeView: View {
                                 if cooked {
                                     Circle()
                                         .fill(LinearGradient(
-                                            colors: [
-                                                Color(hue: 0.075 - Double(index) * 0.004, saturation: 0.82, brightness: 0.96),
-                                                Color(hue: 0.11 + Double(index) * 0.004, saturation: 0.85, brightness: 0.98),
-                                            ],
+                                            colors: [dayHues[index].opacity(0.85), dayHues[index]],
                                             startPoint: .topLeading, endPoint: .bottomTrailing
                                         ))
-                                        .shadow(color: Color.fridjOrange.opacity(0.35), radius: 5, x: 0, y: 2)
+                                        .shadow(color: dayHues[index].opacity(0.42), radius: 5, x: 0, y: 2)
                                     Image(systemName: "checkmark")
                                         .font(.system(size: isToday ? 13 : 11, weight: .heavy))
                                         .foregroundStyle(.white)
@@ -368,7 +371,10 @@ struct HomeView: View {
             .padding(.vertical, 14)
             .background {
                 RoundedRectangle(cornerRadius: 24, style: .continuous)
-                    .fill(.white.opacity(0.22))
+                    .fill(LinearGradient(
+                        colors: [Color.fridjPeach.opacity(0.55), Color.fridjMint.opacity(0.28)],
+                        startPoint: .topLeading, endPoint: .bottomTrailing
+                    ))
                     .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
                     .overlay {
                         RoundedRectangle(cornerRadius: 24, style: .continuous)
