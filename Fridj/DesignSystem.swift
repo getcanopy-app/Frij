@@ -5,6 +5,7 @@ extension Color {
     static let fridjPeach  = Color(hex: "FBE5C7")
     static let fridjOrange = Color(hex: "EE7D4D")
     static let fridjCoral  = Color(hex: "EC5D62")
+    static let fridjBerry  = Color(hex: "9C6B9E")
     static let fridjGreen  = Color(hex: "6F876A")
     static let fridjMint   = Color(hex: "D1D3B5")
     static let fridjText   = Color(hex: "2D2D2D")

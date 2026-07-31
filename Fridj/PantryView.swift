@@ -113,8 +113,9 @@ struct PantryView: View {
     /// gets no chip. Adding a future category = one line here (the row is the
     /// only thing that grows). Capped at these two until real users ask.
     private static let detourModes: [(mode: String, emoji: String, label: String, color: Color)] = [
-        ("dessert", "🍰", "Desserts", .fridjCoral),
-        ("snack",   "🍿", "Snacks",   .fridjOrange),
+        ("dessert",  "🍰", "Desserts",  .fridjCoral),
+        ("snack",    "🍿", "Snacks",    .fridjOrange),
+        ("smoothie", "🥤", "Smoothies", .fridjBerry),
     ]
 
     /// Chips advertise the detours; each stays its own color even when idle so
@@ -159,12 +160,15 @@ struct PantryView: View {
 
     private var cookButtonTitle: String {
         if session.isCooking { return "Cooking up ideas…  tap to cancel" }
-        let word = mealMode == "dessert" ? "desserts" : mealMode == "snack" ? "snacks" : "dinners"
+        let word = mealMode == "dessert" ? "desserts"
+                 : mealMode == "snack" ? "snacks"
+                 : mealMode == "smoothie" ? "smoothies" : "dinners"
         guard !selectedIDs.isEmpty else { return "Get 3 \(word) from this" }
         switch mealMode {
-        case "dessert": return "Desserts from these \(selectedIDs.count)"
-        case "snack":   return "Snacks from these \(selectedIDs.count)"
-        default:        return "Cook with these \(selectedIDs.count)"
+        case "dessert":  return "Desserts from these \(selectedIDs.count)"
+        case "snack":    return "Snacks from these \(selectedIDs.count)"
+        case "smoothie": return "Smoothies from these \(selectedIDs.count)"
+        default:         return "Cook with these \(selectedIDs.count)"
         }
     }
 
