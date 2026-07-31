@@ -292,6 +292,7 @@ struct HomeView: View {
             // Seven articulated day coins instead of one solid loaf: cooked
             // days glow in a warm gradient that deepens across the week,
             // today-uncooked invites with a dashed ring, future days recede.
+            VStack(spacing: 12) {
             HStack(spacing: 0) {
                 ForEach(Array(weekDates.enumerated()), id: \.offset) { index, date in
                     let cooked = cooking.hasCooked(on: date)
@@ -350,6 +351,7 @@ struct HomeView: View {
                     .font(.system(size: 12.5, weight: .semibold, design: .rounded))
                     .foregroundStyle(.black.opacity(0.4))
                     .frame(maxWidth: .infinity)
+            }
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 14)
