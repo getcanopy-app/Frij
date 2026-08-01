@@ -289,7 +289,7 @@ struct HomeView: View {
                 // The Duolingo pattern: the streak flame is the emotional
                 // hero, big and first; the week trail supports it below.
                 HStack(spacing: 12) {
-                    Image(systemName: streak > 0 ? "flame.fill" : "flame")
+                    Image(systemName: "flame.fill")
                         .font(.system(size: 33, weight: .semibold))
                         .foregroundStyle(
                             streak > 0
@@ -349,7 +349,7 @@ struct HomeView: View {
                                     Circle()
                                         .strokeBorder(Color.fridjOrange.opacity(0.7),
                                                       style: StrokeStyle(lineWidth: 1.8, dash: [3.5, 3.5]))
-                                    Image(systemName: "flame")
+                                    Image(systemName: "flame.fill")
                                         .font(.system(size: 13, weight: .semibold))
                                         .foregroundStyle(Color.fridjOrange.opacity(0.85))
                                 } else {
