@@ -112,10 +112,10 @@ struct PantryView: View {
     /// The occasion detours, one chip each. Dinner is the unmarked default and
     /// gets no chip. Adding a future category = one line here (the row is the
     /// only thing that grows). Capped at these two until real users ask.
-    private static let detourModes: [(mode: String, emoji: String, label: String, color: Color)] = [
-        ("dessert",  "🍰", "Desserts",  .fridjCoral),
-        ("snack",    "🍿", "Snacks",    .fridjOrange),
-        ("smoothie", "🥤", "Smoothies", .fridjBerry),
+    private static let detourModes: [(mode: String, icon: String, label: String, color: Color)] = [
+        ("dessert",  "birthday.cake.fill",   "Desserts",  .fridjCoral),
+        ("snack",    "popcorn.fill",         "Snacks",    .fridjOrange),
+        ("smoothie", "takeoutbag.and.cup.and.straw.fill", "Smoothies", .fridjBerry),
     ]
 
     /// Chips advertise the detours; each stays its own color even when idle so
@@ -130,7 +130,7 @@ struct PantryView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    private func modeChip(_ detour: (mode: String, emoji: String, label: String, color: Color)) -> some View {
+    private func modeChip(_ detour: (mode: String, icon: String, label: String, color: Color)) -> some View {
         let on = mealMode == detour.mode
         return Button {
             withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
@@ -138,9 +138,11 @@ struct PantryView: View {
             }
         } label: {
             HStack(spacing: 5) {
-                Text(detour.emoji).font(.system(size: 12))
+                Image(systemName: detour.icon).font(.system(size: 11, weight: .semibold))
                 Text(detour.label).font(FridjFont.size(13, weight: .bold))
             }
+            .lineLimit(1)
+            .fixedSize()
             .foregroundColor(on ? .white : detour.color)
             .padding(.horizontal, 13)
             .padding(.vertical, 7)
