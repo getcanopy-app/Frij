@@ -1092,8 +1092,12 @@ struct RecipeDetailSheet: View {
             }
         } label: {
             HStack(spacing: 7) {
+                // Simulators render color emoji as missing-glyph boxes;
+                // devices are unaffected.
+                #if !targetEnvironment(simulator)
                 Text(side.emoji)
                     .font(.system(size: 17))
+                #endif
                 Text(side.name)
                     .font(FridjFont.size(13, weight: .semibold))
                     .foregroundColor(.fridjText.opacity(onList ? 0.6 : 1))
@@ -1376,9 +1380,15 @@ struct RecipeDetailSheet: View {
                         // chip is un-picked (both read from the grocery list).
                         ForEach(selectedSides) { side in
                             VStack(alignment: .leading, spacing: 10) {
+                                #if targetEnvironment(simulator)
+                                Text("For the \(side.name)")
+                                    .font(FridjFont.size(15, weight: .bold))
+                                    .foregroundColor(.fridjText)
+                                #else
                                 Text("\(side.emoji)  For the \(side.name)")
                                     .font(FridjFont.size(15, weight: .bold))
                                     .foregroundColor(.fridjText)
+                                #endif
                                 ForEach(Array(SidesSuggester.steps(for: side.name).enumerated()), id: \.offset) { _, step in
                                     HStack(alignment: .top, spacing: 10) {
                                         Circle()
