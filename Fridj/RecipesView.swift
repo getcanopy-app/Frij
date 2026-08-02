@@ -345,7 +345,9 @@ struct RecipesView: View {
                                 .font(.system(size: 12, weight: .bold))
                             Text("more options")
                                 .font(FridjFont.size(13, weight: .bold))
-                            if !sub.isSubscribed && usage.remaining > 0 {
+                            // Above 999 the budget is effectively unlimited (admin/testing)
+                            // and reads as a glitch; only real, finite budgets are shown.
+                            if !sub.isSubscribed && usage.remaining > 0 && usage.remaining <= 999 {
                                 Text("· \(usage.remaining) left")
                                     .font(FridjFont.size(11))
                                     .foregroundColor(.fridjOrange.opacity(0.6))
