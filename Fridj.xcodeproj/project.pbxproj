@@ -543,8 +543,8 @@
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_NSCameraUsageDescription = "Frij uses your camera to scan your fridge and identify ingredients.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Frij listens so you can say your ingredients out loud instead of typing them.";
-				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Frij saves your fridge photos to your camera roll.";
-				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Frij scans your fridge photos.";
+				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Frij saves the fridge and grocery photos you capture to your photo library so you can keep them \U2014 for example, to re-scan last week\U2019s fridge photo later without retaking it.";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Frij accesses your photo library so you can choose an existing photo of your fridge, pantry, or groceries \U2014 for example, a photo of your fridge shelves \U2014 and Frij identifies the ingredients in it to build your pantry list.";
 				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "Frij turns what you say into your ingredient list.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -594,8 +594,8 @@
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_NSCameraUsageDescription = "Frij uses your camera to scan your fridge and identify ingredients.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Frij listens so you can say your ingredients out loud instead of typing them.";
-				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Frij saves your fridge photos to your camera roll.";
-				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Frij scans your fridge photos.";
+				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Frij saves the fridge and grocery photos you capture to your photo library so you can keep them \U2014 for example, to re-scan last week\U2019s fridge photo later without retaking it.";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Frij accesses your photo library so you can choose an existing photo of your fridge, pantry, or groceries \U2014 for example, a photo of your fridge shelves \U2014 and Frij identifies the ingredients in it to build your pantry list.";
 				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "Frij turns what you say into your ingredient list.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
