@@ -21,9 +21,17 @@ struct StreakCelebrationView: View {
                     Text("Let's go!")
                         .font(.system(size: 30, weight: .black, design: .rounded))
                         .foregroundStyle(Color(red: 0.28, green: 0.12, blue: 0.02))
+                    // Simulators render color emoji as missing-glyph boxes;
+                    // devices are unaffected.
+                    #if targetEnvironment(simulator)
+                    Text("You're on fire today")
+                        .font(.system(size: 15, weight: .semibold, design: .rounded))
+                        .foregroundStyle(Color(red: 0.55, green: 0.28, blue: 0.05))
+                    #else
                     Text("You're on fire today 🔥")
                         .font(.system(size: 15, weight: .semibold, design: .rounded))
                         .foregroundStyle(Color(red: 0.55, green: 0.28, blue: 0.05))
+                    #endif
                 }
                 .padding(.top, 32)
 
