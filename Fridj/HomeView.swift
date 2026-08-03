@@ -271,7 +271,6 @@ struct HomeView: View {
         let weekStart = calendar.date(byAdding: .day, value: -weekdayIndex, to: today)!
         let weekDates = (0..<7).compactMap { calendar.date(byAdding: .day, value: $0, to: weekStart) }
         let labels = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"]
-        let todayLabel = labels[calendar.component(.weekday, from: today) - 1]
 
         let streak = cooking.currentStreak
         // The week sweeps left-to-right through the ORIGINAL bar's gradient —
