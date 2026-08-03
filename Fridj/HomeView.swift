@@ -289,19 +289,15 @@ struct HomeView: View {
                 // The Duolingo pattern: the streak flame is the emotional
                 // hero, big and first; the week trail supports it below.
                 HStack(spacing: 12) {
+                    // The flame is always at full color — an unlit streak is
+                    // told by the copy, not by a washed-out icon.
                     Image(systemName: "flame.fill")
                         .font(.system(size: 33, weight: .semibold))
-                        .foregroundStyle(
-                            streak > 0
-                            ? AnyShapeStyle(LinearGradient(
-                                colors: [Color(hue: 0.115, saturation: 0.85, brightness: 0.98),
-                                         Color.fridjOrange, Color.fridjCoral],
-                                startPoint: .top, endPoint: .bottom))
-                            : AnyShapeStyle(LinearGradient(
-                                colors: [Color.fridjOrange.opacity(0.55), Color.fridjCoral.opacity(0.4)],
-                                startPoint: .top, endPoint: .bottom))
-                        )
-                        .shadow(color: Color.fridjOrange.opacity(streak > 0 ? 0.35 : 0), radius: 7, x: 0, y: 2)
+                        .foregroundStyle(AnyShapeStyle(LinearGradient(
+                            colors: [Color(hue: 0.115, saturation: 0.85, brightness: 0.98),
+                                     Color.fridjOrange, Color.fridjCoral],
+                            startPoint: .top, endPoint: .bottom)))
+                        .shadow(color: Color.fridjOrange.opacity(0.35), radius: 7, x: 0, y: 2)
 
                     VStack(alignment: .leading, spacing: 1) {
                         if streak > 0 {
@@ -345,11 +341,15 @@ struct HomeView: View {
                                         .foregroundStyle(.white)
                                 } else {
                                     // Un-cooked coins are identical ghosts — today is
-                                    // marked only by its orange label below.
+                                    // marked only by its orange label below. The faint
+                                    // checkmark shows what cooking will fill in.
                                     Circle()
                                         .fill(dayHues[index].opacity(isFuture ? 0.13 : 0.22))
                                     Circle()
                                         .strokeBorder(dayHues[index].opacity(isFuture ? 0.25 : 0.45), lineWidth: 1.2)
+                                    Image(systemName: "checkmark")
+                                        .font(.system(size: 11, weight: .heavy))
+                                        .foregroundStyle(dayHues[index].opacity(isFuture ? 0.3 : 0.5))
                                 }
                             }
                             .frame(width: 31, height: 31)
