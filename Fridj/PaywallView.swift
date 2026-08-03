@@ -254,8 +254,9 @@ struct PaywallView: View {
                     plan: .monthly,
                     title: "Monthly",
                     priceDisplay: sub.products.first(where: { $0.id == SubscriptionManager.monthlyID })?.displayPrice ?? "$2.99",
-                    sub: "per month",
-                    badge: nil
+                    sub: "per month \u00b7 cancel anytime",
+                    badge: "Flexible",
+                    quietBadge: true
                 )
 
                 planCard(
@@ -269,16 +270,21 @@ struct PaywallView: View {
         }
     }
 
-    private func planCard(plan: Plan, title: String, priceDisplay: String, sub subText: String, badge: String?) -> some View {
+    private func planCard(plan: Plan, title: String, priceDisplay: String, sub subText: String, badge: String?, quietBadge: Bool = false) -> some View {
         let selected = selectedPlan == plan
         return Button { withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) { selectedPlan = plan } } label: {
             VStack(spacing: 6) {
+                // The pushed plan gets the loud orange badge; other plans can
+                // carry a quiet tinted one so no card sits with a bare slot.
                 if let badge {
                     Text(badge)
                         .font(.system(size: 10, weight: .black, design: .rounded))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(quietBadge ? Color.fridjGreen : .white)
                         .padding(.horizontal, 10).padding(.vertical, 3)
-                        .background(Color.fridjOrange, in: Capsule())
+                        .background(
+                            quietBadge ? Color.fridjGreen.opacity(0.14) : Color.fridjOrange,
+                            in: Capsule()
+                        )
                 } else {
                     Color.clear.frame(height: 20)
                 }
