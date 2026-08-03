@@ -345,13 +345,12 @@ struct HomeView: View {
                                         .foregroundStyle(.white)
                                 } else if isToday {
                                     Circle()
-                                        .fill(Color.fridjOrange.opacity(0.2))
+                                        .fill(dayHues[index].opacity(0.25))
                                     Circle()
-                                        .strokeBorder(Color.fridjOrange.opacity(0.7),
-                                                      style: StrokeStyle(lineWidth: 1.8, dash: [3.5, 3.5]))
+                                        .strokeBorder(Color.fridjOrange, lineWidth: 2)
                                     Image(systemName: "flame.fill")
                                         .font(.system(size: 13, weight: .semibold))
-                                        .foregroundStyle(Color.fridjOrange.opacity(0.85))
+                                        .foregroundStyle(Color.fridjOrange)
                                 } else {
                                     Circle()
                                         .fill(dayHues[index].opacity(isFuture ? 0.13 : 0.22))
