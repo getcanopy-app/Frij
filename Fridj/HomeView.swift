@@ -341,24 +341,18 @@ struct HomeView: View {
                                         ))
                                         .shadow(color: dayHues[index].opacity(0.42), radius: 5, x: 0, y: 2)
                                     Image(systemName: "checkmark")
-                                        .font(.system(size: isToday ? 13 : 11, weight: .heavy))
+                                        .font(.system(size: 12, weight: .heavy))
                                         .foregroundStyle(.white)
-                                } else if isToday {
-                                    Circle()
-                                        .fill(dayHues[index].opacity(0.25))
-                                    Circle()
-                                        .strokeBorder(Color.fridjOrange, lineWidth: 2)
-                                    Image(systemName: "flame.fill")
-                                        .font(.system(size: 13, weight: .semibold))
-                                        .foregroundStyle(Color.fridjOrange)
                                 } else {
+                                    // Un-cooked coins are identical ghosts — today is
+                                    // marked only by its orange label below.
                                     Circle()
                                         .fill(dayHues[index].opacity(isFuture ? 0.13 : 0.22))
                                     Circle()
                                         .strokeBorder(dayHues[index].opacity(isFuture ? 0.25 : 0.45), lineWidth: 1.2)
                                 }
                             }
-                            .frame(width: isToday ? 37 : 30, height: isToday ? 37 : 30)
+                            .frame(width: 31, height: 31)
 
                             Text(labels[index])
                                 .font(.system(size: 10.5, weight: .bold, design: .rounded))
