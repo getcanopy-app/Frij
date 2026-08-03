@@ -541,6 +541,7 @@
 				INFOPLIST_FILE = Fridj/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Frij;
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_NSCameraUsageDescription = "Frij uses your camera to scan your fridge and identify ingredients.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Frij listens so you can say your ingredients out loud instead of typing them.";
 				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Frij saves the fridge and grocery photos you capture to your photo library so you can keep them \U2014 for example, to re-scan last week\U2019s fridge photo later without retaking it.";
@@ -591,6 +592,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Fridj/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Frij;
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_NSCameraUsageDescription = "Frij uses your camera to scan your fridge and identify ingredients.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Frij listens so you can say your ingredients out loud instead of typing them.";
