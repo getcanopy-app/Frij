@@ -952,6 +952,20 @@ enum SidesSuggester {
     }
 
     private static let sideSteps: [String: [String]] = [
+        "hummus & pita": ["Swirl hummus onto a plate and drizzle with olive oil.", "Warm the pita in a dry pan; tear and scoop."],
+        "tabbouleh": ["Soak fine bulgur per the package.", "Toss with LOTS of chopped parsley, tomato, lemon juice and olive oil."],
+        "cucumber-yogurt salad": ["Dice cucumber; stir into yogurt with a pinch of salt.", "Add a little garlic or dried mint if you have it."],
+        "warm pita": ["Heat each pita in a dry pan ~30 seconds a side.", "Wrap in a towel so they stay soft."],
+        "greek salad": ["Chunk tomato, cucumber, red onion and olives.", "Top with feta, oregano and olive oil — no lettuce needed."],
+        "tzatziki & pita": ["Grate cucumber and squeeze it dry.", "Stir into yogurt with garlic, lemon and salt; scoop with warm pita."],
+        "lemon potatoes": ["Toss potato wedges with olive oil, lemon juice and oregano.", "Roast at 425°F until golden, ~35 min."],
+        "rice pilaf": ["Toast rice in butter until nutty.", "Simmer in broth, covered, until tender."],
+        "naan": ["Warm store-bought naan in a dry pan.", "Brush with melted butter (garlic optional)."],
+        "basmati rice": ["Rinse rice until the water runs clear.", "Simmer 1:1.5 rice-to-water, covered, 12 min; rest 5."],
+        "raita": ["Whisk yogurt with a splash of water.", "Stir in grated cucumber, salt and cumin."],
+        "rice & beans": ["Cook rice; warm black beans with garlic in their liquid.", "Serve side by side or stirred together."],
+        "fried plantains": ["Slice ripe plantains on the bias.", "Fry in a little oil until caramelized on both sides."],
+        "vinagrete": ["Dice tomato, onion and bell pepper.", "Dress with vinegar, olive oil and salt — it's Brazil's pico."],
         "antipasto": ["Arrange olives, cured meats, cheese and marinated veg on a plate.", "Drizzle with olive oil and crack some pepper over."],
         "applesauce": ["Peel and chunk apples; simmer with a splash of water until soft.", "Mash with a fork and a pinch of cinnamon."],
         "baked beans": ["Warm the beans in a small pot over medium-low.", "Stir in a little brown sugar or hot sauce to taste."],
@@ -1001,6 +1015,34 @@ enum SidesSuggester {
     }
 
     private static func pool(for lower: String) -> [SideDish] {
+        // Cuisine beats protein: "Chicken Shawarma" pairs like the Levant,
+        // not like a roast chicken. Keep these checks above the protein ones.
+        if ["shawarma", "falafel", "kebab", "kabob", "kofta", "hummus", "tahini",
+            "shakshuka", "za'atar", "harissa", "couscous"].contains(where: lower.contains) {
+            return [.init(name: "Hummus & Pita", emoji: "🫓"),      .init(name: "Tabbouleh", emoji: "🌿"),
+                    .init(name: "Cucumber-Yogurt Salad", emoji: "🥒"), .init(name: "Warm Pita", emoji: "🫓"),
+                    .init(name: "Pickled Turnips", emoji: "🥬"),     .init(name: "Olives & Feta", emoji: "🫒")]
+        }
+        if ["gyro", "greek", "tzatziki", "souvlaki", "mediterranean", "halloumi"].contains(where: lower.contains) {
+            return [.init(name: "Greek Salad", emoji: "🥗"),        .init(name: "Tzatziki & Pita", emoji: "🥒"),
+                    .init(name: "Lemon Potatoes", emoji: "🍋"),      .init(name: "Rice Pilaf", emoji: "🍚"),
+                    .init(name: "Olives & Feta", emoji: "🫒"),       .init(name: "Grilled Halloumi", emoji: "🧀")]
+        }
+        if ["tikka", "masala", "tandoori", "biryani", "paneer", "dal", "korma", "vindaloo", "naan"].contains(where: lower.contains) {
+            return [.init(name: "Naan", emoji: "🫓"),                .init(name: "Basmati Rice", emoji: "🍚"),
+                    .init(name: "Raita", emoji: "🥒"),               .init(name: "Mango Chutney", emoji: "🥭"),
+                    .init(name: "Samosas", emoji: "🥟"),             .init(name: "Papadum", emoji: "🫓")]
+        }
+        if ["brazilian", "feijoada", "churrasco", "picanha", "moqueca", "plantain"].contains(where: lower.contains) {
+            return [.init(name: "Rice & Beans", emoji: "🍚"),        .init(name: "Farofa", emoji: "🌾"),
+                    .init(name: "Vinagrete", emoji: "🍅"),           .init(name: "Fried Plantains", emoji: "🍌"),
+                    .init(name: "Collard Greens", emoji: "🥬"),      .init(name: "Pão de Queijo", emoji: "🧀")]
+        }
+        if ["mexican", "carnitas", "al pastor", "tostada", "elote", "salsa", "carne asada", "birria"].contains(where: lower.contains) {
+            return [.init(name: "Mexican Rice", emoji: "🍚"),        .init(name: "Refried Beans", emoji: "🫘"),
+                    .init(name: "Guacamole", emoji: "🥑"),           .init(name: "Pico de Gallo", emoji: "🍅"),
+                    .init(name: "Elote", emoji: "🌽"),               .init(name: "Chips & Salsa", emoji: "🫔")]
+        }
         if lower.contains("steak") || lower.contains("beef") || lower.contains("burger") || lower.contains("brisket") || lower.contains("ribeye") {
             return [.init(name: "Mashed Potatoes", emoji: "🥔"), .init(name: "Roasted Asparagus", emoji: "🌿"),
                     .init(name: "French Fries", emoji: "🍟"),   .init(name: "Garlic Bread", emoji: "🥖"),
@@ -1064,7 +1106,20 @@ struct RecipeDetailSheet: View {
     @State private var confirmCookMissing = false
     // All sides in one swipeable row — swiping replaced the old "rotate"
     // button, so no paging state needed. Deduped by name defensively.
+    // Sides are a dinner concept — a smoothie or a flan needs no steamed rice.
+    // Mode is stamped on generated recipes; older saved ones fall back to a
+    // name sniff.
+    private var sidesEligible: Bool {
+        if let mode = recipe.mode { return mode == "dinner" }
+        let n = recipe.name.lowercased()
+        let nonDinner = ["smoothie", "shake", "lassi", "cookie", "cake", "pudding",
+                         "brownie", "granita", "ice cream", "nice cream", "cobbler",
+                         "pie", "muffin", "parfait", "truffle", "fudge"]
+        return !nonDinner.contains { n.contains($0) }
+    }
+
     private var allSides: [SideDish] {
+        guard sidesEligible else { return [] }
         var seen = Set<String>()
         return SidesSuggester.sets(for: recipe.name).flatMap { $0 }
             .filter { seen.insert($0.name).inserted }

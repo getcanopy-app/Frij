@@ -105,7 +105,12 @@ enum FrijAPI {
         if !exclude.isEmpty { body["exclude"] = exclude }
 
         let data = try await post("/api/recipes", body: body)
-        return try JSONDecoder().decode(RecipeResponse.self, from: data).recipes
+        // Stamp the generation mode so surfaces like "Pair it with" know a
+        // smoothie from a dinner forever after.
+        return try JSONDecoder().decode(RecipeResponse.self, from: data).recipes.map {
+            Recipe(name: $0.name, cookTime: $0.cookTime, uses: $0.uses, needs: $0.needs,
+                   steps: $0.steps, reason: $0.reason, origin: $0.origin, mode: mode)
+        }
     }
 
     /// Shared app secret — the backend rejects requests without it. This is

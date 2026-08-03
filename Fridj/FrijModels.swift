@@ -59,9 +59,12 @@ struct Recipe: Codable, Identifiable, Hashable {
     // Where an imported meal came from ("Instagram", "TikTok", "YouTube"…).
     // nil = generated in the app. Optional for the same migration reasons.
     let origin: String?
+    // Which generator made it ("dinner", "dessert", "snack", "smoothie").
+    // nil = saved before modes existed; treated as dinner.
+    let mode: String?
 
     init(name: String, cookTime: String, uses: [String], needs: [String], steps: [String],
-         reason: String? = nil, origin: String? = nil) {
+         reason: String? = nil, origin: String? = nil, mode: String? = nil) {
         self.name = name
         self.cookTime = cookTime
         self.uses = uses
@@ -69,6 +72,7 @@ struct Recipe: Codable, Identifiable, Hashable {
         self.steps = steps
         self.reason = reason
         self.origin = origin
+        self.mode = mode
     }
 
     // Migration-safe decoding. Recipe is persisted to disk (FavoritesStore) as
@@ -85,6 +89,7 @@ struct Recipe: Codable, Identifiable, Hashable {
         self.steps = try c.decodeIfPresent([String].self, forKey: .steps) ?? []
         self.reason = try c.decodeIfPresent(String.self, forKey: .reason)
         self.origin = try c.decodeIfPresent(String.self, forKey: .origin)
+        self.mode = try c.decodeIfPresent(String.self, forKey: .mode)
     }
 }
 
