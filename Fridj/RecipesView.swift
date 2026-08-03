@@ -1449,19 +1449,18 @@ struct RecipeDetailSheet: View {
                 .padding(.top, 16)
                 .padding(.bottom, 36)
                 .background(.ultraThinMaterial)
+                .alert("Missing a few ingredients", isPresented: $confirmCookMissing) {
+                    Button("I cooked it anyway") { onCooked() }
+                    Button("Not yet", role: .cancel) {}
+                } message: {
+                    let count = PantryMatch.partition(recipe.uses + recipe.needs).need.count
+                    Text("Your kitchen is missing \(count) ingredient\(count == 1 ? "" : "s") for this. Substitutions absolutely count.")
+                }
             }
         }
         .sheet(item: $shareDoc) { doc in
             ShareSheet(items: doc.items)
                 .presentationDetents([.medium, .large])
-        }
-        .confirmationDialog("Missing a few ingredients", isPresented: $confirmCookMissing,
-                            titleVisibility: .visible) {
-            Button("I cooked it anyway") { onCooked() }
-            Button("Not yet", role: .cancel) {}
-        } message: {
-            let count = PantryMatch.partition(recipe.uses + recipe.needs).need.count
-            Text("Your kitchen is missing \(count) ingredient\(count == 1 ? "" : "s") for this. Substitutions absolutely count.")
         }
         .presentationDetents([.large])
         .presentationCornerRadius(32)

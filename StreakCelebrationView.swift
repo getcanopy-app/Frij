@@ -60,9 +60,15 @@ struct StreakCelebrationView: View {
                     Text(coordinator.streak > 1 ? "\(coordinator.streak) meals cooked in a row" : "First meal — keep it going!")
                         .font(.system(size: 15, weight: .bold, design: .rounded))
                         .foregroundStyle(Color.orange)
+                    #if targetEnvironment(simulator)
+                    Text(coordinator.streak > 1 ? "You're on a roll" : "One down, many to go.")
+                        .font(.system(size: 13, design: .rounded))
+                        .foregroundStyle(Color(red: 0.45, green: 0.22, blue: 0.04))
+                    #else
                     Text(coordinator.streak > 1 ? "You're on a roll 🎉" : "One down, many to go.")
                         .font(.system(size: 13, design: .rounded))
                         .foregroundStyle(Color(red: 0.45, green: 0.22, blue: 0.04))
+                    #endif
                 }
                 .multilineTextAlignment(.center)
 
