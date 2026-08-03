@@ -254,7 +254,7 @@ struct PaywallView: View {
                     plan: .monthly,
                     title: "Monthly",
                     priceDisplay: sub.products.first(where: { $0.id == SubscriptionManager.monthlyID })?.displayPrice ?? "$2.99",
-                    sub: "per month \u00b7 cancel anytime",
+                    sub: "per month · cancel anytime",
                     badge: "Flexible",
                     quietBadge: true
                 )
