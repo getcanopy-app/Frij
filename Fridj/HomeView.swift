@@ -343,12 +343,12 @@ struct HomeView: View {
                                     // marked only by its orange label below. The faint
                                     // checkmark shows what cooking will fill in.
                                     Circle()
-                                        .fill(dayHues[index].opacity(isFuture ? 0.13 : 0.22))
+                                        .fill(dayHues[index].opacity(isFuture ? 0.28 : 0.4))
                                     Circle()
-                                        .strokeBorder(dayHues[index].opacity(isFuture ? 0.25 : 0.45), lineWidth: 1.2)
+                                        .strokeBorder(dayHues[index].opacity(isFuture ? 0.5 : 0.75), lineWidth: 1.4)
                                     Image(systemName: "checkmark")
                                         .font(.system(size: 11, weight: .heavy))
-                                        .foregroundStyle(dayHues[index].opacity(isFuture ? 0.3 : 0.5))
+                                        .foregroundStyle(dayHues[index].opacity(isFuture ? 0.55 : 0.8))
                                 }
                             }
                             .frame(width: 31, height: 31)
