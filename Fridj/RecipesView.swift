@@ -787,13 +787,18 @@ struct RecipesView: View {
         let removed = (recipe.uses + recipe.needs).filter {
             store.contains($0) && PantryCategory.classify($0).isPerishable
         }
-        guard !removed.isEmpty else { return }
         for name in removed { store.remove(name: name) }
+
+        // Cooking always counts — streak and celebration must not depend on
+        // whether any pantry items happened to match (substitutions and
+        // unlogged grocery runs are normal cooking).
         CookingStore.shared.logToday()
         Task {
             try? await Task.sleep(nanoseconds: 350_000_000)
             CelebrationCoordinator.shared.show(streak: CookingStore.shared.currentStreak)
         }
+
+        guard !removed.isEmpty else { return }
         lastRemoved = removed
         showUndoFor = recipe.id
 
