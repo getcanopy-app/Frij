@@ -177,6 +177,7 @@ struct HomeView: View {
                     .scrollTargetLayout()
                 }
                 .scrollTargetBehavior(.viewAligned)
+                .scrollClipDisabled()
                 .contentMargins(.horizontal, 20, for: .scrollContent)
                 .padding(.horizontal, -20)
                 .transition(.asymmetric(
@@ -244,6 +245,7 @@ struct HomeView: View {
                 .scrollTargetLayout()
             }
             .scrollTargetBehavior(.viewAligned)
+            .scrollClipDisabled()
             .contentMargins(.horizontal, 20, for: .scrollContent)
             .padding(.horizontal, -20)
 

@@ -1,43 +1,66 @@
 import SwiftUI
 
+// Decoded-image cache. AsyncImage re-fetched and re-decoded on every screen
+// switch; this loads a thumbnail's bytes over the network once (URLCache keeps
+// them on disk), decodes once, and hands every later appearance the same
+// UIImage instantly.
+@MainActor
+final class MealImageStore {
+    static let shared = MealImageStore()
+    private let decoded = NSCache<NSURL, UIImage>()
+    private let session: URLSession
+
+    private init() {
+        decoded.countLimit = 120
+        let cfg = URLSessionConfiguration.default
+        cfg.urlCache = URLCache(memoryCapacity: 20_000_000, diskCapacity: 250_000_000)
+        // Generated images are immutable (cache-busts get new paths), so a
+        // cached copy never needs revalidation.
+        cfg.requestCachePolicy = .returnCacheDataElseLoad
+        session = URLSession(configuration: cfg)
+    }
+
+    /// Instant, synchronous hit for images this session has already decoded.
+    func cached(_ url: URL) -> UIImage? { decoded.object(forKey: url as NSURL) }
+
+    func load(_ url: URL) async throws -> UIImage {
+        if let hit = decoded.object(forKey: url as NSURL) { return hit }
+        let (data, _) = try await session.data(from: url)
+        guard let image = UIImage(data: data) else {
+            throw URLError(.cannotDecodeContentData)
+        }
+        decoded.setObject(image, forKey: url as NSURL)
+        return image
+    }
+}
+
 // Fetches and displays an AI-generated photo for a dish name.
-// Backend handles generation + caching; this caches the resolved URL in-memory
-// so the same dish doesn't re-request within a session.
+// Backend handles generation + caching; MealImageCache remembers the resolved
+// URL and MealImageStore holds the pixels.
 struct MealImageView: View {
     let dish: String
     var cornerRadius: CGFloat = 20
 
-    @State private var url: URL?
+    @State private var uiImage: UIImage?
     @State private var loadFailed = false
-    @State private var retriedAfterFailure = false
+
+    init(dish: String, cornerRadius: CGFloat = 20) {
+        self.dish = dish
+        self.cornerRadius = cornerRadius
+        // Synchronous cache peek so an already-seen thumbnail renders on the
+        // first frame — no shimmer flash when switching screens.
+        if let url = MealImageCache.shared.url(for: dish),
+           let hit = MealImageStore.shared.cached(url) {
+            _uiImage = State(initialValue: hit)
+        }
+    }
 
     var body: some View {
         ZStack {
-            if let url {
-                AsyncImage(url: url) { phase in
-                    switch phase {
-                    case .success(let image):
-                        image
-                            .resizable()
-                            .scaledToFill()
-                    case .failure:
-                        // A cached URL can die (creator thumbnails on platform
-                        // CDNs expire). Drop it and re-resolve once — the
-                        // backend then serves/generates its own image.
-                        placeholder(failed: true)
-                            .task {
-                                guard !retriedAfterFailure else { return }
-                                retriedAfterFailure = true
-                                MealImageCache.shared.remove(for: dish)
-                                self.url = nil
-                                await resolve()
-                            }
-                    case .empty:
-                        ShimmerView()
-                    @unknown default:
-                        ShimmerView()
-                    }
-                }
+            if let uiImage {
+                Image(uiImage: uiImage)
+                    .resizable()
+                    .scaledToFill()
             } else if loadFailed {
                 placeholder(failed: true)
             } else {
@@ -45,7 +68,7 @@ struct MealImageView: View {
             }
         }
         .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
-        .task(id: dish) { await resolve() }
+        .task(id: dish) { await resolveAndLoad() }
     }
 
     private func placeholder(failed: Bool) -> some View {
@@ -57,22 +80,32 @@ struct MealImageView: View {
         }
     }
 
-    private func resolve() async {
-        // In-memory cache first.
-        if let cached = MealImageCache.shared.url(for: dish) {
-            url = cached
-            return
-        }
+    private func resolveAndLoad() async {
+        guard uiImage == nil else { return }
         do {
-            let resolved = try await FrijAPI.mealImage(dish: dish)
-            // Guard against a stale result landing after the dish prop changed
-            // and the prior task was cancelled by .task(id: dish).
-            guard !Task.isCancelled else { return }
-            MealImageCache.shared.set(resolved, for: dish)
-            url = resolved
+            let url: URL
+            if let cached = MealImageCache.shared.url(for: dish) {
+                url = cached
+            } else {
+                url = try await FrijAPI.mealImage(dish: dish)
+                guard !Task.isCancelled else { return }
+                MealImageCache.shared.set(url, for: dish)
+            }
+            uiImage = try await MealImageStore.shared.load(url)
         } catch {
             guard !Task.isCancelled else { return }
-            loadFailed = true
+            // A cached URL can die (creator thumbnails on platform CDNs
+            // expire). Drop it and re-resolve once — the backend then
+            // serves/generates its own image.
+            MealImageCache.shared.remove(for: dish)
+            if let fresh = try? await FrijAPI.mealImage(dish: dish),
+               let image = try? await MealImageStore.shared.load(fresh) {
+                MealImageCache.shared.set(fresh, for: dish)
+                uiImage = image
+            } else {
+                guard !Task.isCancelled else { return }
+                loadFailed = true
+            }
         }
     }
 }

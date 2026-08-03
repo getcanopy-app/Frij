@@ -108,11 +108,16 @@ enum FrijAPI {
         return try JSONDecoder().decode(RecipeResponse.self, from: data).recipes
     }
 
+    /// Shared app secret — the backend rejects requests without it. This is
+    /// abuse deterrence (the binary necessarily contains it), not cryptography.
+    private static let appKey = "frij_f0062d3aff5c479d2f9b44c5b12cb24eb0ed8fee"
+
     static func mealImage(dish: String) async throws -> URL {
         var req = URLRequest(url: URL(string: baseURL + "/api/recipe-image")!)
         req.httpMethod = "POST"
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
         req.setValue(DeviceID.current, forHTTPHeaderField: "X-Device-ID")
+        req.setValue(appKey, forHTTPHeaderField: "X-Frij-Key")
         req.timeoutInterval = 90
         req.httpBody = try JSONSerialization.data(withJSONObject: ["name": dish])
         let (data, _) = try await URLSession.shared.data(for: req)
@@ -201,6 +206,7 @@ enum FrijAPI {
         req.httpMethod = "POST"
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
         req.setValue(DeviceID.current, forHTTPHeaderField: "X-Device-ID")
+        req.setValue(appKey, forHTTPHeaderField: "X-Frij-Key")
         req.httpBody = try JSONSerialization.data(withJSONObject: body)
         req.timeoutInterval = 60
 
