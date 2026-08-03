@@ -1059,6 +1059,9 @@ struct RecipeDetailSheet: View {
     @State private var addedToList = false
     // The rendered single-recipe PDF awaiting the share sheet.
     @State private var shareDoc: ShareDoc?
+    // "I cooked this" with missing ingredients asks first — substitutions
+    // count, but an accidental tap shouldn't eat the pantry.
+    @State private var confirmCookMissing = false
     // All sides in one swipeable row — swiping replaced the old "rotate"
     // button, so no paging state needed. Deduped by name defensively.
     private var allSides: [SideDish] {
@@ -1422,7 +1425,14 @@ struct RecipeDetailSheet: View {
         }
         .overlay(alignment: .bottom) {
             VStack(spacing: 0) {
-                Button { onCooked() } label: {
+                Button {
+                    let missing = PantryMatch.partition(recipe.uses + recipe.needs).need
+                    if missing.isEmpty {
+                        onCooked()
+                    } else {
+                        confirmCookMissing = true
+                    }
+                } label: {
                     HStack(spacing: 8) {
                         Image(systemName: "checkmark.circle.fill")
                             .font(.system(size: 18, weight: .bold))
@@ -1444,6 +1454,14 @@ struct RecipeDetailSheet: View {
         .sheet(item: $shareDoc) { doc in
             ShareSheet(items: doc.items)
                 .presentationDetents([.medium, .large])
+        }
+        .confirmationDialog("Missing a few ingredients", isPresented: $confirmCookMissing,
+                            titleVisibility: .visible) {
+            Button("I cooked it anyway") { onCooked() }
+            Button("Not yet", role: .cancel) {}
+        } message: {
+            let count = PantryMatch.partition(recipe.uses + recipe.needs).need.count
+            Text("Your kitchen is missing \(count) ingredient\(count == 1 ? "" : "s") for this. Substitutions absolutely count.")
         }
         .presentationDetents([.large])
         .presentationCornerRadius(32)
