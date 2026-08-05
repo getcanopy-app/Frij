@@ -182,6 +182,7 @@ struct TasteQuizView: View {
             .padding(.top, 8)
             .padding(.bottom, 52)
         }
+        .phoneColumn()
         .sensoryFeedback(.selection, trigger: picked)
     }
 
@@ -193,9 +194,13 @@ struct TasteQuizView: View {
             }
         } label: {
             VStack(alignment: .leading, spacing: 6) {
-                MealImageView(dish: name, cornerRadius: 14)
-                    .frame(height: 104)
+                // Aspect-ratio sizing, not fixed height: tiles keep their
+                // shape at any column width (iPhone ~104pt tall, iPad ~180pt)
+                // instead of squashing into panoramas on wide screens.
+                Color.clear
+                    .aspectRatio(1.55, contentMode: .fit)
                     .frame(maxWidth: .infinity)
+                    .overlay(MealImageView(dish: name, cornerRadius: 14))
                     // Clip AFTER the frame — scaledToFill reports oversized
                     // bounds and would bleed past the tile otherwise.
                     .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
