@@ -41,25 +41,31 @@ struct HomeView: View {
             LiquidCreamBackground()
                 .ignoresSafeArea()
 
-            VStack(spacing: 0) {
-                topBar
+            // ScrollView, not a fixed stack: on short canvases (iPad's
+            // "Designed for iPhone" window — App Review's Guideline 4
+            // rejection) a fixed stack overflows and clips the top bar and
+            // tab bar. On iPhones the content fits and basedOnSize keeps it
+            // feeling like a fixed page.
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: 0) {
+                    topBar
 
-                greeting
-                    .padding(.top, 18)
+                    greeting
+                        .padding(.top, 18)
 
-                scanBar
-                    .padding(.top, 16)
+                    scanBar
+                        .padding(.top, 16)
 
-                recipeCards
-                    .padding(.top, 20)
+                    recipeCards
+                        .padding(.top, 20)
 
-                progressSection
-                    .padding(.top, 24)
-
-                Spacer()
+                    progressSection
+                        .padding(.top, 24)
+                }
+                .padding(.horizontal, 20)
+                .padding(.bottom, 110)
             }
-            .padding(.horizontal, 20)
-            .padding(.bottom, 110)
+            .scrollBounceBehavior(.basedOnSize)
         }
         .sheet(isPresented: $showProfile) {
             ProfileView()
