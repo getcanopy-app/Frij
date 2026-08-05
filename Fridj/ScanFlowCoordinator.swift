@@ -77,6 +77,10 @@ struct ScanFlowCoordinator: View {
     // Handle to the in-flight scan Task so the user can cancel it. Cancelling
     // the Task aborts the URLSession request so the OpenAI API call stops.
     @State private var scanTask: Task<Void, Never>? = nil
+    // Regular width = iPad: center short content instead of leaving the
+    // extra height as dead space at the bottom.
+    @Environment(\.horizontalSizeClass) private var hSize
+    private var columnAlignment: Alignment { hSize == .regular ? .center : .top }
     @State private var store = PantryStore.shared
     @Bindable private var session = ScanSession.shared
     @State private var sub = SubscriptionManager.shared
@@ -215,6 +219,7 @@ struct ScanFlowCoordinator: View {
     private var entryView: some View {
         ZStack {
             Color.fridjBg.ignoresSafeArea()
+            GeometryReader { geo in
             ScrollView {
                 VStack(alignment: .leading, spacing: FridjSpacing.lg) {
                     VStack(alignment: .leading, spacing: 4) {
@@ -273,6 +278,8 @@ struct ScanFlowCoordinator: View {
                 .padding(FridjSpacing.lg)
                 .padding(.bottom, 120)
                 .phoneColumn()
+                .frame(minHeight: geo.size.height, alignment: columnAlignment)
+            }
             }
         }
         // Tap-outside-to-close via .onTapGesture on the outer ZStack. Unlike

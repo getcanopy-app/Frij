@@ -5,6 +5,10 @@ struct RecipesView: View {
     /// celebration must then mount INSIDE this sheet — an overlay in the
     /// base window renders behind the presented sheet.
     var isSheet: Bool = false
+    // Regular width = iPad: center short content instead of leaving the
+    // extra height as dead space at the bottom.
+    @Environment(\.horizontalSizeClass) private var hSize
+    private var columnAlignment: Alignment { hSize == .regular ? .center : .top }
     @State private var selectedRecipe: Recipe?
     @State private var store = PantryStore.shared
     @State private var favorites = FavoritesStore.shared
@@ -59,6 +63,7 @@ struct RecipesView: View {
                 emptyState
                     .transition(.opacity)
             } else {
+                GeometryReader { geo in
                 ScrollView {
                     VStack(alignment: .leading, spacing: FridjSpacing.lg) {
                         // Freshest first: tonight's new ideas lead, the archive
@@ -91,6 +96,7 @@ struct RecipesView: View {
                     .padding(.top, 60)
                     .padding(.bottom, 120)
                     .phoneColumn()
+                    .frame(minHeight: geo.size.height, alignment: columnAlignment)
                 }
                 // Tap on any empty space while selecting = smooth exit; item
                 // taps win their own gesture, so toggling still works.
@@ -99,6 +105,7 @@ struct RecipesView: View {
                     insertion: .opacity.combined(with: .offset(y: 24)),
                     removal: .opacity
                 ))
+                }
             }
 
             if isSheet, CelebrationCoordinator.shared.isShowing {

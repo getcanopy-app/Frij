@@ -2,6 +2,10 @@ import SwiftUI
 import Combine
 
 struct PantryView: View {
+    // Regular width = iPad: center short content instead of leaving the
+    // extra height as dead space at the bottom.
+    @Environment(\.horizontalSizeClass) private var hSize
+    private var columnAlignment: Alignment { hSize == .regular ? .center : .top }
     @State private var store = PantryStore.shared
     @State private var grocery = GroceryStore.shared
     @Bindable private var session = ScanSession.shared
@@ -30,6 +34,7 @@ struct PantryView: View {
         ZStack {
             Color.fridjBg.ignoresSafeArea()
 
+            GeometryReader { geo in
             ScrollView {
                 VStack(alignment: .leading, spacing: FridjSpacing.lg) {
                     header
@@ -80,6 +85,7 @@ struct PantryView: View {
                 .padding(FridjSpacing.lg)
                 .padding(.bottom, 120)
                 .phoneColumn()
+                .frame(minHeight: geo.size.height, alignment: columnAlignment)
                 .animation(.spring(response: 0.45, dampingFraction: 0.82), value: store.items.isEmpty)
                 .animation(.spring(response: 0.45, dampingFraction: 0.82), value: grocery.hasItems)
             }
@@ -87,6 +93,7 @@ struct PantryView: View {
             // iMessage), or tap anywhere off the field.
             .scrollDismissesKeyboard(.interactively)
             .onTapGesture { addFocused = false }
+            }
         }
         .sheet(isPresented: $session.showRecipes) {
             RecipesView(isSheet: true)

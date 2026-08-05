@@ -2,6 +2,9 @@ import SwiftUI
 
 struct HomeView: View {
     var onScanTap: (() -> Void)? = nil
+    // Regular width = iPad. Only there does the canvas outrun the content.
+    @Environment(\.horizontalSizeClass) private var hSize
+    private var isWideCanvas: Bool { hSize == .regular }
     @State private var showProfile = false
     @State private var selectedRecipe: Recipe?
     @Bindable private var session = ScanSession.shared
@@ -46,27 +49,46 @@ struct HomeView: View {
             // rejection) a fixed stack overflows and clips the top bar and
             // tab bar. On iPhones the content fits and basedOnSize keeps it
             // feeling like a fixed page.
-            ScrollView(showsIndicators: false) {
-                VStack(spacing: 0) {
-                    topBar
+            GeometryReader { geo in
+                ScrollView(showsIndicators: false) {
+                    VStack(spacing: 0) {
+                        topBar
 
-                    greeting
-                        .padding(.top, 18)
+                        // The header stays pinned to the top like a nav bar;
+                        // on iPad these Spacers center everything below it so
+                        // the extra height isn't dumped at the bottom. iPhone
+                        // (compact) skips them entirely and lays out exactly
+                        // as before.
+                        if isWideCanvas { Spacer(minLength: 0) }
 
-                    scanBar
-                        .padding(.top, 16)
+                        VStack(spacing: 0) {
+                            greeting
+                                .padding(.top, 18)
 
-                    recipeCards
-                        .padding(.top, 20)
+                            scanBar
+                                .padding(.top, 16)
 
-                    progressSection
-                        .padding(.top, 24)
+                            recipeCards
+                                .padding(.top, 20)
+
+                            progressSection
+                                .padding(.top, 24)
+                        }
+
+                        if isWideCanvas { Spacer(minLength: 0) }
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 110)
+                    .phoneColumn()
+                    // Short content centers in the viewport instead of
+                    // pinning to the top: on a tall canvas (iPad) a
+                    // top-pinned phone column dumps all the empty space at
+                    // the bottom and reads as broken. Taller content (any
+                    // iPhone) grows past this and scrolls normally.
+                    .frame(minHeight: geo.size.height, alignment: .top)
                 }
-                .padding(.horizontal, 20)
-                .padding(.bottom, 110)
-                .phoneColumn()
+                .scrollBounceBehavior(.basedOnSize)
             }
-            .scrollBounceBehavior(.basedOnSize)
         }
         .sheet(isPresented: $showProfile) {
             ProfileView()
