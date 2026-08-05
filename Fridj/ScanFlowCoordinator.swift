@@ -173,7 +173,7 @@ struct ScanFlowCoordinator: View {
             OverviewView(onDismiss: { session.showScanOverview = false })
         }
         .sheet(isPresented: $session.showRecipes) {
-            RecipesView()
+            RecipesView(isSheet: true)
         }
         .photosPicker(isPresented: $showPhotosPicker,
                       selection: $pickerItem,

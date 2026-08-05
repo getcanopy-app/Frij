@@ -89,7 +89,7 @@ struct PantryView: View {
             .onTapGesture { addFocused = false }
         }
         .sheet(isPresented: $session.showRecipes) {
-            RecipesView()
+            RecipesView(isSheet: true)
         }
     }
 

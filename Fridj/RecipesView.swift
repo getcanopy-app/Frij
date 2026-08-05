@@ -1,6 +1,10 @@
 import SwiftUI
 
 struct RecipesView: View {
+    /// True when presented as a sheet (kitchen/scan flows). The streak
+    /// celebration must then mount INSIDE this sheet — an overlay in the
+    /// base window renders behind the presented sheet.
+    var isSheet: Bool = false
     @State private var selectedRecipe: Recipe?
     @State private var store = PantryStore.shared
     @State private var favorites = FavoritesStore.shared
@@ -95,6 +99,11 @@ struct RecipesView: View {
                     insertion: .opacity.combined(with: .offset(y: 24)),
                     removal: .opacity
                 ))
+            }
+
+            if isSheet, CelebrationCoordinator.shared.isShowing {
+                StreakCelebrationView()
+                    .zIndex(999)
             }
 
             if let recipeId = showUndoFor, !lastRemoved.isEmpty {

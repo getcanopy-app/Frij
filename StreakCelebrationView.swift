@@ -101,7 +101,7 @@ struct StreakCelebrationView: View {
                 .padding(.horizontal, 4)
                 .padding(.bottom, 28)
             }
-            .frame(maxWidth: .infinity)
+            .frame(maxWidth: 430)
             .background(
                 LinearGradient(
                     colors: [
@@ -112,6 +112,7 @@ struct StreakCelebrationView: View {
                 ),
                 in: RoundedRectangle(cornerRadius: 32, style: .continuous)
             )
+            .frame(maxWidth: .infinity)
             .padding(.horizontal, 28)
             .scaleEffect(cardScale)
             .opacity(cardOpacity)

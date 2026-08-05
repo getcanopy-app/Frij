@@ -90,7 +90,10 @@ struct ContentView: View {
                 .opacity(ScanSession.shared.hidesTabBar ? 0 : 1)
                 .allowsHitTesting(!ScanSession.shared.hidesTabBar)
 
-            if celebration.isShowing {
+            // While the recipes sheet is presented it mounts its own copy (a
+            // base-window overlay renders BEHIND sheets); skip the base mount
+            // so the celebration never double-renders.
+            if celebration.isShowing && !ScanSession.shared.showRecipes {
                 StreakCelebrationView()
                     .zIndex(999)
             }
