@@ -272,6 +272,7 @@ struct ScanFlowCoordinator: View {
                 }
                 .padding(FridjSpacing.lg)
                 .padding(.bottom, 120)
+                .phoneColumn()
             }
         }
         // Tap-outside-to-close via .onTapGesture on the outer ZStack. Unlike

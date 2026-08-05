@@ -86,6 +86,7 @@ struct RecipesView: View {
                     .padding(FridjSpacing.lg)
                     .padding(.top, 60)
                     .padding(.bottom, 120)
+                    .phoneColumn()
                 }
                 // Tap on any empty space while selecting = smooth exit; item
                 // taps win their own gesture, so toggling still works.

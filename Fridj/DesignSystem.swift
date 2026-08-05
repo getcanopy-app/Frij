@@ -25,6 +25,16 @@ extension Color {
     }
 }
 
+extension View {
+    /// Phone-proportioned content column: full width on iPhone, centered at a
+    /// comfortable reading width on iPad's wide canvas. Backgrounds stay
+    /// full-bleed; only the content column is capped.
+    func phoneColumn(_ maxWidth: CGFloat = 600) -> some View {
+        self.frame(maxWidth: maxWidth)
+            .frame(maxWidth: .infinity)
+    }
+}
+
 enum FridjFont {
     static func size(_ size: CGFloat, weight: Font.Weight = .regular) -> Font {
         .system(size: size, weight: weight, design: .rounded)

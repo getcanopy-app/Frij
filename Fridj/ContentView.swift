@@ -83,6 +83,7 @@ struct ContentView: View {
             .ignoresSafeArea(edges: .bottom)
 
             ExpandableTabBar(selectedTab: $selectedTab)
+                .phoneColumn()
                 .padding(.bottom, 24)
                 // Duolingo-style swipe-down when the camera panel is open.
                 .offset(y: ScanSession.shared.hidesTabBar ? 180 : 0)

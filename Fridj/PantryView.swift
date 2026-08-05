@@ -79,6 +79,7 @@ struct PantryView: View {
                 }
                 .padding(FridjSpacing.lg)
                 .padding(.bottom, 120)
+                .phoneColumn()
                 .animation(.spring(response: 0.45, dampingFraction: 0.82), value: store.items.isEmpty)
                 .animation(.spring(response: 0.45, dampingFraction: 0.82), value: grocery.hasItems)
             }

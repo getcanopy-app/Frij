@@ -64,6 +64,7 @@ struct HomeView: View {
                 }
                 .padding(.horizontal, 20)
                 .padding(.bottom, 110)
+                .phoneColumn()
             }
             .scrollBounceBehavior(.basedOnSize)
         }

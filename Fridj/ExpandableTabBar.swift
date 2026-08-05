@@ -77,7 +77,8 @@ struct ExpandableTabBar: View {
         // containerRelativeFrame computes an explicit pixel width at layout time
         // (unlike .frame(maxWidth: .infinity)), which is what glassEffect needs
         // to constrain its scene-level rendering.
-        .containerRelativeFrame(.horizontal) { width, _ in width - 44 }
+        // Cap at phone width so the pill doesn't stretch across an iPad.
+        .containerRelativeFrame(.horizontal) { width, _ in min(width - 44, 600) }
         .glassEffect(
             isExpanded
                 ? .regular.tint(Color.black.opacity(0.55))

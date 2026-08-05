@@ -4,16 +4,6 @@
     "· %lld left" : {
 
     },
-    "%@  For the %@" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "%1$@  For the %2$@"
-          }
-        }
-      }
-    },
     "%lld" : {
 
     },
@@ -368,9 +358,6 @@
     "ON YOUR GROCERY LIST" : {
 
     },
-    "One down, many to go." : {
-
-    },
     "Open Settings" : {
 
     },
@@ -521,12 +508,6 @@
 
     },
     "You're doing amazing" : {
-
-    },
-    "You're on a roll 🎉" : {
-
-    },
-    "You're on fire today 🔥" : {
 
     },
     "Your kitchen" : {

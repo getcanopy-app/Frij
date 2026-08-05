@@ -55,6 +55,7 @@ struct OnboardingView: View {
                         .padding(.horizontal, 28)
                         .padding(.bottom, 52)
                 }
+                .phoneColumn()
                 .transition(.opacity)
             }
         }
