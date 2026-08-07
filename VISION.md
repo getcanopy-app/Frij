@@ -966,3 +966,54 @@ One tasteful nudge beats ten ignored ones.
 
 This is the surface that makes the store finder + saved meals actually *fire*
 at the right moment. It's the glue between features, not a standalone one.
+
+## V3 — Frij Voice Agent ("Siri for the fridge") ⭐ *(Gabe, 2026-08-06)*
+
+**The moment:** press and hold anywhere in the app. The screen edges light up
+with a warm aura — Frij's own Siri glow, cream-and-orange, not Apple's colors.
+You just talk: *"Yo, toss the chicken, add tortillas and salsa, and make me
+something for tonight."* Release. The aura pulses while it thinks, then the
+app just... does it: pantry updated, three dinners generating. No taps, no
+navigation, no forms.
+
+**Why it fits Frij's identity:** the whole app is "stop typing, start
+cooking" — scan instead of listing, speak instead of typing. This is that
+promise at its endpoint: the fridge you talk to. It also finally gives the
+screen-edge Siri aura (prototyped for delete-selection, rightly scrapped
+there) the job it was born for.
+
+**Why it's cheap for how magical it feels — we already own most of it:**
+- Voice capture: pause-safe dictation, live waveform, phone-language
+  recognition (built for ingredient entry, shipped)
+- Understanding: `parse-ingredients` already turns rambling speech into clean
+  items; the agent generalizes this into intent parsing
+- Actions: every verb already exists as app code — add/remove pantry items,
+  generate (dinner/dessert/snack/smoothie), add to grocery list, mark cooked,
+  save/open a recipe
+
+**Architecture sketch (thin agent, not a chatbot):**
+1. Press-and-hold (global gesture on the tab bar's Frij glyph, or long-press
+   the Scan pill) → aura + live transcription overlay
+2. Transcript → new backend endpoint `/api/agent-intent`: one model call
+   returns a STRUCTURED action list, e.g.
+   `[{action:"pantry.remove", items:["chicken"]},
+     {action:"pantry.add", items:["tortillas","salsa"]},
+     {action:"generate", mode:"dinner"}]`
+   — a closed verb set the app validates; never free-form execution
+3. App plays the actions with the existing stores/APIs, narrating each as a
+   small toast ("Chicken tossed · 2 added · cooking…")
+4. Anything unrecognized falls back honestly: "Didn't catch that — try
+   'add', 'toss', 'make me', or 'grocery'."
+
+**V1 verb set (deliberately small):** pantry.add, pantry.remove,
+grocery.add, generate(mode), cook.log, recipes.open("the salmon one").
+No open-ended Q&A in v1 — verbs only, so it always ACTS instead of chatting.
+
+**Guardrails:** same allergy enforcement as every generation; destructive
+verbs (pantry.remove of many items) confirm inline on the aura overlay;
+mis-heard items are one tap to undo (reuse the cook-undo strip pattern).
+
+**Staging:** post-launch (1.2+). Needs the basics stable first — but it's the
+single best demo-video feature the app could have: film the aura lighting up,
+say the sentence, watch dinner appear. Ad material that sells itself.
+
