@@ -78,6 +78,23 @@ final class ScanSession {
         cookError = nil
         cookTask = Task {
             do {
+                #if DEBUG
+                // Ad shoot: the exact-match pantry returns the guaranteed hero
+                // dish after a brief beat so the cooking animation still plays.
+                // DEBUG-only — cannot ship. See AdDemoMeal.swift.
+                if AdDemoMeal.matches(ingredients) {
+                    try await Task.sleep(nanoseconds: 2_200_000_000)
+                    try Task.checkCancellation()
+                    let demo = [AdDemoMeal.recipe]
+                    recipes = demo
+                    RecipeHistoryStore.shared.record(demo)
+                    showRecipes = true
+                    isCooking = false
+                    cookTask = nil
+                    startCooldown()
+                    return
+                }
+                #endif
                 let result = try await FrijAPI.recipes(ingredients: ingredients, mode: mode,
                                                        prioritize: prioritize, anchored: anchored)
                 try Task.checkCancellation()
