@@ -5,6 +5,7 @@ struct ProfileView: View {
     @State private var sub = SubscriptionManager.shared
     @State private var usage = UsageStore.shared
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.openURL) private var openURL
     // Hidden admin toggle — 7 taps on "About you" flips isAdmin.
     @State private var adminTapCount = 0
     @State private var adminTapResetTask: Task<Void, Never>? = nil
@@ -118,6 +119,30 @@ struct ProfileView: View {
                                 .background(.white, in: RoundedRectangle(cornerRadius: FridjRadius.md, style: .continuous))
                         }
 
+                        // Spread the word — sharing and reviews are the app's
+                        // only free growth engine, so they get a real home here.
+                        VStack(spacing: 10) {
+                            ShareLink(
+                                item: FrijLinks.appStore,
+                                subject: Text("Frij"),
+                                message: Text(FrijLinks.shareText)
+                            ) {
+                                growthRow(icon: "square.and.arrow.up",
+                                          title: "Share Frij",
+                                          subtitle: "Send it to a friend who's always ordering out")
+                            }
+                            .buttonStyle(.plain)
+
+                            Button {
+                                openURL(FrijLinks.writeReview)
+                            } label: {
+                                growthRow(icon: "star.fill",
+                                          title: "Rate Frij",
+                                          subtitle: "A quick review helps more people find it")
+                            }
+                            .buttonStyle(.plain)
+                        }
+
                         // Legal
                         HStack(spacing: 18) {
                             Link("Terms of Use", destination: FrijLinks.terms)
@@ -152,6 +177,36 @@ struct ProfileView: View {
     }
 
     // MARK: Subscription card
+
+    // A tappable settings-style row: orange glyph, title, one-line subtitle,
+    // chevron. Shared by Share and Rate so they read as one pair.
+    private func growthRow(icon: String, title: String, subtitle: String) -> some View {
+        HStack(spacing: 14) {
+            Image(systemName: icon)
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundColor(.fridjOrange)
+                .frame(width: 38, height: 38)
+                .background(Color.fridjOrange.opacity(0.12),
+                            in: RoundedRectangle(cornerRadius: 11, style: .continuous))
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(FridjFont.size(15, weight: .bold))
+                    .foregroundColor(.fridjText)
+                Text(subtitle)
+                    .font(FridjFont.size(12))
+                    .foregroundColor(.fridjText.opacity(0.5))
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer(minLength: 8)
+            Image(systemName: "chevron.right")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundColor(.fridjText.opacity(0.25))
+        }
+        .padding(.horizontal, 14).padding(.vertical, 12)
+        .frame(maxWidth: .infinity)
+        .background(.white, in: RoundedRectangle(cornerRadius: FridjRadius.md, style: .continuous))
+        .contentShape(Rectangle())
+    }
 
     @ViewBuilder
     private var subscriptionCard: some View {
