@@ -14,6 +14,13 @@ final class ScanSession {
     var cookError: String?
     var showRecipes = false
 
+    // The kitchen page's chosen mode (dinner / dessert / snack / smoothie).
+    // Lives here, NOT as @State in PantryView: the pantry tab is built inside
+    // `if selectedTab == .bookmarks`, so switching tabs destroys and recreates
+    // the view — a @State mealMode would silently snap back to "dinner", and
+    // the user would pick Snacks, glance away, return, and cook dinners.
+    var mealMode = "dinner"
+
     // Scan result state — read by ExpandableTabBar to morph from tab bar → found panel
     var scanDetectedItems: [DetectedItem] = []
     var showScanFound = false

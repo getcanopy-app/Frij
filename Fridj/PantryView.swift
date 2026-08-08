@@ -22,12 +22,10 @@ struct PantryView: View {
     // riding along with it and looking cramped mid-morph.
     @State private var pillReady = false
     @State private var isEditing = false
-    // Per-session choice, not a saved preference — you pick it when you're
-    // deciding what to make, so it resets each visit.
-    // "dinner" is the unmarked default; chips below are the occasion detours.
-    @State private var mealMode = "dinner"
-    // Empty means "cook with everything" — the original behaviour, so someone
-    // who never discovers tap-to-pick gets exactly what they got before.
+    // Which pantry items are hand-picked for the next cook. Empty means "cook
+    // with everything" — the original behaviour, so someone who never discovers
+    // tap-to-pick gets exactly what they got before. (The chosen MODE lives on
+    // ScanSession so it survives this view being recreated on tab switches.)
     @State private var selectedIDs: Set<UUID> = []
 
     var body: some View {
@@ -114,7 +112,7 @@ struct PantryView: View {
     /// The screen's whole accent shifts with the mode so it's felt at a
     /// glance, not just read: dinner green, dessert coral, snack orange.
     private var accent: Color {
-        Self.detourModes.first { $0.mode == mealMode }?.color ?? .fridjGreen
+        Self.detourModes.first { $0.mode == session.mealMode }?.color ?? .fridjGreen
     }
 
     /// The occasion detours, one chip each. Dinner is the unmarked default and
@@ -139,10 +137,10 @@ struct PantryView: View {
     }
 
     private func modeChip(_ detour: (mode: String, icon: String, label: String, color: Color)) -> some View {
-        let on = mealMode == detour.mode
+        let on = session.mealMode == detour.mode
         return Button {
             withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                mealMode = on ? "dinner" : detour.mode
+                session.mealMode = on ? "dinner" : detour.mode
             }
         } label: {
             HStack(spacing: 5) {
@@ -170,11 +168,11 @@ struct PantryView: View {
 
     private var cookButtonTitle: String {
         if session.isCooking { return "Cooking up ideas…  tap to cancel" }
-        let word = mealMode == "dessert" ? "desserts"
-                 : mealMode == "snack" ? "snacks"
-                 : mealMode == "smoothie" ? "smoothies" : "dinners"
+        let word = session.mealMode == "dessert" ? "desserts"
+                 : session.mealMode == "snack" ? "snacks"
+                 : session.mealMode == "smoothie" ? "smoothies" : "dinners"
         guard !selectedIDs.isEmpty else { return "Get 3 \(word) from this" }
-        switch mealMode {
+        switch session.mealMode {
         case "dessert":  return "Desserts from these \(selectedIDs.count)"
         case "snack":    return "Snacks from these \(selectedIDs.count)"
         case "smoothie": return "Smoothies from these \(selectedIDs.count)"
@@ -189,7 +187,7 @@ struct PantryView: View {
             if session.isCooking {
                 session.cancelCook()
             } else {
-                session.cook(ingredients: cookIngredients, mode: mealMode)
+                session.cook(ingredients: cookIngredients, mode: session.mealMode)
             }
         } label: {
             HStack {
@@ -212,6 +210,9 @@ struct PantryView: View {
         // in the few-second cooldown right after a generation.
         .disabled(store.items.isEmpty || (!session.isCooking && !session.canCook))
         .animation(.easeOut(duration: 0.18), value: selectedIDs.count)
+        // Recovering from the cooldown fades the button back up to full colour
+        // instead of snapping gray → green, which read like a glitch.
+        .animation(.easeInOut(duration: 0.55), value: session.canCook)
     }
 
     // Shown after a typed or dictated phrase parses into multiple items: the
@@ -530,7 +531,7 @@ struct PantryView: View {
                 Spacer()
                 Button {
                     session.cook(ingredients: store.allNames,
-                                 mode: mealMode,
+                                 mode: session.mealMode,
                                  prioritize: useSoonItems.map(\.name))
                 } label: {
                     HStack(spacing: 4) {
