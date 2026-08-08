@@ -1266,6 +1266,67 @@ struct RecipeDetailSheet: View {
         }
     }
 
+    // "How to make it" styled as a handwritten recipe card: warm paper, faint
+    // ruled lines, a soft margin rule down the left, steps written in ink.
+    private var recipeCardSteps: some View {
+        let ink = Color(hex: "4A3A28")            // warm brown, like pen on cream
+        return VStack(alignment: .leading, spacing: 0) {
+            // Title in a casual hand, underlined like a jotted heading.
+            Text("How to make it")
+                .font(.custom("Bradley Hand", size: 23).weight(.bold))
+                .foregroundColor(ink)
+                .padding(.bottom, 2)
+            Rectangle()
+                .fill(Color.fridjOrange.opacity(0.35))
+                .frame(width: 140, height: 2)
+                .padding(.bottom, 16)
+
+            VStack(alignment: .leading, spacing: 0) {
+                ForEach(Array(recipe.steps.enumerated()), id: \.offset) { idx, step in
+                    HStack(alignment: .firstTextBaseline, spacing: 12) {
+                        Text("\(idx + 1).")
+                            .font(.custom("Bradley Hand", size: 18).weight(.bold))
+                            .foregroundColor(.fridjCoral)
+                            .frame(width: 24, alignment: .leading)
+                        Text(step)
+                            .font(.system(size: 15, weight: .regular, design: .serif))
+                            .foregroundColor(ink.opacity(0.9))
+                            .lineSpacing(3)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    .padding(.vertical, 11)
+                    // Faint rule under each step, like lined paper — skip it
+                    // after the last so the card doesn't end on a stray line.
+                    if idx < recipe.steps.count - 1 {
+                        Rectangle()
+                            .fill(ink.opacity(0.1))
+                            .frame(height: 1)
+                    }
+                }
+            }
+        }
+        .padding(.leading, 22)
+        .padding(.trailing, 18)
+        .padding(.vertical, 18)
+        .background(
+            ZStack(alignment: .leading) {
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .fill(Color(hex: "FFFDF4"))          // paper, a touch lighter than the sheet
+                // The margin rule a notepad has down its left edge.
+                Rectangle()
+                    .fill(Color.fridjCoral.opacity(0.4))
+                    .frame(width: 1.5)
+                    .padding(.leading, 14)
+                    .padding(.vertical, 10)
+            }
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .stroke(ink.opacity(0.1), lineWidth: 1)
+        )
+        .shadow(color: ink.opacity(0.06), radius: 8, x: 0, y: 4)
+    }
+
     // A chip isn't dead UI: tap adds the side to the grocery list and the chip
     // settles into a checked mint state (persisted — it reads from the list).
     // Tapping again takes it back off — a toggle, not a one-way door.
@@ -1550,25 +1611,11 @@ struct RecipeDetailSheet: View {
 
                         Divider()
 
-                        Text("How to make it")
-                            .font(FridjFont.size(18, weight: .bold))
-                            .foregroundColor(.fridjText)
-
-                        VStack(alignment: .leading, spacing: 16) {
-                            ForEach(Array(recipe.steps.enumerated()), id: \.offset) { idx, step in
-                                HStack(alignment: .top, spacing: 14) {
-                                    Text("\(idx + 1)")
-                                        .font(FridjFont.size(13, weight: .bold))
-                                        .foregroundColor(.white)
-                                        .frame(width: 28, height: 28)
-                                        .background(Color.fridjGreen, in: Circle())
-                                    Text(step)
-                                        .font(FridjFont.size(15))
-                                        .foregroundColor(.fridjText.opacity(0.8))
-                                        .fixedSize(horizontal: false, vertical: true)
-                                }
-                            }
-                        }
+                        // "How to make it" as a handwritten recipe card: a warm
+                        // paper panel with faint ruled lines and a margin, steps
+                        // jotted in ink. Reads like a card a friend wrote out,
+                        // not a sterile numbered list.
+                        recipeCardSteps
 
                         // Selected sides join the cooking flow: a compact
                         // how-to block per picked chip, gone the moment the
