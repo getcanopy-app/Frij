@@ -51,11 +51,15 @@ enum FrijAPI {
 
     /// Recipes — pulls profile automatically so callers don't have to thread it through.
     static func recipes(ingredients: [String], extraDiet: String? = nil,
-                        mode: String = "dinner", prioritize: [String] = []) async throws -> [Recipe] {
+                        mode: String = "dinner", prioritize: [String] = [],
+                        anchored: Bool = false) async throws -> [Recipe] {
         let profile = ProfileStore.shared.profile
         var body: [String: Any] = ["ingredients": ingredients]
         // Dinner is the unmarked default; any detour mode rides along.
         if mode != "dinner" { body["mode"] = mode }
+        // Anchored = the user hand-picked these items, so build every dish
+        // around them instead of diversifying across three proteins.
+        if anchored { body["anchored"] = true }
         // "Use it up" — items about to spoil the backend should build around.
         if !prioritize.isEmpty { body["prioritize"] = prioritize }
 
@@ -146,8 +150,15 @@ enum FrijAPI {
     /// for private posts, login walls, and non-food links.
     /// Accepts either a link OR pasted recipe/caption text — the text path is
     /// the escape hatch when Instagram walls off a post.
-    static func importRecipe(_ input: String) async throws -> Recipe {
-        struct Resp: Decodable { let recipe: Recipe; let imageURL: String? }
+    /// A post can hold several dishes (meal-prep videos). Returns every recipe
+    /// the post yielded — one for a normal post, several for "3 lunches this
+    /// week" — so the caller can let the user choose.
+    static func importRecipes(_ input: String) async throws -> [Recipe] {
+        struct Resp: Decodable {
+            let recipe: Recipe
+            let recipes: [Recipe]?
+            let imageURL: String?
+        }
         let trimmed = input.trimmingCharacters(in: .whitespacesAndNewlines)
         let body: [String: Any] = trimmed.lowercased().hasPrefix("http")
             ? ["url": trimmed] : ["text": trimmed]
@@ -156,17 +167,25 @@ enum FrijAPI {
         // Show the creator's OWN thumbnail, not an AI reimagining of a dish the
         // user just watched: seeding the cache makes every MealImageView for
         // this dish render it instantly. If the CDN link later dies,
-        // MealImageView drops it and falls back to generation.
-        if let s = resp.imageURL, let url = URL(string: s) {
-            MealImageCache.shared.set(url, for: resp.recipe.name)
+        // MealImageView drops it and falls back to generation. The backend
+        // withholds the URL when it's too low-res to look good, so an absent
+        // one here means "generate a better photo", not "no photo".
+        // Only the FIRST dish gets it — one thumbnail can't depict five meals.
+        let found = resp.recipes?.isEmpty == false ? resp.recipes! : [resp.recipe]
+        if let s = resp.imageURL, let url = URL(string: s), let first = found.first {
+            MealImageCache.shared.set(url, for: first.name)
         }
         // Stamp where it came from so the UI can tell imported meals from
         // generated ones forever after.
-        let d = resp.recipe
-        let stamped = Recipe(name: d.name, cookTime: d.cookTime, uses: d.uses,
-                             needs: d.needs, steps: d.steps, reason: d.reason,
-                             origin: importOrigin(from: trimmed))
-        return await crossCheckPantry(stamped)
+        let origin = importOrigin(from: trimmed)
+        var out: [Recipe] = []
+        for d in found {
+            let stamped = Recipe(name: d.name, cookTime: d.cookTime, uses: d.uses,
+                                 needs: d.needs, steps: d.steps, reason: d.reason,
+                                 origin: origin)
+            out.append(await crossCheckPantry(stamped))
+        }
+        return out
     }
 
     /// Platform name from the shared/pasted input — nil for plain text and

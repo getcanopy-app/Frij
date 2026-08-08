@@ -187,7 +187,10 @@ struct PantryView: View {
             if session.isCooking {
                 session.cancelCook()
             } else {
-                session.cook(ingredients: cookIngredients, mode: session.mealMode)
+                // A non-empty selection means the user hand-picked what to
+                // cook with — anchor the dishes around those items.
+                session.cook(ingredients: cookIngredients, mode: session.mealMode,
+                             anchored: !selectedIDs.isEmpty)
             }
         } label: {
             HStack {

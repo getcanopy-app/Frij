@@ -112,9 +112,7 @@ struct HomeView: View {
 
             Spacer()
 
-            Text("Frij")
-                .font(.system(size: 22, weight: .bold, design: .rounded))
-                .foregroundStyle(.black.opacity(0.82))
+            brandMark
 
             Spacer()
 
@@ -122,6 +120,33 @@ struct HomeView: View {
                 .frame(width: 22, height: 22)
         }
         .padding(.top, 16)
+    }
+
+    // The logo + wordmark lockup. The fridge sits in a rounded tile (a mini
+    // app-icon badge) so its cream fill reads as intentional against the cream
+    // canvas, and the wordmark carries the brand's orange gradient — turning a
+    // plain centered label into a proper header.
+    private var brandMark: some View {
+        HStack(spacing: 8) {
+            Image("FridjLogo")
+                .resizable()
+                .aspectRatio(contentMode: .fill)
+                .frame(width: 30, height: 30)
+                .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 9, style: .continuous)
+                        .stroke(.white.opacity(0.7), lineWidth: 1)
+                }
+                .shadow(color: Color.fridjOrange.opacity(0.28), radius: 5, x: 0, y: 3)
+
+            Text("Frij")
+                .font(.system(size: 23, weight: .heavy, design: .rounded))
+                .foregroundStyle(LinearGradient(
+                    colors: [Color.fridjOrange, Color.fridjCoral],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                ))
+        }
     }
 
     private var timeGreeting: String {

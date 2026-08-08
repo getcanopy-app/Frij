@@ -17,7 +17,6 @@ struct ProfileView: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: FridjSpacing.xl) {
                         subscriptionCard
-                            .padding(.top, FridjSpacing.md)
 
                         VStack(alignment: .leading, spacing: 4) {
                             HStack(spacing: 8) {
@@ -128,10 +127,20 @@ struct ProfileView: View {
                         .font(FridjFont.size(13, weight: .medium))
                         .foregroundColor(.fridjText.opacity(0.5))
                     }
-                    .padding(FridjSpacing.lg)
+                    .padding(.horizontal, FridjSpacing.lg)
+                    .padding(.top, FridjSpacing.sm)
                     .padding(.bottom, FridjSpacing.xl)
                 }
+                // Kill the iOS 26 scroll-edge "pocket" — the soft dimmed band
+                // the scroll view paints under the top bar. That was the
+                // full-width line hovering above the card, not a border on the
+                // card itself.
+                .scrollEdgeEffectHidden(true, for: .top)
             }
+            // Hide the nav bar's material + hairline so the cream background
+            // flows straight into the card — the "Done" button stays, but the
+            // separator shadow that cut across the top is gone.
+            .toolbarBackground(.hidden, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Done") { dismiss() }
@@ -197,39 +206,48 @@ struct ProfileView: View {
                     sub.showPaywall = true
                 }
             } label: {
-                HStack(spacing: 14) {
-                    ZStack {
-                        Circle()
-                            .fill(Color.fridjOrange.opacity(0.12))
-                            .frame(width: 44, height: 44)
-                        Text("F+")
-                            .font(.system(size: 16, weight: .black, design: .rounded))
-                            .foregroundStyle(Color.fridjOrange)
-                    }
+                HStack(spacing: 16) {
+                    // The Frij logo in a rounded tile — a white edge lifts the
+                    // fridge off the orange fill so it reads as a premium badge.
+                    Image("FridjLogo")
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .frame(width: 60, height: 60)
+                        .clipShape(RoundedRectangle(cornerRadius: 17, style: .continuous))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 17, style: .continuous)
+                                .stroke(.white.opacity(0.85), lineWidth: 1.5)
+                        )
+                        .shadow(color: .black.opacity(0.15), radius: 5, x: 0, y: 3)
 
-                    VStack(alignment: .leading, spacing: 3) {
+                    VStack(alignment: .leading, spacing: 5) {
                         Text("Upgrade to Frij+")
-                            .font(FridjFont.size(16, weight: .bold))
-                            .foregroundColor(.fridjText)
+                            .font(FridjFont.size(21, weight: .bold))
+                            .foregroundColor(.white)
                         Text(usage.remaining > 0
                              ? "\(usage.remaining) free idea\(usage.remaining == 1 ? "" : "s") left · $2.99/mo"
                              : "Free ideas used up · unlock unlimited")
-                            .font(FridjFont.size(12))
-                            .foregroundColor(.fridjText.opacity(0.5))
+                            .font(FridjFont.size(13))
+                            .foregroundColor(.white.opacity(0.9))
                     }
 
                     Spacer()
 
                     Image(systemName: "chevron.right")
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(Color.fridjOrange.opacity(0.7))
+                        .font(.system(size: 15, weight: .bold))
+                        .foregroundStyle(.white.opacity(0.9))
                 }
-                .padding(16)
-                .background(.white, in: RoundedRectangle(cornerRadius: FridjRadius.md, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: FridjRadius.md, style: .continuous)
-                        .stroke(Color.fridjOrange.opacity(0.2), lineWidth: 1)
+                .padding(.horizontal, 20)
+                .padding(.vertical, 22)
+                .background(
+                    LinearGradient(
+                        colors: [Color.fridjOrange, Color.fridjCoral],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    in: RoundedRectangle(cornerRadius: FridjRadius.md, style: .continuous)
                 )
+                .shadow(color: Color.fridjOrange.opacity(0.38), radius: 16, x: 0, y: 8)
             }
             .buttonStyle(.plain)
         }

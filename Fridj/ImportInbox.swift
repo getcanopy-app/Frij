@@ -24,8 +24,11 @@ enum ImportInbox {
             // Failures drop silently: the share moment is long past, so there's
             // no good surface to complain on. The paste-a-link sheet remains
             // the retry path.
-            if let recipe = try? await FrijAPI.importRecipe(entry),
-               !FavoritesStore.shared.isFavorite(recipe) {
+            // Shared-in posts have no UI to ask which dishes to keep, so a
+            // meal-prep post saves all of them — losing four of five would be
+            // worse, and the Saved shelf has multi-select for trimming.
+            for recipe in (try? await FrijAPI.importRecipes(entry)) ?? []
+            where !FavoritesStore.shared.isFavorite(recipe) {
                 _ = FavoritesStore.shared.toggle(recipe)
             }
         }

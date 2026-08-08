@@ -134,12 +134,14 @@ struct RecipesView: View {
                 .presentationDetents([.medium, .large])
         }
         .sheet(isPresented: $showImport) {
-            ImportLinkSheet { recipe in
+            ImportLinkSheet { imported in
                 // Imported recipes land in Saved (that's the "all in one
-                // place" promise), then open for a look.
-                if !favorites.isFavorite(recipe) { _ = favorites.toggle(recipe) }
+                // place" promise), then the first one opens for a look.
+                for recipe in imported where !favorites.isFavorite(recipe) {
+                    _ = favorites.toggle(recipe)
+                }
                 showImport = false
-                selectedRecipe = recipe
+                selectedRecipe = imported.first
             }
         }
     }
@@ -836,8 +838,12 @@ struct RecipesView: View {
 // Paste a TikTok / Instagram / YouTube link, get it back as a saved recipe.
 // Kept deliberately tiny: one field, one button, honest errors.
 private struct ImportLinkSheet: View {
-    var onImported: (Recipe) -> Void
+    var onImported: ([Recipe]) -> Void
 
+    // A post can hold several dishes. One goes straight through; several swap
+    // this sheet's contents for a picker rather than stacking a second sheet.
+    @State private var found: [Recipe] = []
+    @State private var picked: Set<String> = []
     @State private var url = ""
     @State private var isImporting = false
     @State private var errorText: String?
@@ -846,6 +852,106 @@ private struct ImportLinkSheet: View {
     @FocusState private var focused: Bool
 
     var body: some View {
+        Group {
+            if found.count > 1 { pickerView } else { linkForm }
+        }
+    }
+
+    // MARK: Which dishes?
+
+    // A post with several meals: the same card + orange-glow language the
+    // Saved shelf already uses for multi-select, so nothing new to learn.
+    private var pickerView: some View {
+        VStack(alignment: .leading, spacing: FridjSpacing.md) {
+            Text("This post has \(found.count) recipes")
+                .font(FridjFont.style(.title, weight: .bold))
+                .foregroundColor(.fridjText)
+            Text("All of them are ready to save. Tap any you don't want.")
+                .font(FridjFont.size(14))
+                .foregroundColor(.fridjText.opacity(0.55))
+
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: 10) {
+                    ForEach(found) { recipe in
+                        pickRow(recipe)
+                    }
+                }
+                .padding(.top, 2)
+                .padding(.bottom, 4)
+            }
+
+            Button {
+                onImported(found.filter { picked.contains($0.name) })
+            } label: {
+                Text(picked.isEmpty ? "Pick at least one"
+                                    : "Add \(picked.count) recipe\(picked.count == 1 ? "" : "s")")
+                    .font(FridjFont.size(17, weight: .bold))
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 16)
+                    .background(picked.isEmpty ? Color.fridjGreen.opacity(0.4) : Color.fridjGreen,
+                                in: RoundedRectangle(cornerRadius: FridjRadius.sm, style: .continuous))
+            }
+            .buttonStyle(.plain)
+            .disabled(picked.isEmpty)
+            .animation(.easeOut(duration: 0.18), value: picked.isEmpty)
+        }
+        .padding(FridjSpacing.lg)
+        .background(Color.fridjBg)
+        .transition(.opacity)
+    }
+
+    private func pickRow(_ recipe: Recipe) -> some View {
+        let on = picked.contains(recipe.name)
+        return Button {
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.75)) {
+                if on { picked.remove(recipe.name) } else { picked.insert(recipe.name) }
+            }
+        } label: {
+            HStack(spacing: 12) {
+                MealImageView(dish: recipe.name, cornerRadius: 12)
+                    .frame(width: 64, height: 64)
+
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(recipe.name)
+                        .font(FridjFont.size(15, weight: .semibold))
+                        .foregroundColor(.fridjText)
+                        .multilineTextAlignment(.leading)
+                        .lineLimit(2)
+                    HStack(spacing: 8) {
+                        if !recipe.cookTime.isEmpty {
+                            Label(recipe.cookTime, systemImage: "clock")
+                                .font(FridjFont.size(12))
+                                .foregroundColor(.fridjText.opacity(0.5))
+                        }
+                        Text("\(recipe.needs.count + recipe.uses.count) ingredients")
+                            .font(FridjFont.size(12))
+                            .foregroundColor(.fridjText.opacity(0.5))
+                    }
+                }
+                Spacer(minLength: 0)
+
+                Image(systemName: on ? "checkmark.circle.fill" : "circle")
+                    .font(.system(size: 22, weight: on ? .bold : .regular))
+                    .foregroundStyle(on ? Color.fridjOrange : Color.fridjText.opacity(0.22))
+                    .contentTransition(.symbolEffect(.replace))
+            }
+            .padding(10)
+            .background(Color(white: 1), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+            // Same glow the Saved shelf uses for a selected meal.
+            .overlay(
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .strokeBorder(Color.fridjOrange.opacity(on ? 1 : 0), lineWidth: 2)
+            )
+            .shadow(color: Color.fridjOrange.opacity(on ? 0.3 : 0), radius: on ? 8 : 0)
+            .opacity(on ? 1 : 0.65)
+        }
+        .buttonStyle(.plain)
+    }
+
+    // MARK: Paste a link
+
+    private var linkForm: some View {
         VStack(alignment: .leading, spacing: FridjSpacing.md) {
             Text("Import a recipe")
                 .font(FridjFont.style(.title, weight: .bold))
@@ -945,8 +1051,17 @@ private struct ImportLinkSheet: View {
         isImporting = true
         defer { isImporting = false }
         do {
-            let recipe = try await FrijAPI.importRecipe(url)
-            onImported(recipe)
+            let recipes = try await FrijAPI.importRecipes(url)
+            if recipes.count <= 1 {
+                onImported(recipes)          // the ordinary post: straight through
+            } else {
+                // Everything starts selected — you shared the video wanting
+                // the food; deselecting is the rarer intent.
+                picked = Set(recipes.map(\.name))
+                withAnimation(.spring(response: 0.42, dampingFraction: 0.88)) {
+                    found = recipes
+                }
+            }
         } catch {
             errorText = error.localizedDescription
         }
