@@ -79,13 +79,13 @@ final class ScanSession {
         cookTask = Task {
             do {
                 #if DEBUG
-                // Ad shoot: the exact-match pantry returns the guaranteed hero
-                // dish after a brief beat so the cooking animation still plays.
+                // Ad / demo: an exact-match pantry returns its guaranteed dish
+                // after a brief beat so the cooking animation still plays.
                 // DEBUG-only — cannot ship. See AdDemoMeal.swift.
-                if AdDemoMeal.matches(ingredients) {
+                if let demoRecipe = AdDemoMeal.match(ingredients) {
                     try await Task.sleep(nanoseconds: 2_200_000_000)
                     try Task.checkCancellation()
-                    let demo = [AdDemoMeal.recipe]
+                    let demo = [demoRecipe]
                     recipes = demo
                     RecipeHistoryStore.shared.record(demo)
                     showRecipes = true
