@@ -23,6 +23,9 @@ struct PantryView: View {
     @State private var pillReady = false
     @State private var isEditing = false
     @State private var confirmClearAll = false
+    // Non-nil while the "this is really a smoothie/dessert" nudge is showing;
+    // holds the mode(s) to offer.
+    @State private var sweetNudgeModes: [String]? = nil
     // Which pantry items are hand-picked for the next cook. Empty means "cook
     // with everything" — the original behaviour, so someone who never discovers
     // tap-to-pick gets exactly what they got before. (The chosen MODE lives on
@@ -222,17 +225,34 @@ struct PantryView: View {
         }
     }
 
+    private func startCook(mode: String? = nil) {
+        session.cook(ingredients: cookIngredients, mode: mode ?? session.mealMode,
+                     anchored: !selectedIDs.isEmpty, speed: session.mealSpeed)
+    }
+
+    // Human label for a mode in the nudge buttons.
+    private func nudgeModeLabel(_ mode: String) -> String {
+        switch mode {
+        case "smoothie": return "Make a Smoothie"
+        case "dessert":  return "Make a Dessert"
+        default:         return "Make \(mode.capitalized)"
+        }
+    }
+
     private var cookButton: some View {
         Button {
             // Tapping while it's running cancels — no credit spent, per the
             // credit-on-success change.
             if session.isCooking {
                 session.cancelCook()
+            } else if session.mealMode == "dinner", !selectedIDs.isEmpty,
+                      let modes = SweetLean.suggestion(for: cookIngredients) {
+                // The user hand-picked only sweet things and asked for dinner —
+                // steer them to the mode where it shines before making a bad
+                // dinner. They can still keep dinner.
+                sweetNudgeModes = modes
             } else {
-                // A non-empty selection means the user hand-picked what to
-                // cook with — anchor the dishes around those items.
-                session.cook(ingredients: cookIngredients, mode: session.mealMode,
-                             anchored: !selectedIDs.isEmpty, speed: session.mealSpeed)
+                startCook()
             }
         } label: {
             HStack {
@@ -569,6 +589,29 @@ struct PantryView: View {
             Button("Keep them", role: .cancel) {}
         } message: {
             Text("This removes everything so you can start fresh. It can't be undone.")
+        }
+        // The sweet-selection nudge: offered as a dialog so it reads as a
+        // helpful sous-chef, not a blocked action.
+        .confirmationDialog(SweetLean.headline(for: cookIngredients),
+                            isPresented: Binding(get: { sweetNudgeModes != nil },
+                                                 set: { if !$0 { sweetNudgeModes = nil } }),
+                            titleVisibility: .visible) {
+            ForEach(sweetNudgeModes ?? [], id: \.self) { mode in
+                Button(nudgeModeLabel(mode)) {
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                        session.mealMode = mode
+                    }
+                    startCook(mode: mode)
+                    sweetNudgeModes = nil
+                }
+            }
+            Button("Keep as Dinner") {
+                startCook(mode: "dinner")
+                sweetNudgeModes = nil
+            }
+            Button("Cancel", role: .cancel) { sweetNudgeModes = nil }
+        } message: {
+            Text("It's usually a smoothie or dessert star — but you can still cook dinner with it.")
         }
     }
 
