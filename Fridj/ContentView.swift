@@ -103,13 +103,14 @@ struct ContentView: View {
             PaywallView()
         }
         // A shared meal link: save it, cross-check it against THIS user's
-        // pantry, and open it.
-        .onOpenURL { url in
-            guard let recipe = RecipeShareLink.decode(from: url) else { return }
-            if !FavoritesStore.shared.isFavorite(recipe) {
-                _ = FavoritesStore.shared.toggle(recipe)
-            }
-            receivedRecipe = recipe
+        // pantry, and open it. Universal links arrive TWO ways and we must
+        // handle both: onOpenURL fires when the app is already running, but a
+        // COLD launch from tapping the link (the recipient's usual case)
+        // delivers the URL via NSUserActivity — which only onContinueUserActivity
+        // catches. Listening to just one silently drops the other.
+        .onOpenURL { openSharedMeal($0) }
+        .onContinueUserActivity(NSUserActivityTypeBrowsingWeb) { activity in
+            if let url = activity.webpageURL { openSharedMeal(url) }
         }
         .sheet(item: $receivedRecipe) { recipe in
             RecipeDetailSheet(recipe: recipe) {
@@ -132,6 +133,16 @@ struct ContentView: View {
             UIApplication.shared.sendAction(
                 #selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
         }
+    }
+
+    // Decode a shared-meal link, save it to Favorites (deduped), and open it.
+    // Called from BOTH onOpenURL (warm) and onContinueUserActivity (cold launch).
+    private func openSharedMeal(_ url: URL) {
+        guard let recipe = RecipeShareLink.decode(from: url) else { return }
+        if !FavoritesStore.shared.isFavorite(recipe) {
+            _ = FavoritesStore.shared.toggle(recipe)
+        }
+        receivedRecipe = recipe
     }
 }
 
