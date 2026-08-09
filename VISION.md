@@ -1028,14 +1028,20 @@ reality, not just "cheaper." What it actually changes:
 - **Minimal equipment** — microwave / one-pan / kettle / dorm-fridge friendly;
   no oven-required assumptions.
 - **Small batches, fast, low cleanup.**
-- Possible framing: a onboarding/profile persona ("I'm a student") that biases
-  ALL generation, rather than a per-cook mode — since it's an identity, not an
-  occasion. Decide during build.
+**Framing decided (Gemini-audited 2026-08-06): NOT a persona that biases all
+generation** — a "student" profile would suggest microwaving a celebratory
+weekend steak. Split into two mechanical levers instead:
+- **Profile = equipment constraints** (permanent physical reality): checkboxes
+  for Microwave Only / No Oven / Hot-Plate. Prevents suggesting a 45-min oven
+  roast to a dorm cook regardless of mode. (Bigger feature: profile UI + prompt
+  plumbing.)
+- **Per-cook = "Dorm-Friendly" chip** (on demand, next to the mode chips): biases
+  toward 5-min prep, single-bowl cleanup, cheap staples (beans, canned tuna,
+  instant noodles, eggs, rice). Ship this first — it's the same generation-
+  constraint plumbing as the time filter.
 
 Fits Frij's "cook what you have, don't order out" core especially hard for the
 audience that orders out the most. Strong TikTok/campus growth angle.
-Staged post-launch, likely alongside the time-filter work (shares the
-"constraints on generation" plumbing).
 
 ## V3 — Sweet-ingredient mode routing / anchor honesty *(Gabe, 2026-08-06)* ⭐
 
@@ -1046,13 +1052,23 @@ protein (guava-glazed ribs/chicken/pork), and its true home is desserts/drinks.
 The anchored-cook rule "build all 3 AROUND this" forces garbage when the anchor
 is a fruit.
 
-Two-part fix (designed, not yet built):
-1. **Smart mode nudge** — tag sweet-leaning ingredients (guava, mango, berries,
-   banana, pineapple, peach). When a *selection* is dominated by them, offer the
-   right mode first: "Guava's usually a smoothie or dessert star — want those?"
-   with one-tap Smoothie/Dessert. A nudge, not a block.
-2. **Anchor honesty valve** — in dinner mode a sweet ingredient may only appear
-   as a glaze/salsa/sauce on a real protein or base (guava-glazed chicken, never
-   guava rice bowl); if it can't be used honestly, drop it. Never force a fruit
-   as the hero.
+Two-part fix (designed + Gemini-audited 2026-08-06, not yet built):
+1. **Smart mode nudge** — fires ONLY on a hand-picked selection dominated by
+   *sweet-strict* fruit (not a full pantry that merely contains guava — a fridge
+   with guava + chicken should just make guava-glazed chicken, no nudge). Copy
+   (Gemini's, better than the original): "Making something sweet? Guava shines
+   best in Smoothies or Desserts." Actions: [Smoothie] [Dessert] [Keep as Dinner].
+2. **Anchor honesty valve** (the load-bearing fix, system-prompt) — in dinner
+   mode a sweet ingredient may only be a glaze / reduction / salsa / vinaigrette
+   over a savory base, never the hero. If it can't be used honestly, drop it.
+   Applies to ALL fruit at the hero level even solo-anchored (no "Mango Rice
+   Bowl"); savory-flexible fruits just get more rope as a supporting element.
+
+**Fruit divide (the lookup table the valve needs):**
+- SAVORY-FLEXIBLE (integrate into dinner as more than a garnish): pineapple
+  (teriyaki, al pastor, fried rice), mango (curry, salsa, chutney), peach/plum
+  (grilled with pork/chicken), apple (roasts, paninis).
+- SWEET-STRICT (trigger the nudge; in dinner, background flavor only or drop):
+  guava, banana (NOT plantain), berries (strawberry/raspberry/blackberry),
+  melon, grape.
 
