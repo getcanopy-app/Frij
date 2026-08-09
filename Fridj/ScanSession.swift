@@ -21,6 +21,10 @@ final class ScanSession {
     // the user would pick Snacks, glance away, return, and cook dinners.
     var mealMode = "dinner"
 
+    // How much time the user feels like cooking. "any" (default) or "quick".
+    // On the session for the same tab-recreation reason as mealMode.
+    var mealSpeed = "any"
+
     // Scan result state — read by ExpandableTabBar to morph from tab bar → found panel
     var scanDetectedItems: [DetectedItem] = []
     var showScanFound = false
@@ -62,7 +66,7 @@ final class ScanSession {
     /// brief on it. `prioritize` names items about to spoil for "use it up".
     /// Both defaulted so existing callers keep asking for dinners from all of it.
     func cook(ingredients: [String], mode: String = "dinner", prioritize: [String] = [],
-              anchored: Bool = false) {
+              anchored: Bool = false, speed: String = "any") {
         guard canCook else { return }
 
         let subMgr = SubscriptionManager.shared
@@ -96,7 +100,8 @@ final class ScanSession {
                 }
                 #endif
                 let result = try await FrijAPI.recipes(ingredients: ingredients, mode: mode,
-                                                       prioritize: prioritize, anchored: anchored)
+                                                       prioritize: prioritize, anchored: anchored,
+                                                       speed: speed)
                 try Task.checkCancellation()
                 // Spend the credit only once real recipes are in hand, so a
                 // cancel or a failed request never costs a free idea.

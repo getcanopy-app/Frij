@@ -22,6 +22,7 @@ struct PantryView: View {
     // riding along with it and looking cramped mid-morph.
     @State private var pillReady = false
     @State private var isEditing = false
+    @State private var confirmClearAll = false
     // Which pantry items are hand-picked for the next cook. Empty means "cook
     // with everything" — the original behaviour, so someone who never discovers
     // tap-to-pick gets exactly what they got before. (The chosen MODE lives on
@@ -37,6 +38,9 @@ struct PantryView: View {
                 VStack(alignment: .leading, spacing: FridjSpacing.lg) {
                     header
                     modeToggle
+                    // Time preference only applies to real cooking, not blender
+                    // smoothies (which are fast by definition).
+                    if session.mealMode != "smoothie" { speedToggle }
                     cookButton
 
                     if let err = session.cookError {
@@ -90,7 +94,14 @@ struct PantryView: View {
             // Native keyboard dismissal: drag the list down to lower it (like
             // iMessage), or tap anywhere off the field.
             .scrollDismissesKeyboard(.interactively)
-            .onTapGesture { addFocused = false }
+            .onTapGesture {
+                addFocused = false
+                // Tapping empty space also clears a selection — the quick way
+                // to back out of "cook with these" without unpicking each chip.
+                if !selectedIDs.isEmpty {
+                    withAnimation(.easeOut(duration: 0.18)) { selectedIDs.removeAll() }
+                }
+            }
             }
         }
         .sheet(isPresented: $session.showRecipes) {
@@ -134,6 +145,37 @@ struct PantryView: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    /// How much time to cook: a quiet two-state pill. Vague on purpose —
+    /// "Quick" reads better than a specific minute count.
+    private var speedToggle: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "clock")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundColor(.fridjText.opacity(0.4))
+            speedChip(label: "Any time", value: "any")
+            speedChip(label: "Quick", value: "quick")
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func speedChip(label: String, value: String) -> some View {
+        let on = session.mealSpeed == value
+        return Button {
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                session.mealSpeed = value
+            }
+        } label: {
+            Text(label)
+                .font(FridjFont.size(12, weight: .bold))
+                .foregroundColor(on ? .white : .fridjText.opacity(0.55))
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(on ? Color.fridjGreen : Color(white: 1), in: Capsule())
+                .overlay(Capsule().stroke(Color.fridjText.opacity(on ? 0 : 0.12), lineWidth: 1))
+        }
+        .buttonStyle(.plain)
     }
 
     private func modeChip(_ detour: (mode: String, icon: String, label: String, color: Color)) -> some View {
@@ -190,7 +232,7 @@ struct PantryView: View {
                 // A non-empty selection means the user hand-picked what to
                 // cook with — anchor the dishes around those items.
                 session.cook(ingredients: cookIngredients, mode: session.mealMode,
-                             anchored: !selectedIDs.isEmpty)
+                             anchored: !selectedIDs.isEmpty, speed: session.mealSpeed)
             }
         } label: {
             HStack {
@@ -468,6 +510,18 @@ struct PantryView: View {
 
                 Spacer()
 
+                // Editing = managing the pantry, so that's where a clean-slate
+                // "Clear all" belongs. Confirmed, since it wipes everything.
+                if isEditing && !store.items.isEmpty {
+                    Button(role: .destructive) {
+                        confirmClearAll = true
+                    } label: {
+                        Text("Clear all")
+                            .font(FridjFont.size(13, weight: .bold))
+                            .foregroundColor(.fridjCoral)
+                    }
+                }
+
                 if !selectedIDs.isEmpty {
                     Button {
                         withAnimation(.easeOut(duration: 0.18)) { selectedIDs.removeAll() }
@@ -503,6 +557,19 @@ struct PantryView: View {
             }
         }
         .animation(.spring(response: 0.4, dampingFraction: 0.82), value: store.items.count)
+        .confirmationDialog("Clear your whole pantry?", isPresented: $confirmClearAll,
+                            titleVisibility: .visible) {
+            Button("Clear all \(store.items.count) items", role: .destructive) {
+                withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) {
+                    store.clearAll()
+                    selectedIDs.removeAll()
+                    isEditing = false
+                }
+            }
+            Button("Keep them", role: .cancel) {}
+        } message: {
+            Text("This removes everything so you can start fresh. It can't be undone.")
+        }
     }
 
     private func chipSection(title: String, tint: Color, items: [PantryItem]) -> some View {

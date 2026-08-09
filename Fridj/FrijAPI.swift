@@ -52,7 +52,7 @@ enum FrijAPI {
     /// Recipes — pulls profile automatically so callers don't have to thread it through.
     static func recipes(ingredients: [String], extraDiet: String? = nil,
                         mode: String = "dinner", prioritize: [String] = [],
-                        anchored: Bool = false) async throws -> [Recipe] {
+                        anchored: Bool = false, speed: String = "any") async throws -> [Recipe] {
         let profile = ProfileStore.shared.profile
         var body: [String: Any] = ["ingredients": ingredients]
         // Dinner is the unmarked default; any detour mode rides along.
@@ -60,6 +60,8 @@ enum FrijAPI {
         // Anchored = the user hand-picked these items, so build every dish
         // around them instead of diversifying across three proteins.
         if anchored { body["anchored"] = true }
+        // Only send when the user asked for fast — "any" is the no-op default.
+        if speed == "quick" { body["speed"] = "quick" }
         // "Use it up" — items about to spoil the backend should build around.
         if !prioritize.isEmpty { body["prioritize"] = prioritize }
 
