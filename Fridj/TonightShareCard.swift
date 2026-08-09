@@ -10,6 +10,30 @@ import SwiftUI
 struct ShareDoc: Identifiable {
     let id = UUID()
     let items: [Any]
+
+    /// Build clean share items from a rendered card and an optional link.
+    /// A raw UIImage passed to the share sheet gets serialized into an ugly
+    /// `bplist00…` text blob by Messages/Mail; writing the image to a temp PNG
+    /// FILE and sharing its URL makes it attach as a proper inline image.
+    @MainActor
+    static func meal(image: UIImage, link: URL?, name: String) -> ShareDoc {
+        var items: [Any] = []
+        if let data = image.pngData() {
+            let safe = name.replacingOccurrences(of: "/", with: "-")
+                           .replacingOccurrences(of: ":", with: "-")
+            let url = FileManager.default.temporaryDirectory
+                .appendingPathComponent("\(safe.isEmpty ? "meal" : safe).png")
+            if (try? data.write(to: url)) != nil {
+                items.append(url)
+            } else {
+                items.append(image)   // fallback: still shares, just less clean
+            }
+        } else {
+            items.append(image)
+        }
+        if let link { items.append(link) }
+        return ShareDoc(items: items)
+    }
 }
 
 struct TonightShareCard: View {
@@ -179,64 +203,86 @@ struct RecipeShareCard: View {
             }
             .padding(.top, 10)
 
-            // Ingredients — the sheet's exact grouped layout.
-            let split = PantryMatch.partition(recipe.uses + recipe.needs)
-            let total = split.have.count + split.need.count
-            if total > 0 {
-                HStack(alignment: .firstTextBaseline) {
-                    Text("Ingredients")
-                        .font(.system(size: 18, weight: .bold, design: .rounded))
-                        .foregroundStyle(Color.fridjText)
-                    Spacer()
-                    if !split.have.isEmpty {
-                        Text("\(split.have.count) of \(total) in stock")
-                            .font(.system(size: 12, weight: .bold, design: .rounded))
-                            .foregroundStyle(Color.fridjGreen)
-                    }
-                }
-                .padding(.top, 22)
-
-                if !split.have.isEmpty {
-                    Text("IN YOUR FRIDGE")
-                        .font(.system(size: 9, weight: .bold, design: .rounded))
-                        .tracking(0.9)
-                        .foregroundStyle(Color.fridjGreen.opacity(0.8))
-                        .padding(.top, 12)
-                    ingredientRows(split.have, icon: "checkmark", tint: .fridjGreen, dim: true)
-                }
-                if !split.need.isEmpty {
-                    Text("TO BUY")
-                        .font(.system(size: 9, weight: .bold, design: .rounded))
-                        .tracking(0.9)
-                        .foregroundStyle(Color.fridjOrange.opacity(0.75))
-                        .padding(.top, 12)
-                    ingredientRows(split.need, icon: "plus", tint: .fridjOrange, dim: false)
-                }
-            }
-
-            // Steps — green circles, like the sheet.
-            if !recipe.steps.isEmpty {
-                Text("How to make it")
+            // Ingredients — a PLAIN list of everything the meal needs. The
+            // shared image must NOT reveal the sender's pantry (no "in your
+            // fridge / to buy"): the recipient's own app splits have-vs-need
+            // against THEIR kitchen when they open the link.
+            let allIngredients = recipe.uses + recipe.needs
+            if !allIngredients.isEmpty {
+                Text("Ingredients")
                     .font(.system(size: 18, weight: .bold, design: .rounded))
                     .foregroundStyle(Color.fridjText)
-                    .padding(.top, 24)
+                    .padding(.top, 22)
 
-                VStack(alignment: .leading, spacing: 12) {
-                    ForEach(Array(recipe.steps.enumerated()), id: \.offset) { idx, step in
-                        HStack(alignment: .top, spacing: 12) {
-                            Text("\(idx + 1)")
-                                .font(.system(size: 12, weight: .bold, design: .rounded))
-                                .foregroundStyle(.white)
-                                .frame(width: 24, height: 24)
-                                .background(Color.fridjGreen, in: Circle())
-                            Text(step)
+                VStack(alignment: .leading, spacing: 8) {
+                    ForEach(allIngredients, id: \.self) { item in
+                        let parts = PantryMatch.displaySplit(item)
+                        HStack(spacing: 9) {
+                            Circle().fill(Color.fridjOrange.opacity(0.55))
+                                .frame(width: 5, height: 5)
+                            Text(parts.name)
                                 .font(.system(size: 14, weight: .regular, design: .rounded))
-                                .foregroundStyle(Color.fridjText.opacity(0.8))
-                                .fixedSize(horizontal: false, vertical: true)
+                                .foregroundStyle(Color.fridjText)
+                            if let amount = parts.amount {
+                                Text(amount)
+                                    .font(.system(size: 12, weight: .semibold, design: .rounded))
+                                    .foregroundStyle(Color.fridjText.opacity(0.4))
+                            }
                         }
                     }
                 }
-                .padding(.top, 12)
+                .padding(.top, 11)
+            }
+
+            // Steps — the same handwritten notepad card the app now shows.
+            if !recipe.steps.isEmpty {
+                let ink = Color(hex: "4A3A28")
+                VStack(alignment: .leading, spacing: 0) {
+                    Text("How to make it")
+                        .font(.custom("Bradley Hand", size: 23).weight(.bold))
+                        .foregroundColor(ink)
+                        .padding(.bottom, 2)
+                    Rectangle()
+                        .fill(Color.fridjOrange.opacity(0.35))
+                        .frame(width: 140, height: 2)
+                        .padding(.bottom, 16)
+
+                    VStack(alignment: .leading, spacing: 0) {
+                        ForEach(Array(recipe.steps.enumerated()), id: \.offset) { idx, step in
+                            HStack(alignment: .firstTextBaseline, spacing: 12) {
+                                Text("\(idx + 1).")
+                                    .font(.custom("Bradley Hand", size: 18).weight(.bold))
+                                    .foregroundColor(.fridjCoral)
+                                    .frame(width: 24, alignment: .leading)
+                                Text(step)
+                                    .font(.system(size: 15, weight: .regular, design: .serif))
+                                    .foregroundColor(ink.opacity(0.9))
+                                    .lineSpacing(3)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                            .padding(.vertical, 11)
+                            if idx < recipe.steps.count - 1 {
+                                Rectangle().fill(ink.opacity(0.1)).frame(height: 1)
+                            }
+                        }
+                    }
+                }
+                .padding(.leading, 22).padding(.trailing, 18).padding(.vertical, 18)
+                .background(
+                    ZStack(alignment: .leading) {
+                        RoundedRectangle(cornerRadius: 18, style: .continuous)
+                            .fill(Color(hex: "FFFDF4"))
+                        Rectangle()
+                            .fill(Color.fridjCoral.opacity(0.4))
+                            .frame(width: 1.5)
+                            .padding(.leading, 14).padding(.vertical, 10)
+                    }
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .stroke(ink.opacity(0.1), lineWidth: 1)
+                )
+                .padding(.top, 24)
             }
 
             HStack(spacing: 6) {
@@ -251,28 +297,6 @@ struct RecipeShareCard: View {
         .padding(28)
         .frame(width: pageWidth, alignment: .topLeading)
         .background(Color.fridjBg)
-    }
-
-    private func ingredientRows(_ items: [String], icon: String, tint: Color, dim: Bool) -> some View {
-        VStack(alignment: .leading, spacing: 7) {
-            ForEach(items, id: \.self) { item in
-                let parts = PantryMatch.displaySplit(item)
-                HStack(spacing: 9) {
-                    Image(systemName: icon)
-                        .font(.system(size: 10, weight: .bold))
-                        .foregroundStyle(tint)
-                    Text(parts.name)
-                        .font(.system(size: 14, weight: .regular, design: .rounded))
-                        .foregroundStyle(Color.fridjText.opacity(dim ? 0.7 : 1))
-                    if let amount = parts.amount {
-                        Text(amount)
-                            .font(.system(size: 12, weight: .semibold, design: .rounded))
-                            .foregroundStyle(Color.fridjText.opacity(0.4))
-                    }
-                }
-            }
-        }
-        .padding(.top, 7)
     }
 
     /// Fetch the dish photo (cache first), then render the card as a crisp

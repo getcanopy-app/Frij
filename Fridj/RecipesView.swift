@@ -323,7 +323,7 @@ struct RecipesView: View {
                 // send to a partner or pin to the fridge. Local and instant.
                 Button {
                     if let image = TonightShareCard.renderImage(recipes: recipes) {
-                        shareDoc = ShareDoc(items: [image])
+                        shareDoc = ShareDoc.meal(image: image, link: nil, name: "Tonight's dinners")
                     }
                 } label: {
                     Image(systemName: "square.and.arrow.up")
@@ -1407,12 +1407,13 @@ struct RecipeDetailSheet: View {
                                 Task {
                                     if let image = await RecipeShareCard.renderImage(recipe: recipe) {
                                         // Image sells the meal; the link lets a
-                                        // Frij owner import it in one tap.
-                                        var items: [Any] = [image]
-                                        if let link = RecipeShareLink.url(for: recipe) {
-                                            items.append(link)
-                                        }
-                                        shareDoc = ShareDoc(items: items)
+                                        // Frij owner import it in one tap. Shared
+                                        // as a temp file so Messages attaches a
+                                        // clean image, not a bplist text blob.
+                                        shareDoc = ShareDoc.meal(
+                                            image: image,
+                                            link: RecipeShareLink.url(for: recipe),
+                                            name: recipe.name)
                                     }
                                 }
                             } label: {
