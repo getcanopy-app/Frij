@@ -1017,3 +1017,42 @@ mis-heard items are one tap to undo (reuse the cook-undo strip pattern).
 single best demo-video feature the app could have: film the aura lighting up,
 say the sentence, watch dinner appear. Ad material that sells itself.
 
+
+## V3 — College Student Mode *(Gabe, 2026-08-06)*
+
+A generation mode (or profile toggle) tuned for the dorm/broke-student
+reality, not just "cheaper." What it actually changes:
+- **Cheap, common ingredients** — build around ramen, eggs, rice, beans,
+  canned tuna, frozen veg, pasta, tortillas; steer away from expensive proteins
+  and specialty items.
+- **Minimal equipment** — microwave / one-pan / kettle / dorm-fridge friendly;
+  no oven-required assumptions.
+- **Small batches, fast, low cleanup.**
+- Possible framing: a onboarding/profile persona ("I'm a student") that biases
+  ALL generation, rather than a per-cook mode — since it's an identity, not an
+  occasion. Decide during build.
+
+Fits Frij's "cook what you have, don't order out" core especially hard for the
+audience that orders out the most. Strong TikTok/campus growth angle.
+Staged post-launch, likely alongside the time-filter work (shares the
+"constraints on generation" plumbing).
+
+## V3 — Sweet-ingredient mode routing / anchor honesty *(Gabe, 2026-08-06)* ⭐
+
+Problem (real, from testing): selecting a lone fruit like **guava** and asking
+for dinner produced invented junk — "guava chili glazed rice bowl", "guava
+ginger soup". Web research confirms guava savory is real ONLY as a glaze on a
+protein (guava-glazed ribs/chicken/pork), and its true home is desserts/drinks.
+The anchored-cook rule "build all 3 AROUND this" forces garbage when the anchor
+is a fruit.
+
+Two-part fix (designed, not yet built):
+1. **Smart mode nudge** — tag sweet-leaning ingredients (guava, mango, berries,
+   banana, pineapple, peach). When a *selection* is dominated by them, offer the
+   right mode first: "Guava's usually a smoothie or dessert star — want those?"
+   with one-tap Smoothie/Dessert. A nudge, not a block.
+2. **Anchor honesty valve** — in dinner mode a sweet ingredient may only appear
+   as a glaze/salsa/sauce on a real protein or base (guava-glazed chicken, never
+   guava rice bowl); if it can't be used honestly, drop it. Never force a fruit
+   as the hero.
+
