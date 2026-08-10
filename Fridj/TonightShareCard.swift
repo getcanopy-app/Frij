@@ -68,45 +68,21 @@ struct TonightShareCard: View {
                         }
                     }
 
-                    // Ingredients as a wrapping row of quiet chips. Amounts
-                    // whisper; items still to buy get an orange dot.
-                    let all = ingredientChips(recipe)
-                    FlowLayout(spacing: 5) {
-                        ForEach(Array(all.shown.enumerated()), id: \.offset) { _, chip in
-                            HStack(spacing: 4) {
-                                if chip.toBuy {
-                                    Circle().fill(Color.fridjOrange).frame(width: 5, height: 5)
-                                }
-                                Text(chip.name)
-                                    .font(.system(size: 11.5, weight: .semibold, design: .rounded))
-                                    .foregroundStyle(.black.opacity(0.75))
-                                if let amount = chip.amount {
-                                    Text(amount)
-                                        .font(.system(size: 10, weight: .medium, design: .rounded))
-                                        .foregroundStyle(.black.opacity(0.4))
-                                }
-                            }
-                            .padding(.horizontal, 8).padding(.vertical, 4)
-                            .background(Color.white, in: Capsule())
-                        }
-                        if all.overflow > 0 {
-                            Text("+\(all.overflow) more")
-                                .font(.system(size: 10.5, weight: .semibold, design: .rounded))
-                                .foregroundStyle(.black.opacity(0.4))
-                                .padding(.horizontal, 8).padding(.vertical, 4)
-                        }
+                    // Ingredients as one quiet wrapping line — just what the
+                    // meal needs. No fridge status (private to the sender), and
+                    // no FlowLayout: ImageRenderer can't render that custom
+                    // layout, which returned nil and made the share button do
+                    // nothing.
+                    let names = ingredientNames(recipe)
+                    if !names.isEmpty {
+                        Text(names.joined(separator: "  ·  "))
+                            .font(.system(size: 11.5, weight: .semibold, design: .rounded))
+                            .foregroundStyle(.black.opacity(0.6))
+                            .fixedSize(horizontal: false, vertical: true)
                     }
                 }
                 .padding(.top, index == 0 ? 22 : 18)
             }
-
-            HStack(spacing: 5) {
-                Circle().fill(Color.fridjOrange).frame(width: 5, height: 5)
-                Text("= still to buy")
-                    .font(.system(size: 10.5, weight: .medium, design: .rounded))
-                    .foregroundStyle(.black.opacity(0.4))
-            }
-            .padding(.top, 16)
 
             Spacer(minLength: 0)
 
@@ -123,18 +99,16 @@ struct TonightShareCard: View {
         .background(Color.fridjBg)
     }
 
-    private struct Chip { let name: String; let amount: String?; let toBuy: Bool }
-    private func ingredientChips(_ recipe: Recipe) -> (shown: [Chip], overflow: Int) {
-        let split = PantryMatch.partition(recipe.uses + recipe.needs)
-        let chips = split.have.map { item -> Chip in
-            let p = PantryMatch.displaySplit(item)
-            return Chip(name: p.name, amount: p.amount, toBuy: false)
-        } + split.need.map { item -> Chip in
-            let p = PantryMatch.displaySplit(item)
-            return Chip(name: p.name, amount: p.amount, toBuy: true)
+    // Just the ingredient names the meal needs — deduped, capped so the card
+    // stays tidy. No have/need split (that would reveal the sender's fridge).
+    private func ingredientNames(_ recipe: Recipe) -> [String] {
+        var seen = Set<String>()
+        var out: [String] = []
+        for item in recipe.uses + recipe.needs {
+            let name = PantryMatch.displaySplit(item).name
+            if seen.insert(name.lowercased()).inserted { out.append(name) }
         }
-        let cap = 10
-        return (Array(chips.prefix(cap)), max(0, chips.count - cap))
+        return Array(out.prefix(12))
     }
 
     /// Render the card as a crisp 3x image.
