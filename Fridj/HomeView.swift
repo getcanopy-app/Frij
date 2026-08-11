@@ -78,7 +78,7 @@ struct HomeView: View {
                         if isWideCanvas { Spacer(minLength: 0) }
                     }
                     .padding(.horizontal, 20)
-                    .padding(.bottom, 110)
+                    .padding(.bottom, 150)
                     .phoneColumn()
                     // Short content centers in the viewport instead of
                     // pinning to the top: on a tall canvas (iPad) a
