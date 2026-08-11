@@ -16,6 +16,11 @@ struct FridjApp: App {
                 .task {
                     NotificationScheduler.shared.requestPermission()
                     NotificationScheduler.shared.scheduleStreakReminder()
+                    // Count new installs once, ever — the "new users" signal.
+                    if !UserDefaults.standard.bool(forKey: "frij.firstOpenReported") {
+                        UserDefaults.standard.set(true, forKey: "frij.firstOpenReported")
+                        FrijAPI.reportEvent("first_open")
+                    }
                 }
         }
     }

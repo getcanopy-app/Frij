@@ -224,6 +224,17 @@ enum FrijAPI {
         return (try? JSONDecoder().decode(Resp.self, from: data))?.items ?? []
     }
 
+    /// Fire-and-forget analytics event (subscribe, first_open, …). Best-effort:
+    /// never throws, never blocks a real flow — a dropped event isn't worth an
+    /// error to the user.
+    static func reportEvent(_ type: String, props: [String: Any] = [:]) {
+        Task {
+            var body: [String: Any] = props
+            body["type"] = type
+            _ = try? await post("/api/event", body: body)
+        }
+    }
+
     private static func post(_ path: String, body: [String: Any]) async throws -> Data {
         guard let url = URL(string: baseURL + path) else {
             throw FrijAPIError.badResponse("Bad URL")

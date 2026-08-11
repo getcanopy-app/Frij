@@ -79,7 +79,13 @@ final class SubscriptionManager {
                 }
                 await tx.finish()
                 await refreshStatus()
-                if isSubscribed { showPaywall = false }
+                if isSubscribed {
+                    showPaywall = false
+                    // Server can't see StoreKit purchases — report it so the
+                    // subscribe count is real.
+                    let plan = product.id == Self.annualID ? "annual" : "monthly"
+                    FrijAPI.reportEvent("subscribe", props: ["plan": plan])
+                }
             case .userCancelled:
                 break
             case .pending:
