@@ -62,6 +62,10 @@ enum FrijAPI {
         if anchored { body["anchored"] = true }
         // Only send when the user asked for fast — "any" is the no-op default.
         if speed == "quick" { body["speed"] = "quick" }
+        // Generate in the phone's language. Send the English name of the
+        // language (e.g. "Portuguese") so the backend prompt reads naturally;
+        // skip English, which is the default.
+        if let lang = preferredLanguageName() { body["language"] = lang }
         // "Use it up" — items about to spoil the backend should build around.
         if !prioritize.isEmpty { body["prioritize"] = prioritize }
 
@@ -222,6 +226,14 @@ enum FrijAPI {
         struct Resp: Decodable { let items: [String] }
         let data = try await post("/api/parse-ingredients", body: ["text": text])
         return (try? JSONDecoder().decode(Resp.self, from: data))?.items ?? []
+    }
+
+    /// The English name of the phone's language ("Portuguese", "Spanish", …),
+    /// or nil when it's English (the backend default). Drives recipe language.
+    static func preferredLanguageName() -> String? {
+        let code = Locale.current.language.languageCode?.identifier ?? "en"
+        if code == "en" { return nil }
+        return Locale(identifier: "en_US").localizedString(forLanguageCode: code)
     }
 
     /// Fire-and-forget analytics event (subscribe, first_open, …). Best-effort:

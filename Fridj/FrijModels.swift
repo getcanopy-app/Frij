@@ -63,8 +63,13 @@ struct Recipe: Codable, Identifiable, Hashable {
     // nil = saved before modes existed; treated as dinner.
     let mode: String?
 
+    // Per-serving macro estimate from the backend. Optional so older saved
+    // favorites and any recipe generated before this shipped still decode.
+    let nutrition: Nutrition?
+
     init(name: String, cookTime: String, uses: [String], needs: [String], steps: [String],
-         reason: String? = nil, origin: String? = nil, mode: String? = nil) {
+         reason: String? = nil, origin: String? = nil, mode: String? = nil,
+         nutrition: Nutrition? = nil) {
         self.name = name
         self.cookTime = cookTime
         self.uses = uses
@@ -73,6 +78,7 @@ struct Recipe: Codable, Identifiable, Hashable {
         self.reason = reason
         self.origin = origin
         self.mode = mode
+        self.nutrition = nutrition
     }
 
     // Migration-safe decoding. Recipe is persisted to disk (FavoritesStore) as
@@ -90,7 +96,16 @@ struct Recipe: Codable, Identifiable, Hashable {
         self.reason = try c.decodeIfPresent(String.self, forKey: .reason)
         self.origin = try c.decodeIfPresent(String.self, forKey: .origin)
         self.mode = try c.decodeIfPresent(String.self, forKey: .mode)
+        self.nutrition = try c.decodeIfPresent(Nutrition.self, forKey: .nutrition)
     }
+}
+
+// Per-serving macro estimate. All optional — the model occasionally omits one.
+struct Nutrition: Codable, Hashable {
+    let calories: Int?
+    let protein: Int?
+    let carbs: Int?
+    let fat: Int?
 }
 
 struct RecipeResponse: Codable {

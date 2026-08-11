@@ -1268,6 +1268,38 @@ struct RecipeDetailSheet: View {
 
     // "How to make it" styled as a handwritten recipe card: warm paper, faint
     // ruled lines, a soft margin rule down the left, steps written in ink.
+    // Per-serving macros as four quiet stat tiles. Only shows the numbers the
+    // model actually gave; labeled "estimated" so it never reads as clinical.
+    private func nutritionRow(_ n: Nutrition) -> some View {
+        let stats: [(label: String, value: Int?, unit: String, color: Color)] = [
+            ("Calories", n.calories, "", .fridjOrange),
+            ("Protein", n.protein, "g", .fridjGreen),
+            ("Carbs", n.carbs, "g", .fridjBerry),
+            ("Fat", n.fat, "g", .fridjCoral),
+        ]
+        return VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 8) {
+                ForEach(stats.filter { $0.value != nil }, id: \.label) { stat in
+                    VStack(spacing: 1) {
+                        Text("\(stat.value!)\(stat.unit)")
+                            .font(FridjFont.size(17, weight: .bold))
+                            .foregroundColor(.fridjText)
+                        Text(stat.label)
+                            .font(FridjFont.size(10, weight: .semibold))
+                            .foregroundColor(stat.color)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 11)
+                    .background(stat.color.opacity(0.09),
+                                in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                }
+            }
+            Text("Estimated · per serving")
+                .font(FridjFont.size(10, weight: .medium))
+                .foregroundColor(.fridjText.opacity(0.35))
+        }
+    }
+
     private var recipeCardSteps: some View {
         let ink = Color(hex: "4A3A28")            // warm brown, like pen on cream
         return VStack(alignment: .leading, spacing: 0) {
@@ -1462,6 +1494,10 @@ struct RecipeDetailSheet: View {
                                     .multilineTextAlignment(.leading)
                             }
                             .foregroundColor(.fridjOrange)
+                        }
+
+                        if let nutrition = recipe.nutrition {
+                            nutritionRow(nutrition)
                         }
 
                         // Ingredients — grouped, not merged: standing in a
