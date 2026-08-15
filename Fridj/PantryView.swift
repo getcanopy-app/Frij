@@ -156,8 +156,9 @@ struct PantryView: View {
         .scrollClipDisabled()
     }
 
-    /// Single ⚡ Quick toggle — "any time" is just the off state, so it needs no
-    /// label. Fills with the mode's accent when on, matching the mode chips.
+    /// Single ⚡ toggle — icon-only so it's always visible on the row, no
+    /// horizontal budget for a word. Fills with the mode's accent when on, and
+    /// "any time" is simply the off state. Accessibility label carries meaning.
     private var quickChip: some View {
         let on = session.mealSpeed == "quick"
         return Button {
@@ -165,19 +166,16 @@ struct PantryView: View {
                 session.mealSpeed = on ? "any" : "quick"
             }
         } label: {
-            HStack(spacing: 4) {
-                Image(systemName: "bolt.fill").font(.system(size: 11, weight: .bold))
-                Text("Quick").font(FridjFont.size(13, weight: .bold))
-            }
-            .lineLimit(1)
-            .fixedSize()
-            .foregroundColor(on ? .white : accent)
-            .padding(.horizontal, 13)
-            .padding(.vertical, 7)
-            .background(on ? accent : Color(white: 1), in: Capsule())
-            .overlay(Capsule().stroke(accent.opacity(on ? 0 : 0.55), lineWidth: 1))
+            Image(systemName: "bolt.fill")
+                .font(.system(size: 15, weight: .bold))
+                .foregroundColor(on ? .white : accent)
+                .frame(width: 40, height: 40)
+                .background(on ? accent : Color(white: 1), in: Circle())
+                .overlay(Circle().stroke(accent.opacity(on ? 0 : 0.55), lineWidth: 1))
         }
         .buttonStyle(.plain)
+        .accessibilityLabel(Text("Quick meals"))
+        .accessibilityAddTraits(on ? [.isButton, .isSelected] : .isButton)
     }
 
     private func modeChip(_ detour: (mode: String, icon: String, label: String, color: Color)) -> some View {
