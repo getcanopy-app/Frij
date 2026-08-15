@@ -812,6 +812,8 @@ struct RecipesView: View {
         // whether any pantry items happened to match (substitutions and
         // unlogged grocery runs are normal cooking).
         CookingStore.shared.logToday()
+        // Tally this meal's macros too — the on-brand "what you cooked" stat.
+        CookedNutritionStore.shared.record(recipe.nutrition)
         Task {
             try? await Task.sleep(nanoseconds: 350_000_000)
             CelebrationCoordinator.shared.show(streak: CookingStore.shared.currentStreak)

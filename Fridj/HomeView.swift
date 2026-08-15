@@ -73,6 +73,8 @@ struct HomeView: View {
 
                             progressSection
                                 .padding(.top, 24)
+
+                            weeklyMacrosCard
                         }
 
                         if isWideCanvas { Spacer(minLength: 0) }
@@ -315,6 +317,56 @@ struct HomeView: View {
                 .padding(.top, 2)
             }
         }
+    }
+
+    // "This week you cooked" — macros tallied from the meals the user actually
+    // cooked. Only appears once there's something to show, so it never nags.
+    @ViewBuilder
+    private var weeklyMacrosCard: some View {
+        let totals = CookedNutritionStore.shared.thisWeek()
+        if totals.meals > 0 {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Text("This week you cooked")
+                        .font(.system(size: 13, weight: .bold, design: .rounded))
+                        .foregroundStyle(.black.opacity(0.5))
+                    Spacer()
+                    Text("\(totals.meals) meal\(totals.meals == 1 ? "" : "s")")
+                        .font(.system(size: 12, weight: .bold, design: .rounded))
+                        .foregroundStyle(Color.fridjGreen)
+                }
+                HStack(spacing: 10) {
+                    macroTile("\(totals.protein)g", "protein", .fridjGreen)
+                    macroTile("\(totals.carbs)g", "carbs", .fridjBerry)
+                    macroTile("\(totals.calories)", "calories", .fridjOrange)
+                }
+            }
+            .padding(16)
+            .background {
+                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                    .fill(.white.opacity(0.55))
+                    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 24, style: .continuous)
+                            .stroke(.white.opacity(0.4), lineWidth: 1)
+                    }
+            }
+            .padding(.top, 14)
+        }
+    }
+
+    private func macroTile(_ value: String, _ label: String, _ color: Color) -> some View {
+        VStack(spacing: 2) {
+            Text(value)
+                .font(.system(size: 19, weight: .bold, design: .rounded))
+                .foregroundStyle(.black.opacity(0.85))
+            Text(label)
+                .font(.system(size: 10, weight: .semibold, design: .rounded))
+                .foregroundStyle(color)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 12)
+        .background(color.opacity(0.09), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
     }
 
     private var progressSection: some View {
