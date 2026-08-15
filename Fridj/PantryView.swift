@@ -41,9 +41,6 @@ struct PantryView: View {
                 VStack(alignment: .leading, spacing: FridjSpacing.lg) {
                     header
                     modeToggle
-                    // Time preference only applies to real cooking, not blender
-                    // smoothies (which are fast by definition).
-                    if session.mealMode != "smoothie" { speedToggle }
                     cookButton
 
                     if let err = session.cookError {
@@ -142,48 +139,43 @@ struct PantryView: View {
     /// it reads as "somewhere else you can go". Tapping the active one returns
     /// to dinner.
     private var modeToggle: some View {
-        HStack(spacing: 8) {
-            ForEach(Self.detourModes, id: \.mode) { detour in
-                modeChip(detour)
+        // One horizontally-scrollable row: the occasion chips plus the Quick
+        // filter. Four word-chips don't fit a phone width statically, so it
+        // scrolls — the standard iOS filter-row pattern, and nothing clips.
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                ForEach(Self.detourModes, id: \.mode) { detour in
+                    modeChip(detour)
+                }
+                // A quick-meal filter, riding with the occasions. Smoothies are
+                // fast by definition, so it hides there.
+                if session.mealMode != "smoothie" { quickChip }
             }
+            .padding(.vertical, 2)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .scrollClipDisabled()
     }
 
-    /// How much time to cook: one clean segmented control (not two scattered
-    /// pills). The selected side fills with the screen's accent, so it shifts
-    /// colour with the mode — green for dinner, coral dessert, berry smoothie.
-    private var speedToggle: some View {
-        HStack(spacing: 0) {
-            speedSegment(label: "Any time", value: "any")
-            speedSegment(label: "Quick", value: "quick")
-        }
-        .padding(3)
-        .background(Color(white: 1), in: Capsule())
-        .overlay(Capsule().stroke(Color.fridjText.opacity(0.08), lineWidth: 1))
-        .shadow(color: .black.opacity(0.04), radius: 4, y: 2)
-        .fixedSize()
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    private func speedSegment(label: String, value: String) -> some View {
-        let on = session.mealSpeed == value
+    /// Single ⚡ Quick toggle — "any time" is just the off state, so it needs no
+    /// label. Fills with the mode's accent when on, matching the mode chips.
+    private var quickChip: some View {
+        let on = session.mealSpeed == "quick"
         return Button {
-            withAnimation(.spring(response: 0.32, dampingFraction: 0.82)) {
-                session.mealSpeed = value
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                session.mealSpeed = on ? "any" : "quick"
             }
         } label: {
-            Text(label)
-                .font(FridjFont.size(13, weight: .bold))
-                .foregroundColor(on ? .white : .fridjText.opacity(0.5))
-                .padding(.horizontal, 18)
-                .padding(.vertical, 8)
-                .background {
-                    if on {
-                        Capsule().fill(accent)
-                            .shadow(color: accent.opacity(0.35), radius: 5, y: 2)
-                    }
-                }
+            HStack(spacing: 4) {
+                Image(systemName: "bolt.fill").font(.system(size: 11, weight: .bold))
+                Text("Quick").font(FridjFont.size(13, weight: .bold))
+            }
+            .lineLimit(1)
+            .fixedSize()
+            .foregroundColor(on ? .white : accent)
+            .padding(.horizontal, 13)
+            .padding(.vertical, 7)
+            .background(on ? accent : Color(white: 1), in: Capsule())
+            .overlay(Capsule().stroke(accent.opacity(on ? 0 : 0.55), lineWidth: 1))
         }
         .buttonStyle(.plain)
     }
