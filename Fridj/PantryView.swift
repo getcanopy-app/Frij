@@ -150,33 +150,40 @@ struct PantryView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    /// How much time to cook: a quiet two-state pill. Vague on purpose —
-    /// "Quick" reads better than a specific minute count.
+    /// How much time to cook: one clean segmented control (not two scattered
+    /// pills). The selected side fills with the screen's accent, so it shifts
+    /// colour with the mode — green for dinner, coral dessert, berry smoothie.
     private var speedToggle: some View {
-        HStack(spacing: 6) {
-            Image(systemName: "clock")
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundColor(.fridjText.opacity(0.4))
-            speedChip(label: "Any time", value: "any")
-            speedChip(label: "Quick", value: "quick")
+        HStack(spacing: 0) {
+            speedSegment(label: "Any time", value: "any")
+            speedSegment(label: "Quick", value: "quick")
         }
+        .padding(3)
+        .background(Color(white: 1), in: Capsule())
+        .overlay(Capsule().stroke(Color.fridjText.opacity(0.08), lineWidth: 1))
+        .shadow(color: .black.opacity(0.04), radius: 4, y: 2)
+        .fixedSize()
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    private func speedChip(label: String, value: String) -> some View {
+    private func speedSegment(label: String, value: String) -> some View {
         let on = session.mealSpeed == value
         return Button {
-            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+            withAnimation(.spring(response: 0.32, dampingFraction: 0.82)) {
                 session.mealSpeed = value
             }
         } label: {
             Text(label)
-                .font(FridjFont.size(12, weight: .bold))
-                .foregroundColor(on ? .white : .fridjText.opacity(0.55))
-                .padding(.horizontal, 12)
-                .padding(.vertical, 6)
-                .background(on ? Color.fridjGreen : Color(white: 1), in: Capsule())
-                .overlay(Capsule().stroke(Color.fridjText.opacity(on ? 0 : 0.12), lineWidth: 1))
+                .font(FridjFont.size(13, weight: .bold))
+                .foregroundColor(on ? .white : .fridjText.opacity(0.5))
+                .padding(.horizontal, 18)
+                .padding(.vertical, 8)
+                .background {
+                    if on {
+                        Capsule().fill(accent)
+                            .shadow(color: accent.opacity(0.35), radius: 5, y: 2)
+                    }
+                }
         }
         .buttonStyle(.plain)
     }
