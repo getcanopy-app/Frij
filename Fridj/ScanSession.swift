@@ -80,6 +80,9 @@ final class ScanSession {
 
         isCooking = true
         cookError = nil
+        // Open the results sheet right away so the chef animation greets the
+        // user in the center while the meals cook, then the cards fade in.
+        showRecipes = true
         cookTask = Task {
             do {
                 let result = try await FrijAPI.recipes(ingredients: ingredients, mode: mode,
@@ -114,6 +117,9 @@ final class ScanSession {
         cookTask?.cancel()
         cookTask = nil
         isCooking = false
+        // If the user cancels before any meals arrived, close the sheet the
+        // chef opened rather than dropping them on an empty results screen.
+        if recipes.isEmpty { showRecipes = false }
         cooldownTask?.cancel()
         isCoolingDown = false
     }

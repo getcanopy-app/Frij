@@ -150,9 +150,8 @@ struct RecipesView: View {
 
     private var cookingState: some View {
         VStack(spacing: FridjSpacing.md) {
-            ProgressView()
-                .scaleEffect(1.4)
-                .tint(.fridjOrange)
+            ChefLoaderView(size: 132)
+                .padding(.bottom, FridjSpacing.xs)
             Text("Cooking up ideas…")
                 .font(FridjFont.style(.title, weight: .bold))
                 .foregroundColor(.fridjText)
