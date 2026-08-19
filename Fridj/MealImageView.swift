@@ -64,11 +64,26 @@ struct MealImageView: View {
             } else if loadFailed {
                 placeholder(failed: true)
             } else {
-                ShimmerView()
+                loadingChef
             }
         }
         .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
         .task(id: dish) { await resolveAndLoad() }
+    }
+
+    // A little chef bobbing while the dish photo loads/generates. Sized to the
+    // tile so it works on both big recipe images and small saved thumbnails.
+    private var loadingChef: some View {
+        GeometryReader { geo in
+            let s = min(max(min(geo.size.width, geo.size.height) * 0.42, 26), 66)
+            ZStack {
+                LinearGradient(colors: [Color.fridjOrange.opacity(0.10),
+                                        Color.fridjText.opacity(0.05)],
+                               startPoint: .top, endPoint: .bottom)
+                ChefLoaderView(size: s, compact: true)
+            }
+            .frame(width: geo.size.width, height: geo.size.height)
+        }
     }
 
     private func placeholder(failed: Bool) -> some View {

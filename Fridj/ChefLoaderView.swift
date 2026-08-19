@@ -5,6 +5,9 @@ import SwiftUI
 /// image assets) so it renders identically on device and in the simulator.
 struct ChefLoaderView: View {
     var size: CGFloat = 128
+    /// Compact = just the bobbing head + hat, no pan/steam. For thumbnail-sized
+    /// loading placeholders where the full scene would be too busy.
+    var compact: Bool = false
 
     @State private var bob = false
     @State private var toss = false
@@ -15,12 +18,12 @@ struct ChefLoaderView: View {
 
     var body: some View {
         ZStack {
-            steamWisps
+            if !compact { steamWisps }
             chef
                 .offset(y: bob ? -size * 0.05 : size * 0.03)
                 .animation(.easeInOut(duration: 0.85).repeatForever(autoreverses: true), value: bob)
         }
-        .frame(width: size, height: size * 1.2)
+        .frame(width: size, height: compact ? size : size * 1.2)
         .onAppear { bob = true; toss = true; steam = true }
         .accessibilityLabel("Cooking up ideas")
     }
@@ -36,7 +39,7 @@ struct ChefLoaderView: View {
                 .shadow(color: .black.opacity(0.05), radius: 4, y: 3)
 
             chefHat.offset(y: -size * 0.44)
-            pan.offset(x: size * 0.02, y: size * 0.42)
+            if !compact { pan.offset(x: size * 0.02, y: size * 0.42) }
         }
     }
 
