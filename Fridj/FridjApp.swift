@@ -21,6 +21,11 @@ struct FridjApp: App {
                         UserDefaults.standard.set(true, forKey: "frij.firstOpenReported")
                         FrijAPI.reportEvent("first_open")
                     }
+                    #if DEBUG
+                    // Ad/demo only — puts the filmable meals on Home. Compiled
+                    // out of App Store (Release) builds entirely.
+                    DebugHomeSeed.apply()
+                    #endif
                 }
         }
     }
