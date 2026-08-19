@@ -97,6 +97,9 @@ struct HomeView: View {
         }
         .sheet(item: $selectedRecipe) { recipe in
             RecipeDetailSheet(recipe: recipe) {
+                // Cooking from Home must count exactly like cooking from the
+                // Recipes tab — log the streak, macros, celebration, and pantry.
+                CookLog.record(recipe)
                 selectedRecipe = nil
             }
         }

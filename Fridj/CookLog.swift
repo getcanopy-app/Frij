@@ -1,0 +1,37 @@
+import Foundation
+
+/// The core effects of the "I cooked this" action, shared by EVERY screen that
+/// offers it (Recipes tab, Home's recent ideas, …) so cooking always counts the
+/// same way — no matter where the user tapped it. Consumes the perishables the
+/// recipe used, logs the streak, tallies macros, records the taste signal, and
+/// fires the celebration. Returns the perishables removed, for an optional undo.
+///
+/// This exists because Home was calling only `selectedRecipe = nil` and never
+/// logging the cook — so cooking from a Home card silently gave no streak.
+@MainActor
+enum CookLog {
+    @discardableResult
+    static func record(_ recipe: Recipe) -> [String] {
+        // Strongest taste signal — the dish itself, not just the date.
+        TasteSignalsStore.shared.logCooked(recipe)
+
+        // Uses + needs: an ingredient bought since (stored under needs) is in the
+        // pantry now, so cooking should consume it too. Only perishables leave —
+        // staples (oil, salt) are immortal.
+        let pantry = PantryStore.shared
+        let removed = (recipe.uses + recipe.needs).filter {
+            pantry.contains($0) && PantryCategory.classify($0).isPerishable
+        }
+        for name in removed { pantry.remove(name: name) }
+
+        // Cooking always counts — streak and celebration never depend on whether
+        // pantry items happened to match (substitutions, unlogged grocery runs).
+        CookingStore.shared.logToday()
+        CookedNutritionStore.shared.record(recipe.nutrition)
+        Task {
+            try? await Task.sleep(nanoseconds: 350_000_000)
+            CelebrationCoordinator.shared.show(streak: CookingStore.shared.currentStreak)
+        }
+        return removed
+    }
+}

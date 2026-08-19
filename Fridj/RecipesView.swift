@@ -793,31 +793,12 @@ struct RecipesView: View {
     }
 
     private func markCooked(_ recipe: Recipe) {
-        // Strongest taste signal — record the dish itself, not just the date.
-        TasteSignalsStore.shared.logCooked(recipe)
         lastCooked = recipe
+        // All the shared effects (streak, macros, taste signal, pantry,
+        // celebration) live in one place so Home and Recipes never drift apart.
+        let removed = CookLog.record(recipe)
 
-        // Uses + needs, not just uses: the stored split is a snapshot, and an
-        // ingredient bought since (stored under needs) is in the pantry now —
-        // cooking should consume it too. store.contains keeps it exact.
-        // Staples are immortal here too: cooking a stir fry uses your olive
-        // oil, it doesn't finish it — only perishables leave the pantry.
-        let removed = (recipe.uses + recipe.needs).filter {
-            store.contains($0) && PantryCategory.classify($0).isPerishable
-        }
-        for name in removed { store.remove(name: name) }
-
-        // Cooking always counts — streak and celebration must not depend on
-        // whether any pantry items happened to match (substitutions and
-        // unlogged grocery runs are normal cooking).
-        CookingStore.shared.logToday()
-        // Tally this meal's macros too — the on-brand "what you cooked" stat.
-        CookedNutritionStore.shared.record(recipe.nutrition)
-        Task {
-            try? await Task.sleep(nanoseconds: 350_000_000)
-            CelebrationCoordinator.shared.show(streak: CookingStore.shared.currentStreak)
-        }
-
+        // Recipes-tab-only UI: the undo banner for the pantry items just used.
         guard !removed.isEmpty else { return }
         lastRemoved = removed
         showUndoFor = recipe.id
