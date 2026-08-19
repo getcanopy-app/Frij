@@ -96,7 +96,20 @@ struct MealImageView: View {
     }
 
     private func resolveAndLoad() async {
-        guard uiImage == nil else { return }
+        // Re-sync to the CURRENT dish. This view can be REUSED for a different
+        // dish (e.g. tapping meal cards in quick succession) — @State survives
+        // that reuse, so without this the previous dish's photo lingers. Show
+        // this dish's cached image instantly if we have it; otherwise clear any
+        // leftover image so a stale one never shows while the new one loads.
+        if let url = MealImageCache.shared.url(for: dish),
+           let hit = MealImageStore.shared.cached(url) {
+            uiImage = hit          // instant loads stay instant
+            loadFailed = false
+            return
+        }
+        uiImage = nil
+        loadFailed = false
+
         do {
             let url: URL
             if let cached = MealImageCache.shared.url(for: dish) {
@@ -106,7 +119,11 @@ struct MealImageView: View {
                 guard !Task.isCancelled else { return }
                 MealImageCache.shared.set(url, for: dish)
             }
-            uiImage = try await MealImageStore.shared.load(url)
+            let image = try await MealImageStore.shared.load(url)
+            // A slow load for a dish we've since navigated away from must not
+            // overwrite the current one — the task is cancelled on dish change.
+            guard !Task.isCancelled else { return }
+            uiImage = image
         } catch {
             guard !Task.isCancelled else { return }
             // A cached URL can die (creator thumbnails on platform CDNs
@@ -115,6 +132,7 @@ struct MealImageView: View {
             MealImageCache.shared.remove(for: dish)
             if let fresh = try? await FrijAPI.mealImage(dish: dish),
                let image = try? await MealImageStore.shared.load(fresh) {
+                guard !Task.isCancelled else { return }
                 MealImageCache.shared.set(fresh, for: dish)
                 uiImage = image
             } else {
