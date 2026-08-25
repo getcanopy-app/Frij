@@ -247,6 +247,20 @@ enum FrijAPI {
         }
     }
 
+    /// Redeem a creator referral code. Returns the number of bonus meals to
+    /// grant on success, or nil if the code is invalid. Throws only on a
+    /// network/server failure (the backend returns ok:false for a bad code).
+    static func redeemCreatorCode(_ code: String) async throws -> Int? {
+        let data = try await post("/api/redeem", body: ["code": code])
+        guard let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            return nil
+        }
+        if obj["ok"] as? Bool == true {
+            return (obj["bonusMeals"] as? Int) ?? 0
+        }
+        return nil
+    }
+
     private static func post(_ path: String, body: [String: Any]) async throws -> Data {
         guard let url = URL(string: baseURL + path) else {
             throw FrijAPIError.badResponse("Bad URL")

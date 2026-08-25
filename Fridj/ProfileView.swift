@@ -9,6 +9,7 @@ struct ProfileView: View {
     // Hidden admin toggle — 7 taps on "About you" flips isAdmin.
     @State private var adminTapCount = 0
     @State private var adminTapResetTask: Task<Void, Never>? = nil
+    @State private var showCreatorCode = false
 
     var body: some View {
         NavigationStack {
@@ -141,6 +142,21 @@ struct ProfileView: View {
                                           subtitle: "A quick review helps more people find it")
                             }
                             .buttonStyle(.plain)
+
+                            // Referral: a follower enters a creator's code for
+                            // bonus meals. Once redeemed, the row confirms it.
+                            Button {
+                                if !usage.hasRedeemedCode { showCreatorCode = true }
+                            } label: {
+                                growthRow(
+                                    icon: usage.hasRedeemedCode ? "checkmark.seal.fill" : "gift.fill",
+                                    title: usage.hasRedeemedCode ? "Creator code applied" : "Have a creator code?",
+                                    subtitle: usage.hasRedeemedCode
+                                        ? "You've got bonus meals from \(usage.redeemedCode ?? "a creator")"
+                                        : "Enter it for bonus free meals")
+                            }
+                            .buttonStyle(.plain)
+                            .disabled(usage.hasRedeemedCode)
                         }
 
                         // Legal
@@ -161,6 +177,10 @@ struct ProfileView: View {
                 // full-width line hovering above the card, not a border on the
                 // card itself.
                 .scrollEdgeEffectHidden(true, for: .top)
+            }
+            .sheet(isPresented: $showCreatorCode) {
+                CreatorCodeSheet()
+                    .presentationDetents([.height(340)])
             }
             // Hide the nav bar's material + hairline so the cream background
             // flows straight into the card — the "Done" button stays, but the
