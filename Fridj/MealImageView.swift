@@ -61,13 +61,21 @@ struct MealImageView: View {
                 Image(uiImage: uiImage)
                     .resizable()
                     .scaledToFill()
+                    .transition(.opacity)
             } else if loadFailed {
                 placeholder(failed: true)
             } else {
                 loadingChef
+                    .transition(.opacity)
             }
         }
         .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+        // When the photo finishes generating, cross-fade it in over the chef
+        // instead of a hard pop. A cached image is set synchronously in init
+        // (uiImage non-nil on the first frame), so this only fires for freshly
+        // loaded photos — cached thumbnails still appear instantly.
+        .animation(.easeOut(duration: 0.3), value: uiImage != nil)
+        .animation(.easeOut(duration: 0.25), value: loadFailed)
         .task(id: dish) { await resolveAndLoad() }
     }
 
