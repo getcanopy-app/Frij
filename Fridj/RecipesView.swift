@@ -58,7 +58,7 @@ struct RecipesView: View {
 
             if session.isCooking {
                 cookingState
-                    .transition(.opacity)
+                    .transition(.opacity.combined(with: .scale(scale: 0.96)))
             } else if isCompletelyEmpty {
                 emptyState
                     .transition(.opacity)
@@ -101,10 +101,9 @@ struct RecipesView: View {
                 // Tap on any empty space while selecting = smooth exit; item
                 // taps win their own gesture, so toggling still works.
                 .onTapGesture { if isSelecting { exitSelection() } }
-                .transition(.asymmetric(
-                    insertion: .opacity.combined(with: .offset(y: 24)),
-                    removal: .opacity
-                ))
+                // Pure fade so the meals cross-dissolve with the chef instead of
+                // sliding up over it — reads as one smooth swap.
+                .transition(.opacity)
                 }
             }
 
@@ -121,7 +120,7 @@ struct RecipesView: View {
                 selectionBar
             }
         }
-        .animation(.easeOut(duration: 0.45), value: session.isCooking)
+        .animation(.easeInOut(duration: 0.5), value: session.isCooking)
         .sensoryFeedback(.impact(weight: .light), trigger: pressedID) { _, new in new != nil }
         .sheet(item: $selectedRecipe) { recipe in
             RecipeDetailSheet(recipe: recipe) {
