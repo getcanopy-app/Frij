@@ -33,6 +33,32 @@ Takes effect on the next editable version — see fastlane/Deliverfile.
 
 Check the API key authenticates, without changing anything.
 
+### ios release_status
+
+```sh
+[bundle exec] fastlane ios release_status
+```
+
+Show exactly what 1.0.4 still needs before it can be submitted.
+
+### ios prepare_release
+
+```sh
+[bundle exec] fastlane ios prepare_release
+```
+
+Attach the latest valid build to the editable version and upload release notes.
+
+### ios submit
+
+```sh
+[bundle exec] fastlane ios submit
+```
+
+Submit the editable version to App Review. Irreversible-ish: pulling it
+
+back means Developer Rejecting the submission.
+
 ----
 
 This README.md is auto-generated and will be re-generated every time [_fastlane_](https://fastlane.tools) is run.

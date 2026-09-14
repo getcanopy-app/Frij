@@ -71,4 +71,76 @@ platform :ios do
       UI.message("  subtitle : #{il&.subtitle}")
     end
   end
+
+  desc "Show exactly what 1.0.4 still needs before it can be submitted."
+  lane :release_status do
+    asc_key
+    app = Spaceship::ConnectAPI::App.find("com.hellofrij.frij")
+    version = app.get_edit_app_store_version
+    if version.nil?
+      UI.error("No editable version. Create one in App Store Connect.")
+      next
+    end
+    UI.success("Version #{version.version_string} — #{version.app_store_state}")
+
+    build = version.build
+    UI.message(build ? "  build attached: #{build.version} (#{build.processing_state})"
+                     : "  build attached: NONE")
+
+    UI.header("Builds uploaded for this version")
+    builds = app.get_builds(filter: { "preReleaseVersion.version" => version.version_string })
+    builds = app.get_builds if builds.empty?
+    builds.first(5).each do |b|
+      UI.message("  #{b.version}  #{b.processing_state}  expired=#{b.expired}")
+    end
+
+    loc = version.get_app_store_version_localizations.find { |l| l.locale == "en-US" }
+    UI.header("Metadata")
+    UI.message("  whats_new : #{loc&.whats_new.to_s.empty? ? '(EMPTY — required)' : loc.whats_new.to_s[0, 60]}")
+    UI.message("  keywords  : #{loc&.keywords.to_s[0, 50]}")
+  end
+
+  desc "Attach the latest valid build to the editable version and upload release notes."
+  lane :prepare_release do |options|
+    asc_key
+    app = Spaceship::ConnectAPI::App.find("com.hellofrij.frij")
+    version = app.get_edit_app_store_version
+    UI.user_error!("No editable version") if version.nil?
+
+    build_number = options[:build]
+    builds = app.get_builds.select { |b| b.processing_state == "VALID" && !b.expired }
+    build = build_number ? builds.find { |b| b.version == build_number.to_s } : builds.first
+    UI.user_error!("No VALID build found") if build.nil?
+
+    version.select_build(build_id: build.id)
+    UI.success("Attached build #{build.version} to #{version.version_string}")
+
+    # Release notes come from fastlane/metadata/en-US/release_notes.txt via the
+    # normal deliver pipeline — no bespoke file reading here, which was also
+    # fragile about fastlane's working directory.
+    UI.important("Now run: fastlane aso force:true   (uploads release notes)")
+  end
+
+
+  desc "Submit the editable version to App Review. Irreversible-ish: pulling it"
+  desc "back means Developer Rejecting the submission."
+  lane :submit do
+    deliver(
+      api_key: asc_key,
+      app_version: "1.0.4",
+      submit_for_review: true,
+      force: true,
+      # Declarations Apple asks on every submission. Accurate for Frij:
+      #   - encryption: HTTPS only, which is exempt
+      #   - third-party content: recipes/images are generated for the user
+      #   - IDFA: Frij does no ad tracking
+      submission_information: {
+        export_compliance_uses_encryption: false,
+        content_rights_contains_third_party_content: false,
+        add_id_info_uses_idfa: false,
+      },
+      automatic_release: true,
+    )
+  end
+
 end
