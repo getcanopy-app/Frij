@@ -9,7 +9,33 @@ default_platform(:ios)
 platform :ios do
   desc "Upload App Store metadata only (name, subtitle, keywords, description)."
   desc "Takes effect on the next editable version — see fastlane/Deliverfile."
+  # App Store Connect API key instead of an Apple ID. No password, no 2FA, and
+  # it sidesteps the spaceship Apple-ID login bug ("Service key is empty").
+  # The .p8 lives outside the repo at ~/.appstoreconnect/private_keys/ so it
+  # can never be committed; only the non-secret ids are here.
+  def asc_key
+    app_store_connect_api_key(
+      key_id: "A28C7VX45X",
+      issuer_id: "db4c8ca6-d5a9-4270-893c-13e469aca1e5",
+      key_filepath: File.expand_path("~/.appstoreconnect/private_keys/AuthKey_A28C7VX45X.p8"),
+      in_house: false,
+    )
+  end
+
   lane :aso do
-    deliver
+    deliver(api_key: asc_key)
+  end
+
+  desc "Check the API key authenticates, without changing anything."
+  lane :aso_check do
+    key = asc_key
+    app = Spaceship::ConnectAPI::App.find("com.hellofrij.frij")
+    UI.user_error!("Could not find com.hellofrij.frij with this key") if app.nil?
+    versions = app.get_app_store_versions
+    UI.success("Authenticated. App: #{app.name} (#{app.id})")
+    versions.first(3).each do |v|
+      UI.message("  version #{v.version_string} — #{v.app_store_state}")
+    end
+    UI.important("Metadata can only be written to an editable version.")
   end
 end
