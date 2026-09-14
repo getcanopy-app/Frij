@@ -12,6 +12,12 @@ force(false)
 # submit from App Store Connect when the build is ready.
 submit_for_review(false)
 
+# precheck can't inspect in-app purchases when authenticating with an API key
+# (it needs an Apple ID session), and it only matters ahead of a submission —
+# which this lane never does. Turn it off rather than degrade the auth.
+run_precheck_before_submit(false)
+precheck_include_in_app_purchases(false)
+
 # Metadata changes (name, subtitle, keywords, description) only take effect on
 # a version that is still editable. If the current version is "Ready for
 # Distribution", create the next version in App Store Connect first — deliver

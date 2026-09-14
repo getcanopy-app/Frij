@@ -22,8 +22,17 @@ platform :ios do
     )
   end
 
-  lane :aso do
-    deliver(api_key: asc_key)
+  # Uploading a build does NOT create the App Store version record — that is a
+  # separate thing, and metadata can only be written to an editable version.
+  # Passing app_version makes deliver create it if it doesn't exist.
+  #   fastlane aso                 -> HTML preview, asks before sending
+  #   fastlane aso force:true      -> no preview (for when you've already reviewed)
+  lane :aso do |options|
+    deliver(
+      api_key: asc_key,
+      app_version: options[:version] || "1.0.4",
+      force: options[:force] ? true : false,
+    )
   end
 
   desc "Check the API key authenticates, without changing anything."
@@ -37,5 +46,29 @@ platform :ios do
       UI.message("  version #{v.version_string} — #{v.app_store_state}")
     end
     UI.important("Metadata can only be written to an editable version.")
+
+    # Read back what is actually live. deliver reports success even when it
+    # decides nothing changed, and the app NAME lives in App Info (app-level),
+    # not in the version's metadata — so verify both, separately.
+    editable = versions.find { |v| %w[PREPARE_FOR_SUBMISSION DEVELOPER_REJECTED
+                                      REJECTED METADATA_REJECTED WAITING_FOR_REVIEW].include?(v.app_store_state) }
+    if editable
+      UI.success("Editable version: #{editable.version_string} (#{editable.app_store_state})")
+      loc = editable.get_app_store_version_localizations.find { |l| l.locale == "en-US" }
+      if loc
+        UI.message("  keywords : #{loc.keywords}")
+        UI.message("  promo    : #{loc.promotional_text}")
+        UI.message("  desc[0,60]: #{loc.description.to_s[0, 60]}...")
+      end
+    else
+      UI.error("No editable version — metadata cannot be written.")
+    end
+
+    info = app.get_app_infos.find { |i| i.app_store_state != "READY_FOR_SALE" } || app.get_app_infos.first
+    if info
+      il = info.get_app_info_localizations.find { |l| l.locale == "en-US" }
+      UI.message("  app name : #{il&.name}")
+      UI.message("  subtitle : #{il&.subtitle}")
+    end
   end
 end
