@@ -1,3 +1,9 @@
+# fastlane warns (and can mangle text) when the shell locale isn't UTF-8. The
+# App Store description uses em-dashes and curly quotes, so pin it here rather
+# than relying on whatever the calling shell happens to have.
+ENV["LANG"] ||= "en_US.UTF-8"
+ENV["LC_ALL"] ||= "en_US.UTF-8"
+
 default_platform(:ios)
 
 platform :ios do
