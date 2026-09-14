@@ -59,7 +59,7 @@ final class ScanSession {
 
     // True when the user is blocked specifically by the free-tier limit.
     var isPremiumGated: Bool {
-        !SubscriptionManager.shared.isSubscribed && UsageStore.shared.hasReachedLimit
+        !SubscriptionManager.shared.hasPlus && UsageStore.shared.hasReachedLimit
     }
 
     /// `mode` is "dinner" (default) or "dessert" — the backend swaps its whole
@@ -73,7 +73,7 @@ final class ScanSession {
         let usage  = UsageStore.shared
 
         // Block non-subscribers who've exhausted their free generations.
-        if !subMgr.isSubscribed && usage.hasReachedLimit {
+        if !subMgr.hasPlus && usage.hasReachedLimit {
             subMgr.showPaywall = true
             return
         }
@@ -91,7 +91,7 @@ final class ScanSession {
                 try Task.checkCancellation()
                 // Spend the credit only once real recipes are in hand, so a
                 // cancel or a failed request never costs a free idea.
-                if !subMgr.isSubscribed { usage.recordGeneration() }
+                if !subMgr.hasPlus { usage.recordGeneration() }
                 recipes = result
                 // Bank the batch so the next "more options" excludes it, and so
                 // it survives in the "Recently generated" list.

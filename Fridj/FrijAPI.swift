@@ -292,3 +292,82 @@ enum FrijAPI {
         return data
     }
 }
+
+// MARK: - Invites
+
+/// The inviter-facing summary returned by create/status.
+struct InviteSummary: Codable, Equatable {
+    let code: String
+    let link: String
+    let successfulInvites: Int
+    let mealsEarned: Int
+    let unclaimedMeals: Int
+    let plusUntil: Date?
+    let nextMilestone: Milestone?
+    let milestoneProgress: Double
+
+    struct Milestone: Codable, Equatable {
+        let invites: Int
+        let label: String
+        let remaining: Int
+    }
+}
+
+extension FrijAPI {
+    /// The device's own invite code, created on first call and stable after.
+    static func inviteCreate() async throws -> InviteSummary {
+        try decodeSummary(from: try await postInvite("create"))
+    }
+
+    static func inviteStatus() async throws -> InviteSummary {
+        try decodeSummary(from: try await postInvite("status"))
+    }
+
+    /// Redeem a friend's code. Returns the meals granted, or nil with a reason
+    /// the UI can show. Never throws for a rejected code — only for network
+    /// failure — so "that code isn't valid" doesn't look like an outage.
+    static func inviteRedeem(_ code: String) async throws -> (meals: Int?, error: String?) {
+        let data = try await postInvite("redeem", body: ["code": code])
+        guard let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            return (nil, "unavailable")
+        }
+        if obj["ok"] as? Bool == true {
+            return ((obj["bonusMeals"] as? Int) ?? 0, nil)
+        }
+        return (nil, (obj["error"] as? String) ?? "unavailable")
+    }
+
+    /// Claims meals earned from friends who joined. The server decides the
+    /// amount and marks it claimed atomically, so calling this twice is safe
+    /// and a reinstall can't re-claim.
+    static func inviteClaim() async throws -> Int {
+        let data = try await postInvite("claim")
+        guard let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return 0 }
+        return (obj["granted"] as? Int) ?? 0
+    }
+
+    private static func postInvite(_ action: String, body: [String: Any] = [:]) async throws -> Data {
+        try await post("/api/invite?action=\(action)", body: body)
+    }
+
+    private static func decodeSummary(from data: Data) throws -> InviteSummary {
+        let dec = JSONDecoder()
+        dec.dateDecodingStrategy = .iso8601
+        do {
+            return try dec.decode(InviteSummary.self, from: data)
+        } catch {
+            // Supabase timestamps carry fractional seconds, which plain
+            // .iso8601 rejects. Retry with a formatter that accepts them
+            // rather than losing the whole summary over a decimal point.
+            let fractional = ISO8601DateFormatter()
+            fractional.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+            dec.dateDecodingStrategy = .custom { decoder in
+                let raw = try decoder.singleValueContainer().decode(String.self)
+                if let d = fractional.date(from: raw) { return d }
+                if let d = ISO8601DateFormatter().date(from: raw) { return d }
+                throw FrijAPIError.badResponse("Bad date: \(raw)")
+            }
+            return try dec.decode(InviteSummary.self, from: data)
+        }
+    }
+}

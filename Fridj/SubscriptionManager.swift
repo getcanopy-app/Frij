@@ -14,6 +14,36 @@ final class SubscriptionManager {
     private(set) var products: [Product] = []
     private(set) var isSubscribed = false
     private(set) var isPurchasing = false
+
+    // Frij+ time we granted ourselves for hitting an invite milestone. Kept
+    // SEPARATE from isSubscribed on purpose: that property's guarantee is that
+    // it reflects StoreKit and nothing else, and this is our own perk, not a
+    // purchase. A date rather than a flag, so it keeps working offline and
+    // expires by itself.
+    //
+    // Cached locally because the server is the source of truth but must not be
+    // a dependency — losing network shouldn't revoke a week someone earned.
+    private static let grantKey = "frij.plus.grantedUntil"
+    private(set) var plusGrantedUntil: Date? = UserDefaults.standard
+        .object(forKey: grantKey) as? Date
+
+    /// Does the user have Frij+ right now, by purchase OR by invite grant?
+    /// This is what feature gates should ask. `isSubscribed` alone answers a
+    /// narrower question: did they pay.
+    var hasPlus: Bool {
+        if isSubscribed { return true }
+        if let until = plusGrantedUntil, until > Date() { return true }
+        return false
+    }
+
+    /// Records Frij+ time earned from invites. Only ever extends — a stale or
+    /// missing value from the server can't take away time already granted.
+    func applyPlusGrant(until date: Date?) {
+        guard let date else { return }
+        if let existing = plusGrantedUntil, existing >= date { return }
+        plusGrantedUntil = date
+        UserDefaults.standard.set(date, forKey: Self.grantKey)
+    }
     var purchaseError: String?
     var showPaywall = false
 

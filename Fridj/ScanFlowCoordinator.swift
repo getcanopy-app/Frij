@@ -614,7 +614,7 @@ struct ScanFlowCoordinator: View {
             }
             .disabled(store.items.isEmpty || session.isCooking)
 
-            if !sub.isSubscribed && !store.items.isEmpty {
+            if !sub.hasPlus && !store.items.isEmpty {
                 freeUsageHint
             }
         }

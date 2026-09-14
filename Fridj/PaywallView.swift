@@ -361,7 +361,7 @@ struct PaywallView: View {
             .scaleEffect(sub.isPurchasing ? 0.97 : 1)
             .animation(.spring(response: 0.3, dampingFraction: 0.7), value: sub.isPurchasing)
 
-            if !sub.isSubscribed && usage.remaining > 0 {
+            if !sub.hasPlus && usage.remaining > 0 {
                 HStack(spacing: 6) {
                     Image(systemName: "sparkles")
                         .font(.system(size: 11, weight: .bold))

@@ -10,6 +10,7 @@ struct ProfileView: View {
     @State private var adminTapCount = 0
     @State private var adminTapResetTask: Task<Void, Never>? = nil
     @State private var showCreatorCode = false
+    @State private var invites = InviteStore.shared
 
     var body: some View {
         NavigationStack {
@@ -140,6 +141,21 @@ struct ProfileView: View {
                                 growthRow(icon: "star.fill",
                                           title: "Rate Frij",
                                           subtitle: "A quick review helps more people find it")
+                            }
+                            .buttonStyle(.plain)
+
+                            // Invite friends — the canonical home for a user's
+                            // own code. Above the creator row because having a
+                            // code of your own is the common case.
+                            NavigationLink {
+                                InviteView()
+                            } label: {
+                                growthRow(
+                                    icon: "person.2.fill",
+                                    title: "Invite friends",
+                                    subtitle: invites.successfulInvites > 0
+                                        ? "\(invites.successfulInvites) joined · they get 5 meals, so do you"
+                                        : "Give a friend 5 free meals, get 5 back")
                             }
                             .buttonStyle(.plain)
 

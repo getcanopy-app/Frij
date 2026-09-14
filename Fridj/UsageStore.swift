@@ -60,6 +60,18 @@ final class UsageStore {
         return true
     }
 
+    /// Meals earned from friends joining via an invite. Unlike a creator code
+    /// (one per install, gated by `redeemedCode`), these accrue over time as
+    /// friends accept — so there's no one-shot guard here. Double-granting is
+    /// prevented server-side instead: /api/invite?action=claim decides the
+    /// amount and marks it claimed atomically, so this only ever adds what the
+    /// server just handed over.
+    func applyInviteMeals(_ meals: Int) {
+        guard meals > 0 else { return }
+        bonusGenerations += meals
+        UserDefaults.standard.set(bonusGenerations, forKey: bonusKey)
+    }
+
     func recordGeneration() {
         // Admins don't consume the counter — unlimited scans for whitelisted devices.
         guard !isAdmin else { return }
