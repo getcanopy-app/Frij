@@ -59,6 +59,14 @@ Submit the editable version to App Review. Irreversible-ish: pulling it
 
 back means Developer Rejecting the submission.
 
+### ios review_audit
+
+```sh
+[bundle exec] fastlane ios review_audit
+```
+
+Pre-review audit: what is actually filled in, and what is missing.
+
 ----
 
 This README.md is auto-generated and will be re-generated every time [_fastlane_](https://fastlane.tools) is run.

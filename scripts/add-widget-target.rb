@@ -54,8 +54,8 @@ widget.build_configurations.each do |config|
   s["TARGETED_DEVICE_FAMILY"]                 = "1,2"
   s["CODE_SIGN_STYLE"]                        = "Automatic"
   s["SWIFT_EMIT_LOC_STRINGS"]                 = "YES"
-  s["MARKETING_VERSION"]                      = "1.0.4"
-  s["CURRENT_PROJECT_VERSION"]                = "22"
+  s["MARKETING_VERSION"]                      = "1.0.5"
+  s["CURRENT_PROJECT_VERSION"]                = "23"
 end
 
 # WidgetKit + SwiftUI

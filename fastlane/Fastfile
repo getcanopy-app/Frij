@@ -143,4 +143,30 @@ platform :ios do
     )
   end
 
+
+  desc "Pre-review audit: what is actually filled in, and what is missing."
+  lane :review_audit do
+    asc_key
+    app = Spaceship::ConnectAPI::App.find("com.hellofrij.frij")
+    v = app.get_app_store_versions.first
+    UI.header("Version #{v.version_string} — #{v.app_store_state}")
+
+    b = v.build
+    UI.message("build            : #{b&.version} uploaded #{b&.uploaded_date}")
+    UI.message("release type     : #{v.release_type}")
+
+    loc = v.get_app_store_version_localizations.find { |l| l.locale == "en-US" }
+    %w[description keywords whats_new promotional_text support_url marketing_url].each do |f|
+      val = loc.send(f).to_s
+      UI.message(format("%-17s: %s", f, val.empty? ? "(EMPTY)" : "#{val.length} chars"))
+    end
+
+    UI.message("name             : " + app.name.to_s)
+
+    UI.header("Screenshots")
+    sets = loc.get_app_screenshot_sets
+    sets.each { |s| UI.message("  #{s.screenshot_display_type}: #{s.app_screenshots.count}") }
+    UI.error("  NO SCREENSHOTS — Apple will reject") if sets.empty?
+  end
+
 end
