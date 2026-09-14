@@ -16,6 +16,11 @@ struct ContentView: View {
     // A meal that arrived via a shared Frij link — saved on arrival, then
     // opened so the recipient sees what they just received.
     @State private var receivedRecipe: Recipe?
+    // Invite prompts: "a friend sent you a code" on an early launch, and the
+    // occasional "invite a friend" after a cook. Both live at the root so they
+    // work no matter which tab the user was on.
+    @Bindable private var inviteNudge = InviteNudge.shared
+    @State private var showRedeemInvite = false
 
     var body: some View {
         ZStack {
@@ -115,6 +120,27 @@ struct ContentView: View {
         .sheet(item: $receivedRecipe) { recipe in
             RecipeDetailSheet(recipe: recipe) {
                 receivedRecipe = nil
+            }
+        }
+        // "Got a code from a friend?" — offered once, early, and only when the
+        // clipboard plausibly holds one. The actual pasteboard READ happens
+        // inside, behind the button, because iOS prompts on any read.
+        .sheet(isPresented: $showRedeemInvite) {
+            RedeemInvitePrompt { showRedeemInvite = false }
+                .presentationDetents([.height(400)])
+        }
+        // The post-cook invite nudge. Rate-limited in InviteNudge (2nd cook,
+        // then every 5th) so it stays a suggestion rather than a nag.
+        .sheet(isPresented: $inviteNudge.isShowing) {
+            NavigationStack { InviteView() }
+        }
+        .task {
+            // Don't interrupt onboarding, and never ask someone who already
+            // accepted an invite.
+            guard !showOnboarding, !InviteStore.shared.hasRedeemed else { return }
+            if await InviteStore.shared.hasCandidateCode() {
+                try? await Task.sleep(nanoseconds: 900_000_000)
+                showRedeemInvite = true
             }
         }
         // Re-verify subscription on every foreground.

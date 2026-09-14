@@ -182,3 +182,49 @@ final class InviteStore {
         UserDefaults.standard.set(true, forKey: promptedKey)
     }
 }
+
+/// Decides WHEN to nudge someone to invite a friend.
+///
+/// The rule is deliberately conservative: the second time you cook, then every
+/// fifth. Asking after every cook is nagging, and asking after the first one
+/// lands before Frij has earned anything. Peak satisfaction — you just made
+/// dinner — is the moment worth using, but only occasionally.
+@MainActor @Observable
+final class InviteNudge {
+    static let shared = InviteNudge()
+
+    private let cookCountKey = "frij.invite.cooksSinceNudge.total"
+    private let dismissedKey = "frij.invite.nudgeDismissedForever"
+
+    /// Set when it's time to offer; ContentView presents on this.
+    var isShowing = false
+
+    private var totalCooks: Int {
+        get { UserDefaults.standard.integer(forKey: cookCountKey) }
+        set { UserDefaults.standard.set(newValue, forKey: cookCountKey) }
+    }
+    private var dismissedForever: Bool {
+        get { UserDefaults.standard.bool(forKey: dismissedKey) }
+        set { UserDefaults.standard.set(newValue, forKey: dismissedKey) }
+    }
+
+    /// Called from CookLog so it fires wherever the user cooked from.
+    func recordCook() {
+        guard !dismissedForever else { return }
+        totalCooks += 1
+        let n = totalCooks
+        guard n == 2 || (n > 2 && n % 5 == 0) else { return }
+        // Let the cooking celebration land first — this is a second beat, not
+        // a competing one.
+        Task {
+            try? await Task.sleep(nanoseconds: 2_600_000_000)
+            isShowing = true
+        }
+    }
+
+    /// "Don't show this again" — respected permanently.
+    func stopAsking() {
+        dismissedForever = true
+        isShowing = false
+    }
+}

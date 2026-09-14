@@ -5,6 +5,7 @@ import StoreKit
 // the paywall and Profile.
 
 struct PaywallView: View {
+    @State private var showInvite = false
     @State private var sub = SubscriptionManager.shared
     @State private var usage = UsageStore.shared
     @State private var selectedPlan: Plan = .annual
@@ -126,6 +127,12 @@ struct PaywallView: View {
         .presentationDragIndicator(.visible)
         .presentationCornerRadius(32)
         .onAppear { animateIn() }
+        // Earn-it-instead path. Presented from here so it sits above the
+        // paywall rather than replacing it — closing the invite screen returns
+        // them to the purchase options.
+        .sheet(isPresented: $showInvite) {
+            NavigationStack { InviteView() }
+        }
         // Retry product loading if the launch-time load failed (e.g. the app
         // opened offline) so the paywall isn't stuck on fallback prices with a
         // dead purchase button. No-ops if products are already loaded. Also
@@ -370,6 +377,20 @@ struct PaywallView: View {
                         .font(.system(size: 13, design: .rounded))
                         .foregroundStyle(.secondary)
                 }
+            }
+
+            // Not ready to pay? Earn it instead. Deliberately quiet and below
+            // the purchase button — an alternative for someone about to bounce,
+            // not a competitor to the thing we'd rather they do.
+            if !sub.hasPlus {
+                Button { showInvite = true } label: {
+                    Text("Not ready? Invite 3 friends for a free week")
+                        .font(.system(size: 13, weight: .semibold, design: .rounded))
+                        .foregroundStyle(Color.fridjOrange)
+                        .underline()
+                        .frame(minHeight: 44)
+                }
+                .buttonStyle(.plain)
             }
         }
     }
