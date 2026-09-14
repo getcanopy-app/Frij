@@ -101,10 +101,14 @@ struct Recipe: Codable, Identifiable, Hashable {
 }
 
 // Per-serving macro estimate. All optional — the model occasionally omits one.
+// `fat` was replaced by `fiber` as the fourth stat (more useful at a glance
+// than fat for "did I eat well"), but it stays decodable so recipes saved
+// before the switch still load instead of failing to decode.
 struct Nutrition: Codable, Hashable {
     let calories: Int?
     let protein: Int?
     let carbs: Int?
+    let fiber: Int?
     let fat: Int?
 }
 

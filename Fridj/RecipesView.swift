@@ -636,6 +636,37 @@ struct RecipesView: View {
 
     // MARK: Card
 
+    /// A quiet one-line macro read on the card, so two dishes can be compared
+    /// without opening either. Same colour language as the detail tiles but a
+    /// third of the weight — a dot and a number, not a nutrition label. Only
+    /// the stats the model actually returned are shown.
+    private func macroStrip(_ n: Nutrition) -> some View {
+        // Fiber replaced fat; older saved recipes only carry fat.
+        let fourth: (Int?, String) = n.fiber != nil ? (n.fiber, "fiber") : (n.fat, "fat")
+        let stats: [(value: Int, unit: String, label: String, color: Color)] =
+            [(n.calories, "", "cal", Color.fridjOrange),
+             (n.protein, "g", "protein", Color.fridjGreen),
+             (n.carbs, "g", "carbs", Color.fridjBerry),
+             (fourth.0, "g", fourth.1, Color.fridjCoral)]
+            .compactMap { v, u, l, c in v.map { (value: $0, unit: u, label: l, color: c) } }
+
+        return HStack(spacing: 8) {
+            ForEach(Array(stats.enumerated()), id: \.offset) { _, s in
+                HStack(spacing: 3) {
+                    Circle().fill(s.color).frame(width: 5, height: 5)
+                    Text("\(s.value)\(s.unit)")
+                        .font(FridjFont.size(12, weight: .bold))
+                        .foregroundColor(.fridjText.opacity(0.8))
+                    Text(s.label)
+                        .font(FridjFont.size(11, weight: .semibold))
+                        .foregroundColor(.fridjText.opacity(0.4))
+                }
+                .fixedSize()
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
     private func card(_ recipe: Recipe, topPick: Bool = false) -> some View {
         let isFav = favorites.isFavorite(recipe)
         return Button {
@@ -710,6 +741,8 @@ struct RecipesView: View {
                         .foregroundColor(.fridjText)
                         .multilineTextAlignment(.leading)
                         .frame(maxWidth: .infinity, alignment: .leading)
+
+                    if let n = recipe.nutrition { macroStrip(n) }
 
                     // The personal "Because you…" note — the moment Frij feels
                     // like it knows you. Only present when a taste profile drove
@@ -1256,7 +1289,9 @@ struct RecipeDetailSheet: View {
             ("Calories", n.calories, "", .fridjOrange),
             ("Protein", n.protein, "g", .fridjGreen),
             ("Carbs", n.carbs, "g", .fridjBerry),
-            ("Fat", n.fat, "g", .fridjCoral),
+            // Fiber replaced fat here. Recipes saved before the switch only
+            // carry `fat`, so fall back to it rather than showing three tiles.
+            (n.fiber != nil ? "Fiber" : "Fat", n.fiber ?? n.fat, "g", .fridjCoral),
         ]
         return VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 8) {

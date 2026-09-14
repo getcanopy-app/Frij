@@ -1,0 +1,3 @@
+app_identifier("com.hellofrij.frij")
+# apple_id and team_id are intentionally omitted — fastlane prompts on first
+# run and caches them, so no account details live in the repo.

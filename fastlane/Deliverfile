@@ -1,0 +1,19 @@
+# Metadata-only upload. Screenshots and the binary are managed in Xcode /
+# App Store Connect, so deliver must not touch them — without these it would
+# try to upload (and can clear) screenshots it can't find locally.
+skip_binary_upload(true)
+skip_screenshots(true)
+
+# Show the HTML preview and ask before anything is sent. Set force(true) only
+# when you're running this unattended and already trust the diff.
+force(false)
+
+# Never auto-submit. Metadata lands on the next editable version, and you
+# submit from App Store Connect when the build is ready.
+submit_for_review(false)
+
+# Metadata changes (name, subtitle, keywords, description) only take effect on
+# a version that is still editable. If the current version is "Ready for
+# Distribution", create the next version in App Store Connect first — deliver
+# will then write into it.
+app_identifier("com.hellofrij.frij")

@@ -1,0 +1,9 @@
+default_platform(:ios)
+
+platform :ios do
+  desc "Upload App Store metadata only (name, subtitle, keywords, description)."
+  desc "Takes effect on the next editable version — see fastlane/Deliverfile."
+  lane :aso do
+    deliver
+  end
+end

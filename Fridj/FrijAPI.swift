@@ -119,7 +119,10 @@ enum FrijAPI {
         // smoothie from a dinner forever after.
         return try JSONDecoder().decode(RecipeResponse.self, from: data).recipes.map {
             Recipe(name: $0.name, cookTime: $0.cookTime, uses: $0.uses, needs: $0.needs,
-                   steps: $0.steps, reason: $0.reason, origin: $0.origin, mode: mode)
+                   steps: $0.steps, reason: $0.reason, origin: $0.origin, mode: mode,
+                   // Carry the macros through. Re-stamping used to drop them,
+                   // so the nutrition UI never had data to render.
+                   nutrition: $0.nutrition)
         }
     }
 
@@ -188,7 +191,7 @@ enum FrijAPI {
         for d in found {
             let stamped = Recipe(name: d.name, cookTime: d.cookTime, uses: d.uses,
                                  needs: d.needs, steps: d.steps, reason: d.reason,
-                                 origin: origin)
+                                 origin: origin, nutrition: d.nutrition)
             out.append(await crossCheckPantry(stamped))
         }
         return out
@@ -218,7 +221,11 @@ enum FrijAPI {
                       uses: split.have,
                       needs: split.need,
                       steps: recipe.steps, reason: recipe.reason,
-                      origin: recipe.origin)
+                      origin: recipe.origin,
+                      // `mode` and `nutrition` were being dropped here too, so a
+                      // pantry-matched recipe forgot it was a smoothie and lost
+                      // its macros.
+                      mode: recipe.mode, nutrition: recipe.nutrition)
     }
 
     /// One messy phrase — typed or dictated — into a clean, normalized list.

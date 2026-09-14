@@ -41,6 +41,8 @@ struct PantryView: View {
                 VStack(alignment: .leading, spacing: FridjSpacing.lg) {
                     header
                     modeToggle
+                    // Smoothies are fast by definition, so speed doesn't apply.
+                    if session.mealMode != "smoothie" { speedToggle }
                     cookButton
 
                     if let err = session.cookError {
@@ -139,42 +141,53 @@ struct PantryView: View {
     /// it reads as "somewhere else you can go". Tapping the active one returns
     /// to dinner.
     private var modeToggle: some View {
-        // One horizontally-scrollable row: the occasion chips plus the Quick
-        // filter. Four word-chips don't fit a phone width statically, so it
-        // scrolls — the standard iOS filter-row pattern, and nothing clips.
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
-                ForEach(Self.detourModes, id: \.mode) { detour in
-                    modeChip(detour)
-                }
-                // A quick-meal filter, riding with the occasions. Smoothies are
-                // fast by definition, so it hides there.
-                if session.mealMode != "smoothie" { quickChip }
+        // The occasion chips only (Desserts / Snacks / Smoothies). Speed is a
+        // separate axis and lives in its own control by the cook button.
+        //
+        // Deliberately NOT a scroll view: all three fit on every supported
+        // width, and a horizontal scroller made them look left-anchored and
+        // half-hidden, as if something were cut off. Centered reads as "these
+        // are the three options" rather than "swipe for more".
+        HStack(spacing: 8) {
+            ForEach(Self.detourModes, id: \.mode) { detour in
+                modeChip(detour)
             }
-            .padding(.vertical, 2)
         }
-        .scrollClipDisabled()
+        .padding(.vertical, 2)
+        .frame(maxWidth: .infinity, alignment: .center)
     }
 
-    /// Single ⚡ toggle — icon-only so it's always visible on the row, no
-    /// horizontal budget for a word. Fills with the mode's accent when on, and
-    /// "any time" is simply the off state. Accessibility label carries meaning.
-    private var quickChip: some View {
-        let on = session.mealSpeed == "quick"
+    /// How long the user feels like cooking — a clean, labeled two-segment
+    /// control that sits right above the cook button, where deciding the effort
+    /// belongs. The active segment fills with the current mode's accent.
+    private var speedToggle: some View {
+        HStack(spacing: 4) {
+            speedSegment(title: "Any time", icon: "clock", value: "any")
+            speedSegment(title: "Quick", icon: "bolt.fill", value: "quick")
+        }
+        .padding(4)
+        .background(Color.fridjText.opacity(0.06), in: Capsule())
+        .fixedSize()
+        .frame(maxWidth: .infinity, alignment: .center)
+    }
+
+    private func speedSegment(title: String, icon: String, value: String) -> some View {
+        let on = session.mealSpeed == value
         return Button {
             withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                session.mealSpeed = on ? "any" : "quick"
+                session.mealSpeed = value
             }
         } label: {
-            Image(systemName: "bolt.fill")
-                .font(.system(size: 15, weight: .bold))
-                .foregroundColor(on ? .white : accent)
-                .frame(width: 40, height: 40)
-                .background(on ? accent : Color(white: 1), in: Circle())
-                .overlay(Circle().stroke(accent.opacity(on ? 0 : 0.55), lineWidth: 1))
+            HStack(spacing: 5) {
+                Image(systemName: icon).font(.system(size: 12, weight: .bold))
+                Text(title).font(FridjFont.size(14, weight: .bold))
+            }
+            .foregroundColor(on ? .white : .fridjText.opacity(0.5))
+            .padding(.horizontal, 16)
+            .padding(.vertical, 8)
+            .background(on ? accent : Color.clear, in: Capsule())
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(Text("Quick meals"))
         .accessibilityAddTraits(on ? [.isButton, .isSelected] : .isButton)
     }
 
