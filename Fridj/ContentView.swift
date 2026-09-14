@@ -113,7 +113,16 @@ struct ContentView: View {
         // COLD launch from tapping the link (the recipient's usual case)
         // delivers the URL via NSUserActivity — which only onContinueUserActivity
         // catches. Listening to just one silently drops the other.
-        .onOpenURL { openSharedMeal($0) }
+        .onOpenURL { url in
+            // frij://scan — the home-screen widget. Its whole promise is one
+            // tap to the camera, so jump straight there rather than dropping
+            // the user on whatever tab they left open.
+            if url.scheme == "frij" {
+                if url.host == "scan" || url.path == "/scan" { selectedTab = .scan }
+                return
+            }
+            openSharedMeal(url)
+        }
         .onContinueUserActivity(NSUserActivityTypeBrowsingWeb) { activity in
             if let url = activity.webpageURL { openSharedMeal(url) }
         }

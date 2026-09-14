@@ -7,9 +7,13 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		146D268DFCF4571F4FEDD6EC /* FrijWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 7308D5723E3346FADA742710 /* FrijWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		71FDDC3C3D78A2C3C5E94A1C /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 940571C40FC0068DC48C912D /* WidgetKit.framework */; };
 		99BF54B030069CB8002834FD /* StoreKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 99BF54AF30069CB8002834FD /* StoreKit.framework */; };
 		99E71FF92FD83C71001D2920 /* CelebrationCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99E71FF82FD83C71001D2920 /* CelebrationCoordinator.swift */; };
 		99E71FFB2FD83C8B001D2920 /* StreakCelebrationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99E71FFA2FD83C8B001D2920 /* StreakCelebrationView.swift */; };
+		F1ADDA9D836670DC92C601AB /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = DE536C74224696940CE47E50 /* SwiftUI.framework */; };
+		F2BB3525BB658D6E3EAE07AC /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FC00269D39F4B4BD5ED2EC8A /* Foundation.framework */; };
 		FA5E0000000000000000000D /* ShareImport.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = FA5E00000000000000000001 /* ShareImport.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
@@ -28,6 +32,13 @@
 			remoteGlobalIDString = 22CAE9F92FC70BA2005D79CE;
 			remoteInfo = Fridj;
 		};
+		36D70328A9B4CA531E0433CE /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 22CAE9F22FC70BA2005D79CE /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = DFF0440BADA256D997DD2CE1;
+			remoteInfo = FrijWidget;
+		};
 		FA5E0000000000000000000A /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 22CAE9F22FC70BA2005D79CE /* Project object */;
@@ -45,6 +56,7 @@
 			dstSubfolderSpec = 13;
 			files = (
 				FA5E0000000000000000000D /* ShareImport.appex in Embed Foundation Extensions */,
+				146D268DFCF4571F4FEDD6EC /* FrijWidget.appex in Embed Foundation Extensions */,
 			);
 			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -55,10 +67,14 @@
 		22CAE9FA2FC70BA2005D79CE /* Fridj.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Fridj.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		22CAEA072FC70BA4005D79CE /* FridjTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FridjTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		22CAEA112FC70BA4005D79CE /* FridjUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FridjUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		7308D5723E3346FADA742710 /* FrijWidget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = FrijWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		940571C40FC0068DC48C912D /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		99BF54AF30069CB8002834FD /* StoreKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = StoreKit.framework; path = System/Library/Frameworks/StoreKit.framework; sourceTree = SDKROOT; };
 		99E71FF82FD83C71001D2920 /* CelebrationCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CelebrationCoordinator.swift; sourceTree = "<group>"; };
 		99E71FFA2FD83C8B001D2920 /* StreakCelebrationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreakCelebrationView.swift; sourceTree = "<group>"; };
+		DE536C74224696940CE47E50 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		FA5E00000000000000000001 /* ShareImport.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = ShareImport.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		FC00269D39F4B4BD5ED2EC8A /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -89,12 +105,23 @@
 		};
 		22CAEA0A2FC70BA4005D79CE /* FridjTests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+			);
 			path = FridjTests;
 			sourceTree = "<group>";
 		};
 		22CAEA142FC70BA4005D79CE /* FridjUITests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+			);
 			path = FridjUITests;
+			sourceTree = "<group>";
+		};
+		DE759C199A690B6D4203878F /* FrijWidget */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+			);
+			path = FrijWidget;
 			sourceTree = "<group>";
 		};
 		FA5E00000000000000000002 /* ShareImport */ = {
@@ -130,6 +157,16 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		B5F69443989EE433CFBA7593 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F2BB3525BB658D6E3EAE07AC /* Foundation.framework in Frameworks */,
+				71FDDC3C3D78A2C3C5E94A1C /* WidgetKit.framework in Frameworks */,
+				F1ADDA9D836670DC92C601AB /* SwiftUI.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		FA5E00000000000000000005 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -151,6 +188,7 @@
 				99E71FF82FD83C71001D2920 /* CelebrationCoordinator.swift */,
 				99E71FFA2FD83C8B001D2920 /* StreakCelebrationView.swift */,
 				99BF54AE30069CB8002834FD /* Frameworks */,
+				DE759C199A690B6D4203878F /* FrijWidget */,
 			);
 			sourceTree = "<group>";
 		};
@@ -161,14 +199,26 @@
 				FA5E00000000000000000001 /* ShareImport.appex */,
 				22CAEA072FC70BA4005D79CE /* FridjTests.xctest */,
 				22CAEA112FC70BA4005D79CE /* FridjUITests.xctest */,
+				7308D5723E3346FADA742710 /* FrijWidget.appex */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		597F6315BFA33B2C24BC5404 /* iOS */ = {
+			isa = PBXGroup;
+			children = (
+				FC00269D39F4B4BD5ED2EC8A /* Foundation.framework */,
+			);
+			name = iOS;
 			sourceTree = "<group>";
 		};
 		99BF54AE30069CB8002834FD /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
 				99BF54AF30069CB8002834FD /* StoreKit.framework */,
+				597F6315BFA33B2C24BC5404 /* iOS */,
+				940571C40FC0068DC48C912D /* WidgetKit.framework */,
+				DE536C74224696940CE47E50 /* SwiftUI.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -189,13 +239,12 @@
 			);
 			dependencies = (
 				FA5E0000000000000000000B /* PBXTargetDependency */,
+				1C52CEBEBA7F870B3D39015A /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				22CAE9FC2FC70BA2005D79CE /* Fridj */,
 			);
 			name = Fridj;
-			packageProductDependencies = (
-			);
 			productName = Fridj;
 			productReference = 22CAE9FA2FC70BA2005D79CE /* Fridj.app */;
 			productType = "com.apple.product-type.application";
@@ -217,8 +266,6 @@
 				22CAEA0A2FC70BA4005D79CE /* FridjTests */,
 			);
 			name = FridjTests;
-			packageProductDependencies = (
-			);
 			productName = FridjTests;
 			productReference = 22CAEA072FC70BA4005D79CE /* FridjTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
@@ -240,11 +287,29 @@
 				22CAEA142FC70BA4005D79CE /* FridjUITests */,
 			);
 			name = FridjUITests;
-			packageProductDependencies = (
-			);
 			productName = FridjUITests;
 			productReference = 22CAEA112FC70BA4005D79CE /* FridjUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+		DFF0440BADA256D997DD2CE1 /* FrijWidget */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = DB24A10A638E18E79B8A63AD /* Build configuration list for PBXNativeTarget "FrijWidget" */;
+			buildPhases = (
+				3434E62C53BA9019058FDE11 /* Sources */,
+				B5F69443989EE433CFBA7593 /* Frameworks */,
+				811BBCE5562AB35762DD1C23 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				DE759C199A690B6D4203878F /* FrijWidget */,
+			);
+			name = FrijWidget;
+			productName = FrijWidget;
+			productReference = 7308D5723E3346FADA742710 /* FrijWidget.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 		FA5E00000000000000000003 /* ShareImport */ = {
 			isa = PBXNativeTarget;
@@ -262,8 +327,6 @@
 				FA5E00000000000000000002 /* ShareImport */,
 			);
 			name = ShareImport;
-			packageProductDependencies = (
-			);
 			productName = ShareImport;
 			productReference = FA5E00000000000000000001 /* ShareImport.appex */;
 			productType = "com.apple.product-type.app-extension";
@@ -312,6 +375,7 @@
 				FA5E00000000000000000003 /* ShareImport */,
 				22CAEA062FC70BA4005D79CE /* FridjTests */,
 				22CAEA102FC70BA4005D79CE /* FridjUITests */,
+				DFF0440BADA256D997DD2CE1 /* FrijWidget */,
 			);
 		};
 /* End PBXProject section */
@@ -332,6 +396,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		22CAEA0F2FC70BA4005D79CE /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		811BBCE5562AB35762DD1C23 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -371,6 +442,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		3434E62C53BA9019058FDE11 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		FA5E00000000000000000004 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -381,6 +459,12 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		1C52CEBEBA7F870B3D39015A /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = FrijWidget;
+			target = DFF0440BADA256D997DD2CE1 /* FrijWidget */;
+			targetProxy = 36D70328A9B4CA531E0433CE /* PBXContainerItemProxy */;
+		};
 		22CAEA092FC70BA4005D79CE /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 22CAE9F92FC70BA2005D79CE /* Fridj */;
@@ -710,6 +794,53 @@
 			};
 			name = Release;
 		};
+		4CB5485147F55C996020906D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 22;
+				DEVELOPMENT_TEAM = 5SAX25WKUQ;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "FrijWidget-Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = Frij;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 1.0.4;
+				PRODUCT_BUNDLE_IDENTIFIER = com.hellofrij.frij.FrijWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		592764ED5445BA992DEFAA6B /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 22;
+				DEVELOPMENT_TEAM = 5SAX25WKUQ;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "FrijWidget-Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = Frij;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 1.0.4;
+				PRODUCT_BUNDLE_IDENTIFIER = com.hellofrij.frij.FrijWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
 		FA5E00000000000000000007 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -801,6 +932,15 @@
 			buildConfigurations = (
 				22CAEA222FC70BA4005D79CE /* Debug */,
 				22CAEA232FC70BA4005D79CE /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		DB24A10A638E18E79B8A63AD /* Build configuration list for PBXNativeTarget "FrijWidget" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				592764ED5445BA992DEFAA6B /* Release */,
+				4CB5485147F55C996020906D /* Debug */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
