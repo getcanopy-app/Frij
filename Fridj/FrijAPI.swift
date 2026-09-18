@@ -130,14 +130,16 @@ enum FrijAPI {
     /// abuse deterrence (the binary necessarily contains it), not cryptography.
     private static let appKey = "frij_f0062d3aff5c479d2f9b44c5b12cb24eb0ed8fee"
 
-    static func mealImage(dish: String) async throws -> URL {
+    static func mealImage(dish: String, plate: String? = nil) async throws -> URL {
         var req = URLRequest(url: URL(string: baseURL + "/api/recipe-image")!)
         req.httpMethod = "POST"
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
         req.setValue(DeviceID.current, forHTTPHeaderField: "X-Device-ID")
         req.setValue(appKey, forHTTPHeaderField: "X-Frij-Key")
         req.timeoutInterval = 90
-        req.httpBody = try JSONSerialization.data(withJSONObject: ["name": dish])
+        var body = ["name": dish]
+        if let plate, !plate.isEmpty { body["plate"] = plate }
+        req.httpBody = try JSONSerialization.data(withJSONObject: body)
         let (data, _) = try await URLSession.shared.data(for: req)
         guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
               let str = json["imageURL"] as? String,
@@ -182,7 +184,7 @@ enum FrijAPI {
         // Only the FIRST dish gets it — one thumbnail can't depict five meals.
         let found = resp.recipes?.isEmpty == false ? resp.recipes! : [resp.recipe]
         if let s = resp.imageURL, let url = URL(string: s), let first = found.first {
-            MealImageCache.shared.set(url, for: first.name)
+            MealImageCache.shared.set(url, for: first.name, plate: first.nutrition?.serving)
         }
         // Stamp where it came from so the UI can tell imported meals from
         // generated ones forever after.

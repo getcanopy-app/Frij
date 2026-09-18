@@ -231,7 +231,7 @@ struct RecipesView: View {
     // un-save floating on the image like everywhere else.
     private func savedTile(_ recipe: Recipe, selecting: Bool = false, selected: Bool = false) -> some View {
         VStack(alignment: .leading, spacing: 7) {
-            MealImageView(dish: recipe.name, cornerRadius: 14)
+            MealImageView(dish: recipe.name, plate: recipe.nutrition?.serving, cornerRadius: 14)
                 .frame(width: 150, height: 108)
                 // Clip AFTER the frame: scaledToFill inside MealImageView
                 // reports an oversized height and would bleed past the tile.
@@ -439,7 +439,7 @@ struct RecipesView: View {
                 selectionBadge(selected: selected)
             }
 
-            MealImageView(dish: recipe.name, cornerRadius: 12)
+            MealImageView(dish: recipe.name, plate: recipe.nutrition?.serving, cornerRadius: 12)
                 .frame(width: 54, height: 54)
 
             VStack(alignment: .leading, spacing: 3) {
@@ -676,7 +676,7 @@ struct RecipesView: View {
                 // Heart and cook time float on the photo instead of sharing the
                 // title row — three elements competing there squeezed longer
                 // recipe names into an awkward wrap.
-                MealImageView(dish: recipe.name, cornerRadius: 0)
+                MealImageView(dish: recipe.name, plate: recipe.nutrition?.serving, cornerRadius: 0)
                     .frame(maxWidth: .infinity)
                     .frame(height: 170)
                     .clipShape(.rect(topLeadingRadius: FridjRadius.recipeCard,
@@ -923,7 +923,7 @@ private struct ImportLinkSheet: View {
             }
         } label: {
             HStack(spacing: 12) {
-                MealImageView(dish: recipe.name, cornerRadius: 12)
+                MealImageView(dish: recipe.name, plate: recipe.nutrition?.serving, cornerRadius: 12)
                     .frame(width: 64, height: 64)
 
                 VStack(alignment: .leading, spacing: 3) {
@@ -1310,7 +1310,17 @@ struct RecipeDetailSheet: View {
                                 in: RoundedRectangle(cornerRadius: 14, style: .continuous))
                 }
             }
-            Text("Estimated · per serving")
+            // Say WHAT the numbers are for. "38 g protein" means nothing
+            // without "6 oz chicken, 3/4 cup rice" next to it.
+            if let serving = n.serving {
+                (Text("Per serving: ").fontWeight(.bold) + Text(serving))
+                    .font(FridjFont.size(12, weight: .medium))
+                    .foregroundColor(.fridjText.opacity(0.6))
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.top, 2)
+            }
+            Text(n.servings.map { "Estimated · recipe makes \($0) \($0 == 1 ? "serving" : "servings")" }
+                 ?? "Estimated · per serving")
                 .font(FridjFont.size(10, weight: .medium))
                 .foregroundColor(.fridjText.opacity(0.35))
         }
@@ -1436,7 +1446,7 @@ struct RecipeDetailSheet: View {
 
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 0) {
-                    MealImageView(dish: recipe.name, cornerRadius: 0)
+                    MealImageView(dish: recipe.name, plate: recipe.nutrition?.serving, cornerRadius: 0)
                         .frame(maxWidth: .infinity)
                         .frame(height: 260)
                         .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))

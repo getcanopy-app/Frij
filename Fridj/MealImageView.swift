@@ -39,17 +39,21 @@ final class MealImageStore {
 // URL and MealImageStore holds the pixels.
 struct MealImageView: View {
     let dish: String
+    /// The recipe's serving line, sent so a newly generated photo shows that
+    /// plate. Cached by name only.
+    var plate: String? = nil
     var cornerRadius: CGFloat = 20
 
     @State private var uiImage: UIImage?
     @State private var loadFailed = false
 
-    init(dish: String, cornerRadius: CGFloat = 20) {
+    init(dish: String, plate: String? = nil, cornerRadius: CGFloat = 20) {
         self.dish = dish
+        self.plate = plate
         self.cornerRadius = cornerRadius
         // Synchronous cache peek so an already-seen thumbnail renders on the
         // first frame — no shimmer flash when switching screens.
-        if let url = MealImageCache.shared.url(for: dish),
+        if let url = MealImageCache.shared.url(for: dish, plate: plate),
            let hit = MealImageStore.shared.cached(url) {
             _uiImage = State(initialValue: hit)
         }
@@ -76,7 +80,7 @@ struct MealImageView: View {
         // loaded photos — cached thumbnails still appear instantly.
         .animation(.easeOut(duration: 0.3), value: uiImage != nil)
         .animation(.easeOut(duration: 0.25), value: loadFailed)
-        .task(id: dish) { await resolveAndLoad() }
+        .task(id: MealImageCache.key(dish, plate)) { await resolveAndLoad() }
     }
 
     // A little chef bobbing while the dish photo loads/generates. Sized to the
@@ -109,7 +113,7 @@ struct MealImageView: View {
         // that reuse, so without this the previous dish's photo lingers. Show
         // this dish's cached image instantly if we have it; otherwise clear any
         // leftover image so a stale one never shows while the new one loads.
-        if let url = MealImageCache.shared.url(for: dish),
+        if let url = MealImageCache.shared.url(for: dish, plate: plate),
            let hit = MealImageStore.shared.cached(url) {
             uiImage = hit          // instant loads stay instant
             loadFailed = false
@@ -120,12 +124,12 @@ struct MealImageView: View {
 
         do {
             let url: URL
-            if let cached = MealImageCache.shared.url(for: dish) {
+            if let cached = MealImageCache.shared.url(for: dish, plate: plate) {
                 url = cached
             } else {
-                url = try await FrijAPI.mealImage(dish: dish)
+                url = try await FrijAPI.mealImage(dish: dish, plate: plate)
                 guard !Task.isCancelled else { return }
-                MealImageCache.shared.set(url, for: dish)
+                MealImageCache.shared.set(url, for: dish, plate: plate)
             }
             let image = try await MealImageStore.shared.load(url)
             // A slow load for a dish we've since navigated away from must not
@@ -137,11 +141,11 @@ struct MealImageView: View {
             // A cached URL can die (creator thumbnails on platform CDNs
             // expire). Drop it and re-resolve once — the backend then
             // serves/generates its own image.
-            MealImageCache.shared.remove(for: dish)
-            if let fresh = try? await FrijAPI.mealImage(dish: dish),
+            MealImageCache.shared.remove(for: dish, plate: plate)
+            if let fresh = try? await FrijAPI.mealImage(dish: dish, plate: plate),
                let image = try? await MealImageStore.shared.load(fresh) {
                 guard !Task.isCancelled else { return }
-                MealImageCache.shared.set(fresh, for: dish)
+                MealImageCache.shared.set(fresh, for: dish, plate: plate)
                 uiImage = image
             } else {
                 guard !Task.isCancelled else { return }
@@ -200,17 +204,22 @@ final class MealImageCache {
         }
     }
 
-    func url(for dish: String) -> URL? { map[dish.lowercased()] }
+    /// One photo per dish name (matches the backend's image path). The plate
+    /// is sent along so a newly generated photo shows the right plate, but it
+    /// doesn't split the cache — that would mean paying for more images.
+    static func key(_ dish: String, _ plate: String?) -> String { dish.lowercased() }
+
+    func url(for dish: String, plate: String? = nil) -> URL? { map[Self.key(dish, plate)] }
 
     /// Drop a dead entry (e.g. an expired creator-thumbnail CDN link) so the
     /// next resolve falls through to the backend.
-    func remove(for dish: String) {
-        map.removeValue(forKey: dish.lowercased())
+    func remove(for dish: String, plate: String? = nil) {
+        map.removeValue(forKey: Self.key(dish, plate))
         persist()
     }
 
-    func set(_ url: URL, for dish: String) {
-        map[dish.lowercased()] = url
+    func set(_ url: URL, for dish: String, plate: String? = nil) {
+        map[Self.key(dish, plate)] = url
         // Cap at 150 entries to prevent unbounded UserDefaults growth.
         if map.count > 150 {
             let overflow = map.count - 150

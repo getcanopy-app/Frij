@@ -110,6 +110,12 @@ struct Nutrition: Codable, Hashable {
     let carbs: Int?
     let fiber: Int?
     let fat: Int?
+    /// What one serving IS, with amounts: "6 oz sirloin, 2 tbsp chimichurri".
+    /// The macros were computed from this and the photo is generated from it,
+    /// so all three describe the same plate. Nil on recipes from before 1.0.6.
+    var serving: String? = nil
+    /// How many servings the recipe as written makes.
+    var servings: Int? = nil
 }
 
 struct RecipeResponse: Codable {

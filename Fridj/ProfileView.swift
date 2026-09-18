@@ -11,6 +11,7 @@ struct ProfileView: View {
     @State private var adminTapResetTask: Task<Void, Never>? = nil
     @State private var showCreatorCode = false
     @State private var invites = InviteStore.shared
+    @State private var health = HealthLog.shared
 
     var body: some View {
         NavigationStack {
@@ -121,6 +122,8 @@ struct ProfileView: View {
                                 .background(.white, in: RoundedRectangle(cornerRadius: FridjRadius.md, style: .continuous))
                         }
 
+                        if HealthLog.isAvailable { healthRow }
+
                         // Spread the word — sharing and reviews are the app's
                         // only free growth engine, so they get a real home here.
                         VStack(spacing: 10) {
@@ -210,6 +213,60 @@ struct ProfileView: View {
                 }
             }
         }
+    }
+
+    // MARK: Apple Health
+
+    // Same card language as the growth rows, with a switch instead of a
+    // chevron. Frij+ only ("utility free, aspiration paid"); free users see a
+    // Frij+ pill that opens the paywall. Write-only: see HealthLog.
+    private var healthRow: some View {
+        HStack(spacing: 14) {
+            Image(systemName: "heart.fill")
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundColor(.fridjOrange)
+                .frame(width: 38, height: 38)
+                .background(Color.fridjOrange.opacity(0.12),
+                            in: RoundedRectangle(cornerRadius: 11, style: .continuous))
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Log meals to Apple Health")
+                    .font(FridjFont.size(15, weight: .bold))
+                    .foregroundColor(.fridjText)
+                Text(health.isDenied
+                     ? "Frij isn't allowed yet — turn it on in Health › Sharing › Apps › Frij"
+                     : "Calories and macros from meals you cook, for your calorie tracker")
+                    .font(FridjFont.size(12))
+                    .foregroundColor(.fridjText.opacity(0.5))
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer(minLength: 8)
+            if sub.hasPlus {
+                Toggle("", isOn: Binding(
+                    get: { health.isEnabled },
+                    set: { on in Task { await health.setEnabled(on) } }))
+                    .labelsHidden()
+                    .tint(.fridjOrange)
+            } else {
+                // Frij+ perk. Same dismiss-then-present dance as the upgrade
+                // card: iOS can't stack the paywall sheet on this one.
+                Button {
+                    dismiss()
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                        sub.showPaywall = true
+                    }
+                } label: {
+                    Text("Frij+")
+                        .font(FridjFont.size(12, weight: .heavy))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 10).padding(.vertical, 6)
+                        .background(Color.fridjOrange, in: Capsule())
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(.horizontal, 14).padding(.vertical, 12)
+        .frame(maxWidth: .infinity)
+        .background(.white, in: RoundedRectangle(cornerRadius: FridjRadius.md, style: .continuous))
     }
 
     // MARK: Subscription card

@@ -28,6 +28,7 @@ enum CookLog {
         // pantry items happened to match (substitutions, unlogged grocery runs).
         CookingStore.shared.logToday()
         CookedNutritionStore.shared.record(recipe.nutrition)
+        HealthLog.shared.log(recipe)  // no-op unless turned on in Profile
         // Occasionally offer the invite after a cook — the one moment the user
         // has just succeeded. Rate-limited inside; see InviteNudge.
         InviteNudge.shared.recordCook()

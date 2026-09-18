@@ -105,22 +105,16 @@
 		};
 		22CAEA0A2FC70BA4005D79CE /* FridjTests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-			);
 			path = FridjTests;
 			sourceTree = "<group>";
 		};
 		22CAEA142FC70BA4005D79CE /* FridjUITests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-			);
 			path = FridjUITests;
 			sourceTree = "<group>";
 		};
 		DE759C199A690B6D4203878F /* FrijWidget */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-			);
 			path = FrijWidget;
 			sourceTree = "<group>";
 		};
@@ -625,6 +619,7 @@
 				INFOPLIST_FILE = Fridj/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Frij;
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "When you turn it on, Frij saves the estimated calories, protein, carbs and fiber of meals you cook to Apple Health, so your calorie tracker can count them.";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Frij uses your camera to scan your fridge and identify ingredients.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Frij listens so you can say your ingredients out loud instead of typing them.";
 				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Frij saves the fridge and grocery photos you capture to your photo library so you can keep them — for example, to re-scan last week’s fridge photo later without retaking it.";
@@ -677,6 +672,7 @@
 				INFOPLIST_FILE = Fridj/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Frij;
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "When you turn it on, Frij saves the estimated calories, protein, carbs and fiber of meals you cook to Apple Health, so your calorie tracker can count them.";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Frij uses your camera to scan your fridge and identify ingredients.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Frij listens so you can say your ingredients out loud instead of typing them.";
 				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Frij saves the fridge and grocery photos you capture to your photo library so you can keep them — for example, to re-scan last week’s fridge photo later without retaking it.";

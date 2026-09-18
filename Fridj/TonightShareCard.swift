@@ -282,7 +282,7 @@ struct RecipeShareCard: View {
         if let cached = MealImageCache.shared.url(for: recipe.name) {
             imageURL = cached
         } else {
-            imageURL = try? await FrijAPI.mealImage(dish: recipe.name)
+            imageURL = try? await FrijAPI.mealImage(dish: recipe.name, plate: recipe.nutrition?.serving)
         }
         if let imageURL, let (data, _) = try? await URLSession.shared.data(from: imageURL) {
             hero = UIImage(data: data)

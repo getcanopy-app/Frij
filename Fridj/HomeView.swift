@@ -493,7 +493,7 @@ struct RecipeGlassCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            MealImageView(dish: recipe.name, cornerRadius: 0)
+            MealImageView(dish: recipe.name, plate: recipe.nutrition?.serving, cornerRadius: 0)
                 .frame(maxWidth: .infinity)
                 .frame(height: 160)
                 .clipShape(.rect(topLeadingRadius: 26, topTrailingRadius: 26))
