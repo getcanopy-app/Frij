@@ -144,6 +144,24 @@ platform :ios do
   end
 
 
+  desc "Turn on a capability for the App ID (e.g. HealthKit) so signing can use it."
+  desc "Xcode does this when you tick the box in Signing & Capabilities; the"
+  desc "entitlements file alone is not enough — export fails without it."
+  lane :enable_capability do |options|
+    asc_key
+    type = options[:type] || "HEALTHKIT"
+    bundle = Spaceship::ConnectAPI::BundleId.find("com.hellofrij.frij")
+    UI.user_error!("Bundle ID not found") if bundle.nil?
+    existing = bundle.get_capabilities.map(&:capability_type)
+    UI.message("Current: #{existing.join(', ')}")
+    if existing.include?(type)
+      UI.success("#{type} already enabled.")
+    else
+      bundle.create_capability(type)
+      UI.success("Enabled #{type} on com.hellofrij.frij")
+    end
+  end
+
   desc "Pre-review audit: what is actually filled in, and what is missing."
   lane :review_audit do
     asc_key
