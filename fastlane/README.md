@@ -59,6 +59,18 @@ Submit the editable version to App Review. Irreversible-ish: pulling it
 
 back means Developer Rejecting the submission.
 
+### ios enable_capability
+
+```sh
+[bundle exec] fastlane ios enable_capability
+```
+
+Turn on a capability for the App ID (e.g. HealthKit) so signing can use it.
+
+Xcode does this when you tick the box in Signing & Capabilities; the
+
+entitlements file alone is not enough — export fails without it.
+
 ### ios review_audit
 
 ```sh

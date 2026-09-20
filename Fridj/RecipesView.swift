@@ -1,4 +1,5 @@
 import SwiftUI
+import PhotosUI
 
 struct RecipesView: View {
     /// True when presented as a sheet (kitchen/scan flows). The streak
@@ -124,8 +125,9 @@ struct RecipesView: View {
         .sensoryFeedback(.impact(weight: .light), trigger: pressedID) { _, new in new != nil }
         .sheet(item: $selectedRecipe) { recipe in
             RecipeDetailSheet(recipe: recipe) {
+                // The sheet stays up: the photo offer replaces the button they
+                // just pressed. They close it themselves when they're done.
                 markCooked(recipe)
-                selectedRecipe = nil
             }
         }
         .sheet(item: $shareDoc) { doc in
@@ -1250,6 +1252,17 @@ struct RecipeDetailSheet: View {
     // "I cooked this" with missing ingredients asks first — substitutions
     // count, but an accidental tap shouldn't eat the pantry.
     @State private var confirmCookMissing = false
+    // After cooking, the same bottom button becomes the (entirely optional)
+    // photo offer for THIS cook. Nil until they cook; set once, never re-armed.
+    @State private var cookedEntry: CookbookStore.Entry?
+    @State private var photoSaved = false
+    @State private var showPhotoSource = false
+    @State private var showCamera = false
+    @State private var pickingLibrary = false
+    @State private var photoItem: PhotosPickerItem?
+    @State private var platePhoto: UIImage?
+    @State private var cookbook = CookbookStore.shared
+    @Bindable private var celebration = CelebrationCoordinator.shared
     // All sides in one swipeable row — swiping replaced the old "rotate"
     // button, so no paging state needed. Deduped by name defensively.
     // Sides are a dinner concept — a smoothie or a flan needs no steamed rice.
@@ -1434,6 +1447,103 @@ struct RecipeDetailSheet: View {
         }
         .buttonStyle(.plain)
         .sensoryFeedback(.impact(weight: .light), trigger: onList) { _, new in new }
+    }
+
+    // MARK: The bottom dock
+
+    private var cookButton: some View {
+        Button {
+            let missing = PantryMatch.partition(recipe.uses + recipe.needs).need
+            if missing.isEmpty { cook() } else { confirmCookMissing = true }
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 18, weight: .bold))
+                Text("I cooked this")
+                    .font(FridjFont.size(17, weight: .bold))
+            }
+            .foregroundColor(.white)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 16)
+            .background(Color.fridjGreen,
+                        in: RoundedRectangle(cornerRadius: FridjRadius.sm, style: .continuous))
+            .padding(.horizontal, 20)
+        }
+    }
+
+    // What the cook button becomes once they've cooked: the streak they just
+    // earned, and an offer they are free to ignore forever. No popup, no
+    // countdown, no second ask — if they do nothing, nothing happens.
+    private var cookedDock: some View {
+        VStack(spacing: 9) {
+            HStack(spacing: 7) {
+                Image(systemName: "checkmark")
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundColor(.fridjSage)
+                Text(photoSaved ? "Saved to your cookbook" : "Cooked today")
+                    .font(FridjFont.size(15, weight: .bold))
+                    .foregroundColor(.fridjSage)
+                if !photoSaved, CookingStore.shared.currentStreak > 0 {
+                    Text("·")
+                        .font(FridjFont.size(15, weight: .bold))
+                        .foregroundColor(.fridjSage.opacity(0.5))
+                    HStack(spacing: 4) {
+                        Image(systemName: "flame.fill")
+                            .font(.system(size: 13, weight: .bold))
+                        Text("\(CookingStore.shared.currentStreak)-day streak")
+                            .font(FridjFont.size(15, weight: .bold))
+                    }
+                    .foregroundColor(.fridjOrange)
+                }
+            }
+
+            if photoSaved {
+                EmptyView()
+            } else if cookbook.leadsWithPhotoButton {
+                Button { showPhotoSource = true } label: {
+                    HStack(spacing: 10) {
+                        Image(systemName: "camera.fill")
+                            .font(.system(size: 17, weight: .bold))
+                        Text("Snap your plate")
+                            .font(FridjFont.size(18, weight: .bold))
+                    }
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 17)
+                    .background(Color.fridjSage,
+                                in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                    .padding(.horizontal, 20)
+                }
+                .buttonStyle(.plain)
+
+                Text("add it to your cookbook — only if you want")
+                    .font(FridjFont.size(13))
+                    .foregroundColor(.fridjText.opacity(0.4))
+            } else {
+                // They've let this pass a few times. Keep it available, stop
+                // putting it in front of them.
+                Button { showPhotoSource = true } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: "plus")
+                            .font(.system(size: 12, weight: .bold))
+                        Text("Add photo")
+                            .font(FridjFont.size(14, weight: .semibold))
+                    }
+                    .foregroundColor(.fridjText.opacity(0.45))
+                    .padding(.vertical, 6)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+
+    private func cook() {
+        onCooked()
+        // The sheet stays open on purpose: the button they just pressed is
+        // where the photo offer appears, under the thumb that's already there.
+        withAnimation(.spring(response: 0.45, dampingFraction: 0.85)) {
+            cookedEntry = CookLog.lastEntry
+        }
     }
 
     var body: some View {
@@ -1722,42 +1832,67 @@ struct RecipeDetailSheet: View {
         }
         .overlay(alignment: .bottom) {
             VStack(spacing: 0) {
-                Button {
-                    let missing = PantryMatch.partition(recipe.uses + recipe.needs).need
-                    if missing.isEmpty {
-                        onCooked()
-                    } else {
-                        confirmCookMissing = true
-                    }
-                } label: {
-                    HStack(spacing: 8) {
-                        Image(systemName: "checkmark.circle.fill")
-                            .font(.system(size: 18, weight: .bold))
-                        Text("I cooked this")
-                            .font(FridjFont.size(17, weight: .bold))
-                    }
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 16)
-                    .background(Color.fridjGreen,
-                                in: RoundedRectangle(cornerRadius: FridjRadius.sm, style: .continuous))
-                    .padding(.horizontal, 20)
+                if cookedEntry != nil {
+                    cookedDock
+                        .transition(.opacity.combined(with: .offset(y: 8)))
+                } else {
+                    cookButton
+                        .transition(.opacity)
                 }
-                .padding(.top, 16)
-                .padding(.bottom, 36)
-                .background(.ultraThinMaterial)
-                .alert("Missing a few ingredients", isPresented: $confirmCookMissing) {
-                    Button("I cooked it anyway") { onCooked() }
-                    Button("Not yet", role: .cancel) {}
-                } message: {
-                    let count = PantryMatch.partition(recipe.uses + recipe.needs).need.count
-                    Text("Your kitchen is missing \(count) ingredient\(count == 1 ? "" : "s") for this. Substitutions absolutely count.")
-                }
+            }
+            .padding(.top, 14)
+            .padding(.bottom, 30)
+            .frame(maxWidth: .infinity)     // the dock spans the sheet even in
+            .background(.ultraThinMaterial) // its compact "+ Add photo" state
+            .animation(.spring(response: 0.45, dampingFraction: 0.85), value: cookedEntry?.id)
+            .animation(.spring(response: 0.4, dampingFraction: 0.85), value: photoSaved)
+            .alert("Missing a few ingredients", isPresented: $confirmCookMissing) {
+                Button("I cooked it anyway") { cook() }
+                Button("Not yet", role: .cancel) {}
+            } message: {
+                let count = PantryMatch.partition(recipe.uses + recipe.needs).need.count
+                Text("Your kitchen is missing \(count) ingredient\(count == 1 ? "" : "s") for this. Substitutions absolutely count.")
             }
         }
         .sheet(item: $shareDoc) { doc in
             ShareSheet(items: doc.items)
                 .presentationDetents([.medium, .large])
+        }
+        // The sheet stays up after cooking, so the celebration has to mount
+        // HERE — a copy on the base window renders behind any sheet.
+        .overlay {
+            if celebration.isShowing {
+                StreakCelebrationView()
+                    .transition(.opacity)
+            }
+        }
+        .confirmationDialog("Snap your plate", isPresented: $showPhotoSource, titleVisibility: .hidden) {
+            Button("Take a photo") { showCamera = true }
+            Button("Choose from library") { pickingLibrary = true }
+            Button("Not now", role: .cancel) {}
+        }
+        .fullScreenCover(isPresented: $showCamera) {
+            PlateCameraPicker { platePhoto = $0 }
+                .ignoresSafeArea()
+        }
+        .photosPicker(isPresented: $pickingLibrary, selection: $photoItem, matching: .images)
+        .onChange(of: photoItem) { _, item in
+            guard let item else { return }
+            Task {
+                if let data = try? await item.loadTransferable(type: Data.self),
+                   let image = UIImage(data: data) { platePhoto = image }
+                photoItem = nil
+            }
+        }
+        .fullScreenCover(item: Binding(
+            get: { platePhoto.map { KeepsakePayload(image: $0) } },
+            set: { if $0 == nil { platePhoto = nil } })
+        ) { payload in
+            if let cookedEntry {
+                KeepsakeView(entry: cookedEntry, image: payload.image) {
+                    photoSaved = true
+                }
+            }
         }
         .presentationDetents([.large])
         .presentationCornerRadius(32)

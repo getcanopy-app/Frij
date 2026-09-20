@@ -1,0 +1,40 @@
+{
+  "source": "/Users/gabenejad/Developer/Frij/FrijWidget/FrijWidget.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Snap your fridge — Frij finds three dinners.",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 100
+        }
+      },
+      {
+        "comment": "",
+        "key": "Scan",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 136
+        }
+      },
+      {
+        "comment": "",
+        "key": "What's for dinner?",
+        "location": {
+          "startingColumn": 35,
+          "startingLine": 179
+        }
+      },
+      {
+        "comment": "",
+        "key": "One tap to scan your fridge and get three dinners.",
+        "location": {
+          "startingColumn": 22,
+          "startingLine": 180
+        }
+      }
+    ]
+  },
+  "version": 1
+}

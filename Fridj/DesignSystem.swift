@@ -7,6 +7,8 @@ extension Color {
     static let fridjCoral  = Color(hex: "EC5D62")
     static let fridjBerry  = Color(hex: "9C6B9E")
     static let fridjGreen  = Color(hex: "6F876A")
+    /// The softer green of the post-cook / cookbook actions.
+    static let fridjSage   = Color(hex: "84997C")
     static let fridjMint   = Color(hex: "D1D3B5")
     static let fridjText   = Color(hex: "2D2D2D")
     static let fridjDark   = Color(hex: "171717")
