@@ -14,7 +14,6 @@ struct ExpandableTabBar: View {
         ("viewfinder",            "viewfinder",                 .scan),
         ("list.bullet.rectangle", "list.bullet.rectangle.fill", .recipes),
         ("refrigerator",          "refrigerator",               .bookmarks),
-        ("bookmark",              "bookmark.fill",              .cookbook),
     ]
 
     private var isExpanded: Bool { selectedTab == .scan && session.showScanFound }

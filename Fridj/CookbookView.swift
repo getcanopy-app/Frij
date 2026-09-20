@@ -6,7 +6,10 @@ import PhotosUI
 // THEIRS and it fills up: every cook lands here whether or not they ever take
 // a photo.
 
-struct CookbookView: View {
+// It lives as a SECTION of the meals tab rather than a tab of its own: saved
+// recipes and cooked meals are the same bucket ("my food"), and a fifth tab is
+// how a one-job app stops feeling like one.
+struct CookbookSection: View {
     @State private var cookbook = CookbookStore.shared
     @State private var cooking = CookingStore.shared
     @State private var selected: CookbookStore.Entry?
@@ -15,39 +18,29 @@ struct CookbookView: View {
                            GridItem(.flexible(), spacing: 14)]
 
     var body: some View {
-        ScrollView(showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 18) {
-                    Text("My Cookbook")
-                        .font(FridjFont.size(34, weight: .heavy))
-                        .foregroundColor(.fridjText)
-                        .padding(.top, 8)
+        VStack(alignment: .leading, spacing: 14) {
+            Text("My Cookbook")
+                .font(FridjFont.style(.title, weight: .bold))
+                .foregroundColor(.fridjText)
 
-                    statCard
+            statCard
 
-                    if cookbook.entries.isEmpty {
-                        emptyState
-                    } else {
-                        ForEach(cookbook.sections, id: \.title) { section in
-                            VStack(alignment: .leading, spacing: 12) {
-                                Text(section.title)
-                                    .font(FridjFont.size(12, weight: .bold))
-                                    .tracking(1.2)
-                                    .foregroundColor(.fridjText.opacity(0.35))
-                                LazyVGrid(columns: columns, spacing: 20) {
-                                    ForEach(section.entries) { entry in
-                                        Button { selected = entry } label: { cell(entry) }
-                                            .buttonStyle(.plain)
-                                    }
-                                }
-                            }
+            ForEach(cookbook.sections, id: \.title) { section in
+                VStack(alignment: .leading, spacing: 12) {
+                    Text(section.title)
+                        .font(FridjFont.size(12, weight: .bold))
+                        .tracking(1.2)
+                        .foregroundColor(.fridjText.opacity(0.35))
+                        .padding(.top, 4)
+                    LazyVGrid(columns: columns, spacing: 20) {
+                        ForEach(section.entries) { entry in
+                            Button { selected = entry } label: { cell(entry) }
+                                .buttonStyle(.plain)
                         }
                     }
                 }
-                .padding(.horizontal, FridjSpacing.lg)
-                .padding(.bottom, 130)          // clear of the floating tab bar
             }
-        .scrollEdgeEffectHidden(true, for: .top)
-        .background(Color.fridjBg.ignoresSafeArea())
+        }
         .sheet(item: $selected) { entry in
             CookEntrySheet(entry: entry)
         }
@@ -59,7 +52,7 @@ struct CookbookView: View {
         HStack(alignment: .center, spacing: 12) {
             VStack(alignment: .leading, spacing: 2) {
                 Text("\(cookbook.mealsCooked)")
-                    .font(FridjFont.size(44, weight: .heavy))
+                    .font(FridjFont.size(38, weight: .heavy))
                     .foregroundColor(.fridjText)
                 Text(cookbook.mealsCooked == 1 ? "meal cooked" : "meals cooked")
                     .font(FridjFont.size(17, weight: .bold))
@@ -87,25 +80,6 @@ struct CookbookView: View {
         .frame(maxWidth: .infinity)
         .background(Color.fridjPeach,
                     in: RoundedRectangle(cornerRadius: 24, style: .continuous))
-    }
-
-    // Quiet, not a sales pitch: nothing to do here until they cook.
-    private var emptyState: some View {
-        VStack(spacing: 10) {
-            Image(systemName: "book.closed.fill")
-                .font(.system(size: 38, weight: .semibold))
-                .foregroundColor(.fridjSage.opacity(0.55))
-            Text("Your cookbook starts tonight")
-                .font(FridjFont.size(19, weight: .bold))
-                .foregroundColor(.fridjText)
-            Text("Every meal you cook lands here — with a photo if you feel like it.")
-                .font(FridjFont.size(14))
-                .foregroundColor(.fridjText.opacity(0.5))
-                .multilineTextAlignment(.center)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 50)
     }
 
     // MARK: Cell

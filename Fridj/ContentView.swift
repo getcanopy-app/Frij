@@ -1,7 +1,7 @@
 import SwiftUI
 
 enum AppTab: Int {
-    case home, scan, recipes, bookmarks, cookbook
+    case home, scan, recipes, bookmarks
 }
 
 struct ContentView: View {
@@ -78,13 +78,6 @@ struct ContentView: View {
                 }
                 if selectedTab == .bookmarks {
                     PantryView()
-                        .transition(.asymmetric(
-                            insertion: .opacity.combined(with: .offset(y: 10)),
-                            removal: .opacity
-                        ))
-                }
-                if selectedTab == .cookbook {
-                    CookbookView()
                         .transition(.asymmetric(
                             insertion: .opacity.combined(with: .offset(y: 10)),
                             removal: .opacity

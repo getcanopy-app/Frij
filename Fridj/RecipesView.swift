@@ -37,6 +37,7 @@ struct RecipesView: View {
 
     var onJumpToScan: (() -> Void)? = nil
 
+    @State private var cookbook = CookbookStore.shared
     private var recipes: [Recipe] { session.recipes }
     private var hasSaved: Bool { !favorites.recipes.isEmpty }
     private var hasFresh: Bool { !recipes.isEmpty }
@@ -51,7 +52,9 @@ struct RecipesView: View {
             .prefix(12))
     }
     private var hasHistory: Bool { !recentGenerated.isEmpty }
-    private var isCompletelyEmpty: Bool { !hasSaved && !hasFresh && !hasHistory }
+    private var isCompletelyEmpty: Bool {
+        !hasSaved && !hasFresh && !hasHistory && cookbook.mealsCooked == 0
+    }
 
     var body: some View {
         ZStack {
@@ -90,6 +93,7 @@ struct RecipesView: View {
                                     removal: .opacity
                                 ))
                         }
+                        cookbookSection
                     }
                     .animation(.spring(response: 0.5, dampingFraction: 0.82), value: hasFresh)
                     .animation(.spring(response: 0.5, dampingFraction: 0.82), value: hasSaved)
@@ -168,6 +172,19 @@ struct RecipesView: View {
                 .padding(.top, FridjSpacing.sm)
         }
         .padding(.horizontal, FridjSpacing.lg)
+    }
+
+    // Everything they've actually cooked, newest first. Last on the page:
+    // tonight's dinner comes before the scrapbook of dinners already eaten.
+    @ViewBuilder
+    private var cookbookSection: some View {
+        if cookbook.mealsCooked > 0 {
+            CookbookSection()
+                .transition(.asymmetric(
+                    insertion: .opacity.combined(with: .offset(y: 16)),
+                    removal: .opacity
+                ))
+        }
     }
 
     // MARK: Saved
