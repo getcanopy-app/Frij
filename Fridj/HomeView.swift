@@ -533,7 +533,7 @@ struct RecipeGlassCard: View {
             .padding(.vertical, 14)
         }
         .frame(maxWidth: .infinity)
-        .glassEffect(.regular, in: .rect(cornerRadius: 26))
+        .frijGlass(cornerRadius: 26)
         .shadow(color: .black.opacity(0.09), radius: 13, x: 0, y: 6)
     }
 }

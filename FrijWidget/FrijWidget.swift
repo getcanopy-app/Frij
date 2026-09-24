@@ -42,7 +42,10 @@ struct FrijProvider: TimelineProvider {
         let start = cal.startOfDay(for: Date())
         let entries = (0..<7).compactMap { offset -> FrijEntry? in
             guard let day = cal.date(byAdding: .day, value: offset, to: start) else { return nil }
-            return FrijEntry(date: day, prompt: prompts[(cal.component(.dayOfYear, from: day)) % prompts.count])
+            // .dayOfYear needs iOS 18; days-since-epoch does the same job of
+            // rotating the copy daily and works everywhere.
+            let dayIndex = Int(day.timeIntervalSince1970 / 86_400)
+            return FrijEntry(date: day, prompt: prompts[abs(dayIndex) % prompts.count])
         }
         completion(Timeline(entries: entries, policy: .atEnd))
     }

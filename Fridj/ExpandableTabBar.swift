@@ -79,12 +79,8 @@ struct ExpandableTabBar: View {
         // to constrain its scene-level rendering.
         // Cap at phone width so the pill doesn't stretch across an iPad.
         .containerRelativeFrame(.horizontal) { width, _ in min(width - 44, 600) }
-        .glassEffect(
-            isExpanded
-                ? .regular.tint(Color.black.opacity(0.55))
-                : .regular,
-            in: .rect(cornerRadius: isExpanded ? 28 : 40)
-        )
+        .frijGlass(cornerRadius: isExpanded ? 28 : 40,
+                   tint: isExpanded ? Color.black.opacity(0.55) : nil)
         .clipShape(.rect(cornerRadius: isExpanded ? 28 : 40))
         .animation(.spring(response: 0.48, dampingFraction: 0.78), value: isExpanded)
         .onChange(of: selectedTab) { _, newTab in

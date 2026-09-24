@@ -195,7 +195,7 @@ struct ProfileView: View {
                 // the scroll view paints under the top bar. That was the
                 // full-width line hovering above the card, not a border on the
                 // card itself.
-                .scrollEdgeEffectHidden(true, for: .top)
+                .frijHideScrollEdge()
             }
             .sheet(isPresented: $showCreatorCode) {
                 CreatorCodeSheet()
