@@ -11,9 +11,15 @@ struct StreakCelebrationView: View {
 
     var body: some View {
         ZStack {
+            // Tapping the dim area closes it too. The "Keep it up!" button is
+            // the obvious way out, but on iOS 17 the overlay this view is
+            // mounted in doesn't reliably deliver touches to the button, and a
+            // celebration you cannot dismiss traps the whole screen.
             Color.black.opacity(0.45)
                 .ignoresSafeArea()
                 .opacity(scrimOpacity)
+                .contentShape(Rectangle())
+                .onTapGesture { handleDismiss() }
 
             VStack(spacing: 20) {
                 // Header

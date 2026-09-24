@@ -13,7 +13,7 @@ TARGET    = "FrijWidget"
 APP       = "Fridj"
 BUNDLE_ID = "com.hellofrij.frij.FrijWidget"
 TEAM      = "5SAX25WKUQ"
-IOS_MIN   = "17.0"
+IOS_MIN   = "18.0"
 
 project = Xcodeproj::Project.open(PROJECT)
 

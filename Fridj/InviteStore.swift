@@ -199,6 +199,20 @@ final class InviteNudge {
     /// Set when it's time to offer; ContentView presents on this.
     var isShowing = false
 
+    /// True while a sheet already owns the screen (the recipe detail, which
+    /// now stays open after cooking). iOS cannot present a second sheet over
+    /// the first: the attempt silently fails and, on iOS 17, leaves an
+    /// invisible presentation that swallows every tap on the sheet below.
+    /// So the nudge waits its turn instead.
+    var isSuppressed = false {
+        didSet {
+            guard !isSuppressed, pending else { return }
+            pending = false
+            isShowing = true
+        }
+    }
+    private var pending = false
+
     private var totalCooks: Int {
         get { UserDefaults.standard.integer(forKey: cookCountKey) }
         set { UserDefaults.standard.set(newValue, forKey: cookCountKey) }
@@ -218,7 +232,7 @@ final class InviteNudge {
         // a competing one.
         Task {
             try? await Task.sleep(nanoseconds: 2_600_000_000)
-            isShowing = true
+            if isSuppressed { pending = true } else { isShowing = true }
         }
     }
 

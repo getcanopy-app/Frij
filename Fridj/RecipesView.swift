@@ -112,7 +112,8 @@ struct RecipesView: View {
                 }
             }
 
-            if isSheet, CelebrationCoordinator.shared.isShowing {
+            if isSheet, CelebrationCoordinator.shared.isShowing,
+               !CelebrationCoordinator.shared.hostedBySheet {
                 StreakCelebrationView()
                     .zIndex(999)
             }
@@ -1484,7 +1485,7 @@ struct RecipeDetailSheet: View {
             .padding(.vertical, 16)
             .background(Color.fridjGreen,
                         in: RoundedRectangle(cornerRadius: FridjRadius.sm, style: .continuous))
-            .padding(.horizontal, 20)
+            .contentShape(Rectangle())
         }
     }
 
@@ -1529,9 +1530,8 @@ struct RecipeDetailSheet: View {
                     .padding(.vertical, 17)
                     .background(Color.fridjSage,
                                 in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-                    .padding(.horizontal, 20)
+                    .contentShape(Rectangle())
                 }
-                .buttonStyle(.plain)
 
                 Text("add it to your cookbook — only if you want")
                     .font(FridjFont.size(13))
@@ -1547,9 +1547,9 @@ struct RecipeDetailSheet: View {
                             .font(FridjFont.size(14, weight: .semibold))
                     }
                     .foregroundColor(.fridjText.opacity(0.45))
-                    .padding(.vertical, 6)
+                    .padding(.vertical, 8).padding(.horizontal, 16)
+                    .contentShape(Rectangle())
                 }
-                .buttonStyle(.plain)
             }
         }
     }
@@ -1849,14 +1849,16 @@ struct RecipeDetailSheet: View {
         }
         .overlay(alignment: .bottom) {
             VStack(spacing: 0) {
+                // No .transition here on purpose: on iOS 17 a transition on
+                // the swapped-in branch leaves the OLD branch's hit geometry
+                // behind, so the new buttons draw but never receive a tap.
                 if cookedEntry != nil {
                     cookedDock
-                        .transition(.opacity.combined(with: .offset(y: 8)))
                 } else {
                     cookButton
-                        .transition(.opacity)
                 }
             }
+            .padding(.horizontal, 20)
             .padding(.top, 14)
             .padding(.bottom, 30)
             .frame(maxWidth: .infinity)     // the dock spans the sheet even in
@@ -1877,8 +1879,15 @@ struct RecipeDetailSheet: View {
         }
         // The sheet stays up after cooking, so the celebration has to mount
         // HERE — a copy on the base window renders behind any sheet.
+        // The sheet stays up after cooking, so the celebration mounts HERE —
+        // a copy on the base window renders behind any sheet. ContentView
+        // stands down while this is up (see hostedBySheet).
+        // The sheet stays up after cooking, so the celebration mounts HERE —
+        // a copy on the base window renders behind any sheet. ContentView and
+        // the recipes list stand down while this is up (see hostedBySheet):
+        // two live copies fight over touches.
         .overlay {
-            if celebration.isShowing {
+            if celebration.isShowing, celebration.hostedBySheet {
                 StreakCelebrationView()
                     .transition(.opacity)
             }
@@ -1910,6 +1919,14 @@ struct RecipeDetailSheet: View {
                     photoSaved = true
                 }
             }
+        }
+        .onAppear {
+            InviteNudge.shared.isSuppressed = true
+            CelebrationCoordinator.shared.hostedBySheet = true
+        }
+        .onDisappear {
+            InviteNudge.shared.isSuppressed = false
+            CelebrationCoordinator.shared.hostedBySheet = false
         }
         .presentationDetents([.large])
         .presentationCornerRadius(32)
