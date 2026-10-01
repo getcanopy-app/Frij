@@ -74,7 +74,7 @@ final class ScanSession {
 
         // Block non-subscribers who've exhausted their free generations.
         if !subMgr.hasPlus && usage.hasReachedLimit {
-            subMgr.showPaywall = true
+            subMgr.presentPaywall(from: "limit_reached")
             return
         }
 

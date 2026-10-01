@@ -252,7 +252,7 @@ struct ProfileView: View {
                 Button {
                     dismiss()
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
-                        sub.showPaywall = true
+                        sub.presentPaywall(from: "profile_perk")
                     }
                 } label: {
                     Text("Frij+")
@@ -351,7 +351,7 @@ struct ProfileView: View {
             Button {
                 dismiss()
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
-                    sub.showPaywall = true
+                    sub.presentPaywall(from: "profile_upgrade")
                 }
             } label: {
                 HStack(spacing: 16) {

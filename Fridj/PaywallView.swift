@@ -126,7 +126,10 @@ struct PaywallView: View {
         }
         .presentationDragIndicator(.visible)
         .presentationCornerRadius(32)
-        .onAppear { animateIn() }
+        .onAppear {
+            animateIn()
+            FrijAPI.reportEvent("paywall_view", props: ["source": sub.paywallSource])
+        }
         // Earn-it-instead path. Presented from here so it sits above the
         // paywall rather than replacing it — closing the invite screen returns
         // them to the purchase options.
@@ -141,6 +144,7 @@ struct PaywallView: View {
         .task {
             await sub.loadProducts()
             await sub.refreshStatus()
+            await sub.refreshTrialEligibility()
         }
         // Auto-fade the error toast after 3 seconds. Reset the drag offset
         // whenever a new error appears so a swipe-dismissed toast doesn't
@@ -270,12 +274,31 @@ struct PaywallView: View {
                     plan: .annual,
                     title: "Annual",
                     priceDisplay: sub.products.first(where: { $0.id == SubscriptionManager.annualID })?.displayPrice ?? "$19.99",
-                    sub: "per year · save 44%",
-                    badge: "Best Value"
+                    sub: annualSubtitle,
+                    badge: sub.trialDurationText.map { "\($0) free" } ?? "Best Value"
                 )
             }
         }
     }
+
+    private var monthlyProduct: Product? { sub.products.first(where: { $0.id == SubscriptionManager.monthlyID }) }
+    private var annualProduct: Product? { sub.products.first(where: { $0.id == SubscriptionManager.annualID }) }
+
+    /// Savings vs. paying monthly for a year, from live prices so it stays true
+    /// if the prices change in App Store Connect. Falls back to the launch price.
+    private var savingsPercent: Int {
+        guard let m = monthlyProduct?.price, let a = annualProduct?.price, m > 0 else { return 44 }
+        let ratio = NSDecimalNumber(decimal: a / (m * 12)).doubleValue
+        return max(0, Int((1 - ratio) * 100))
+    }
+
+    private var annualSubtitle: String {
+        if let len = sub.trialLengthText { return "per year after a \(len) free trial" }
+        return "per year · save \(savingsPercent)%"
+    }
+
+    /// True when the selected plan will start a free trial rather than charge.
+    private var startsTrial: Bool { selectedPlan == .annual && sub.annualTrial != nil }
 
     private func planCard(plan: Plan, title: String, priceDisplay: String, sub subText: String, badge: String?, quietBadge: Bool = false) -> some View {
         let selected = selectedPlan == plan
@@ -349,7 +372,7 @@ struct PaywallView: View {
                     if sub.isPurchasing {
                         ProgressView().tint(.white)
                     } else {
-                        Text("Continue with Frij+")
+                        Text(startsTrial ? "Start \(sub.trialLengthText ?? "") free trial" : "Continue with Frij+")
                             .font(.system(size: 17, weight: .black, design: .rounded))
                         Image(systemName: "arrow.right")
                             .font(.system(size: 14, weight: .black))
@@ -367,6 +390,16 @@ struct PaywallView: View {
             .disabled(sub.isPurchasing)
             .scaleEffect(sub.isPurchasing ? 0.97 : 1)
             .animation(.spring(response: 0.3, dampingFraction: 0.7), value: sub.isPurchasing)
+
+            // Trial terms spelled out right under the button (App Review 3.1.2):
+            // what's free, what it costs after, and how not to be charged.
+            if startsTrial, let len = sub.trialDurationText {
+                Text("Free for \(len), then \(annualProduct?.displayPrice ?? "$19.99")/year. Cancel anytime before the trial ends and you won't be charged.")
+                    .font(.system(size: 12, design: .rounded))
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
 
             if !sub.hasPlus && usage.remaining > 0 {
                 HStack(spacing: 6) {

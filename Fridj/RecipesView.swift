@@ -363,7 +363,7 @@ struct RecipesView: View {
                 Spacer(minLength: 12)
 
                 if session.isPremiumGated {
-                    Button { sub.showPaywall = true } label: {
+                    Button { sub.presentPaywall(from: "recipes_locked") } label: {
                         HStack(spacing: 5) {
                             Image(systemName: "lock.fill")
                                 .font(.system(size: 11, weight: .bold))

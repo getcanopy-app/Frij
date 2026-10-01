@@ -38,6 +38,8 @@ enum CookLog {
         // Occasionally offer the invite after a cook — the one moment the user
         // has just succeeded. Rate-limited inside; see InviteNudge.
         InviteNudge.shared.recordCook()
+        ReviewPrompt.recordCook()
+        FrijAPI.reportEvent("cook_logged")
         Task {
             try? await Task.sleep(nanoseconds: 350_000_000)
             CelebrationCoordinator.shared.show(streak: CookingStore.shared.currentStreak)

@@ -47,6 +47,35 @@ final class SubscriptionManager {
     var purchaseError: String?
     var showPaywall = false
 
+    /// Where the paywall was opened from, sent with the `paywall_view` event so
+    /// we can see which moment actually converts. Set via presentPaywall(from:).
+    private(set) var paywallSource = "unknown"
+
+    /// Opens the paywall and remembers why. Prefer this over flipping
+    /// showPaywall directly so every view is attributed.
+    func presentPaywall(from source: String) {
+        paywallSource = source
+        showPaywall = true
+    }
+
+    /// The annual plan's free trial — only when App Store Connect has one
+    /// configured AND this Apple ID hasn't used it before. nil means the
+    /// paywall shows plain prices, so shipping this before the offer exists
+    /// in App Store Connect is harmless.
+    private(set) var annualTrial: Product.SubscriptionOffer?
+
+    /// "7-day", "1-month"… for the trial's length, or nil when there's no trial.
+    var trialLengthText: String? {
+        guard let p = annualTrial?.period else { return nil }
+        switch p.unit {
+        case .day:   return "\(p.value)-day"
+        case .week:  return "\(p.value * 7)-day"
+        case .month: return "\(p.value)-month"
+        case .year:  return "\(p.value)-year"
+        @unknown default: return nil
+        }
+    }
+
     // Background listener handle — keeps the Task alive for the app lifetime.
     private var listenerTask: Task<Void, Never>?
 
@@ -55,6 +84,18 @@ final class SubscriptionManager {
         Task {
             await loadProducts()
             await refreshStatus()
+        }
+    }
+
+    /// "7 days", "1 month"… for running text, or nil when there's no trial.
+    var trialDurationText: String? {
+        guard let p = annualTrial?.period else { return nil }
+        let days = p.unit == .week ? p.value * 7 : p.value
+        switch p.unit {
+        case .day, .week: return days == 1 ? "1 day" : "\(days) days"
+        case .month: return p.value == 1 ? "1 month" : "\(p.value) months"
+        case .year:  return p.value == 1 ? "1 year" : "\(p.value) years"
+        @unknown default: return nil
         }
     }
 
@@ -69,9 +110,26 @@ final class SubscriptionManager {
             if !loaded.isEmpty {
                 products = loaded.sorted { $0.price < $1.price }
             }
+            await refreshTrialEligibility()
         } catch {
             // Network unavailable or product IDs not yet configured — degrade gracefully.
         }
+    }
+
+    /// Re-checks whether the annual trial is on offer to this Apple ID. Apple
+    /// allows one intro offer per subscription group, ever, so this flips to
+    /// nil after the first trial (or any earlier purchase).
+    func refreshTrialEligibility() async {
+        guard let annual = products.first(where: { $0.id == Self.annualID }),
+              let info = annual.subscription,
+              let offer = info.introductoryOffer,
+              offer.paymentMode == .freeTrial,
+              await info.isEligibleForIntroOffer
+        else {
+            annualTrial = nil
+            return
+        }
+        annualTrial = offer
     }
 
     // MARK: Subscription status
@@ -99,6 +157,8 @@ final class SubscriptionManager {
         isPurchasing = true
         purchaseError = nil
         defer { isPurchasing = false }
+        // Captured before buying: eligibility is gone once the trial starts.
+        let startsTrial = product.id == Self.annualID && annualTrial != nil
         do {
             let result = try await product.purchase()
             switch result {
@@ -114,7 +174,9 @@ final class SubscriptionManager {
                     // Server can't see StoreKit purchases — report it so the
                     // subscribe count is real.
                     let plan = product.id == Self.annualID ? "annual" : "monthly"
-                    FrijAPI.reportEvent("subscribe", props: ["plan": plan])
+                    FrijAPI.reportEvent("subscribe", props: ["plan": plan, "trial": startsTrial,
+                                                             "source": paywallSource])
+                    await refreshTrialEligibility()
                 }
             case .userCancelled:
                 break

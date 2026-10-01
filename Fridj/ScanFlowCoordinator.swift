@@ -623,7 +623,7 @@ struct ScanFlowCoordinator: View {
     @ViewBuilder
     private var freeUsageHint: some View {
         if session.isPremiumGated {
-            Button { sub.showPaywall = true } label: {
+            Button { sub.presentPaywall(from: "scan_locked") } label: {
                 HStack(spacing: 5) {
                     Image(systemName: "lock.fill")
                         .font(.system(size: 11, weight: .bold))
