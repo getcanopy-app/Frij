@@ -1,7 +1,8 @@
 import Foundation
 
 // Tracks free-tier recipe generation attempts.
-// This is intentionally a soft limit (resets on reinstall) — the
+// Counts live in the Keychain, which survives deleting the app, so a
+// reinstall no longer hands out a fresh set of free ideas. The
 // subscription gate is in SubscriptionManager which uses StoreKit's
 // cryptographically verified state and can't be cleared locally.
 @MainActor @Observable
@@ -31,10 +32,10 @@ final class UsageStore {
     let isAdmin = false
     #endif
 
-    private init() {
-        generationsUsed = UserDefaults.standard.integer(forKey: key)
-        bonusGenerations = UserDefaults.standard.integer(forKey: bonusKey)
-        redeemedCode = UserDefaults.standard.string(forKey: codeKey)
+    init() {
+        generationsUsed = Self.loadInt(key)
+        bonusGenerations = Self.loadInt(bonusKey)
+        redeemedCode = KeychainHelper.load(key: codeKey) ?? UserDefaults.standard.string(forKey: codeKey)
         #if DEBUG
         // Debug builds default to admin-ON so running from Xcode never hits the
         // free limit — no 7-tap needed, even on a fresh install. An explicit
@@ -43,6 +44,16 @@ final class UsageStore {
         // Release builds never see this: isAdmin is a hard-compiled `false`.
         isAdmin = UserDefaults.standard.object(forKey: adminKey) as? Bool ?? true
         #endif
+    }
+
+    // Keychain first; UserDefaults only to carry over counts from builds that
+    // stored them there. max() so neither copy can roll the count back.
+    private static func loadInt(_ key: String) -> Int {
+        max(Int(KeychainHelper.load(key: key) ?? "") ?? 0, UserDefaults.standard.integer(forKey: key))
+    }
+
+    private static func saveInt(_ value: Int, _ key: String) {
+        KeychainHelper.save(key: key, value: String(value))
     }
 
     var remaining: Int { isAdmin ? 9999 : max(0, Self.freeLimit + bonusGenerations - generationsUsed) }
@@ -55,8 +66,8 @@ final class UsageStore {
         guard redeemedCode == nil, meals > 0 else { return false }
         redeemedCode = code
         bonusGenerations += meals
-        UserDefaults.standard.set(redeemedCode, forKey: codeKey)
-        UserDefaults.standard.set(bonusGenerations, forKey: bonusKey)
+        KeychainHelper.save(key: codeKey, value: code)
+        Self.saveInt(bonusGenerations, bonusKey)
         return true
     }
 
@@ -69,14 +80,14 @@ final class UsageStore {
     func applyInviteMeals(_ meals: Int) {
         guard meals > 0 else { return }
         bonusGenerations += meals
-        UserDefaults.standard.set(bonusGenerations, forKey: bonusKey)
+        Self.saveInt(bonusGenerations, bonusKey)
     }
 
     func recordGeneration() {
         // Admins don't consume the counter — unlimited scans for whitelisted devices.
         guard !isAdmin else { return }
         generationsUsed += 1
-        UserDefaults.standard.set(generationsUsed, forKey: key)
+        Self.saveInt(generationsUsed, key)
     }
 
     // Toggled by a hidden 7-tap gesture on the "About you" title in ProfileView.
